@@ -14,3 +14,7 @@
 
 # VS2012 stuff
 *.opensdf
+Debug/
+ipch/
+*.sdf
+*.suo
