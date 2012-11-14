@@ -75,8 +75,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="EmptyProject9.cpp" />
-    <ClCompile Include="EmptyProject11.cpp" />
+    <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CLInclude Include="resource.h">
