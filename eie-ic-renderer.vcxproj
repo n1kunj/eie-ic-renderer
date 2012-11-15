@@ -384,7 +384,9 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="DebugText.cpp" />
     <None Include="DXUT\Optional\directx.ico" />
+    <ClInclude Include="DebugText.h" />
     <ClInclude Include="DXUT\Core\DXUT.h" />
     <ClInclude Include="DXUT\Core\DXUTDevice11.h" />
     <ClInclude Include="DXUT\Core\DXUTDevice9.h" />
@@ -409,7 +411,7 @@
     <ClCompile Include="DXUT\Optional\SDKmisc.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp" />
+    <ClCompile Include="Renderer.cpp" />
   </ItemGroup>
   <ItemGroup>
   </ItemGroup>
