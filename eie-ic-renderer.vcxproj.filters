@@ -82,9 +82,11 @@
       <Filter>Resource Files</Filter>
     </ResourceCompile>
     <ClInclude Include="DebugText.h" />
+    <ClInclude Include="DevConsole.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="DebugText.cpp" />
+    <ClCompile Include="DevConsole.cpp" />
   </ItemGroup>
 </Project>

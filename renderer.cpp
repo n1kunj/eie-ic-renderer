@@ -1,11 +1,11 @@
+//Based off Empty Project in DX SDK Samples
 #include "DXUT.h"
-#include "DebugText.h"
+#include "DevConsole.h"
 #include <stdlib.h>
 
-#define DEBUG_TEXT_LINE_HEIGHT 10000
+#define DEBUG_TEXT_LINE_HEIGHT 15
 
-DebugTextArray dta = DebugTextArray(2000);
-
+//DebugTextArray dta = DebugTextArray(5);
 
 //--------------------------------------------------------------------------------------
 // Reject any D3D11 devices that aren't acceptable by returning false
@@ -33,8 +33,7 @@ HRESULT CALLBACK OnD3D11CreateDevice( ID3D11Device* pd3dDevice, const DXGI_SURFA
 									 void* pUserContext )
 {
 	HRESULT hr;
-
-	V_RETURN (DebugTextOnD3D11CreateDevice(pd3dDevice, DEBUG_TEXT_LINE_HEIGHT));
+	V_RETURN (DevConsole::OnD3D11CreateDevice(pd3dDevice));
 
 	return S_OK;
 }
@@ -47,10 +46,9 @@ HRESULT CALLBACK OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, IDXGISwapCha
 										 const DXGI_SURFACE_DESC* pBackBufferSurfaceDesc, void* pUserContext )
 {
 	HRESULT hr;
-	dta.addDebugLine(L"resized");
+	DevConsole::log(L"resized");
 
-
-	V_RETURN(DebugTextOnD3D11ResizedSwapChain(pd3dDevice,pBackBufferSurfaceDesc));
+	V_RETURN(DevConsole::OnD3D11ResizedSwapChain(pd3dDevice,pBackBufferSurfaceDesc));
 
 	return S_OK;
 
@@ -81,8 +79,8 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 	pd3dImmediateContext->ClearRenderTargetView( pRTV, ClearColor );
 	pd3dImmediateContext->ClearDepthStencilView( pDSV, D3D11_CLEAR_DEPTH, 1.0, 0 );
 
-	//dta.addDebugLine(i);
-	dta.render(0,0,15);
+	//DevConsole::log(std::to_wstring(i).c_str());
+	DevConsole::draw();
 
 }
 
@@ -92,7 +90,7 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 //--------------------------------------------------------------------------------------
 void CALLBACK OnD3D11ReleasingSwapChain( void* pUserContext )
 {
-	DebugTextOnD3D11ReleasingSwapChain();
+	DevConsole::OnD3D11ReleasingSwapChain();
 }
 
 
@@ -101,7 +99,7 @@ void CALLBACK OnD3D11ReleasingSwapChain( void* pUserContext )
 //--------------------------------------------------------------------------------------
 void CALLBACK OnD3D11DestroyDevice( void* pUserContext )
 {
-	DebugTextOnD3D11DestroyDevice();
+	DevConsole::OnD3D11DestroyDevice();
 }
 
 
@@ -111,6 +109,7 @@ void CALLBACK OnD3D11DestroyDevice( void* pUserContext )
 LRESULT CALLBACK MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 						 bool* pbNoFurtherProcessing, void* pUserContext )
 {
+
 	return 0;
 }
 
@@ -120,6 +119,7 @@ LRESULT CALLBACK MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 //--------------------------------------------------------------------------------------
 void CALLBACK OnKeyboard( UINT nChar, bool bKeyDown, bool bAltDown, void* pUserContext )
 {
+	DevConsole::OnKeyboard(nChar,bKeyDown,bAltDown,pUserContext);
 }
 
 

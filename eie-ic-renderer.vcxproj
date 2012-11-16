@@ -387,10 +387,12 @@
     <ClCompile Include="DebugText.cpp" />
     <None Include="DXUT\Optional\directx.ico" />
     <ClInclude Include="DebugText.h" />
+    <ClInclude Include="DevConsole.h" />
     <ClInclude Include="DXUT\Core\DXUT.h" />
     <ClInclude Include="DXUT\Core\DXUTDevice11.h" />
     <ClInclude Include="DXUT\Core\DXUTDevice9.h" />
     <ClInclude Include="DXUT\Core\DXUTmisc.h" />
+    <ClCompile Include="DevConsole.cpp" />
     <ClCompile Include="DXUT\Core\DXUT.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
