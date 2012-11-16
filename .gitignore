@@ -15,6 +15,10 @@
 # VS2012 stuff
 *.opensdf
 Debug/
+Profile/
+Release/
 ipch/
 *.sdf
 *.suo
+*.vsp
+*.psess

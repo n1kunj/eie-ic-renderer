@@ -41,10 +41,12 @@ void DebugTextArray::render(int x, int y, int spacing, int startIndex, int numTo
 		numStrings = curString;
 	}
 
+	y += spacing * (numToDisplay-1);
+
 	for (int i = curString - startIndex - 1; i>=0; i--) {
 		dxutTextHelper->SetInsertionPos( x, y );
 		dxutTextHelper->DrawFormattedTextLine( this->textArray[i] );
-		y+=spacing;
+		y-=spacing;
 		numToDisplay--;
 		if (numToDisplay == 0) {
 			break;
@@ -54,7 +56,7 @@ void DebugTextArray::render(int x, int y, int spacing, int startIndex, int numTo
 		for (int i = size-1; i>=curString - startIndex; i--) {
 			dxutTextHelper->SetInsertionPos( x, y );
 			dxutTextHelper->DrawFormattedTextLine( this->textArray[i] );
-			y+=spacing;
+			y-=spacing;
 			numToDisplay--;
 			if (numToDisplay == 0) {
 				break;

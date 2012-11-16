@@ -2,10 +2,9 @@
 #include "DXUT.h"
 #include "DevConsole.h"
 #include <stdlib.h>
+#include <sstream>
 
-#define DEBUG_TEXT_LINE_HEIGHT 15
-
-//DebugTextArray dta = DebugTextArray(5);
+bool devConsoleFocused = true;
 
 //--------------------------------------------------------------------------------------
 // Reject any D3D11 devices that aren't acceptable by returning false
@@ -13,6 +12,7 @@
 bool CALLBACK IsD3D11DeviceAcceptable( const CD3D11EnumAdapterInfo *AdapterInfo, UINT Output, const CD3D11EnumDeviceInfo *DeviceInfo,
 									  DXGI_FORMAT BackBufferFormat, bool bWindowed, void* pUserContext )
 {
+	DevConsole::log(L"IsD3D11DeviceAcceptable");
 	return true;
 }
 
@@ -22,6 +22,7 @@ bool CALLBACK IsD3D11DeviceAcceptable( const CD3D11EnumAdapterInfo *AdapterInfo,
 //--------------------------------------------------------------------------------------
 bool CALLBACK ModifyDeviceSettings( DXUTDeviceSettings* pDeviceSettings, void* pUserContext )
 {
+	DevConsole::log(L"ModifyDeviceSettings");
 	return true;
 }
 
@@ -32,6 +33,7 @@ bool CALLBACK ModifyDeviceSettings( DXUTDeviceSettings* pDeviceSettings, void* p
 HRESULT CALLBACK OnD3D11CreateDevice( ID3D11Device* pd3dDevice, const DXGI_SURFACE_DESC* pBackBufferSurfaceDesc,
 									 void* pUserContext )
 {
+	DevConsole::log(L"OnD3D11CreateDevice");
 	HRESULT hr;
 	V_RETURN (DevConsole::OnD3D11CreateDevice(pd3dDevice));
 
@@ -45,8 +47,11 @@ HRESULT CALLBACK OnD3D11CreateDevice( ID3D11Device* pd3dDevice, const DXGI_SURFA
 HRESULT CALLBACK OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, IDXGISwapChain* pSwapChain,
 										 const DXGI_SURFACE_DESC* pBackBufferSurfaceDesc, void* pUserContext )
 {
+	DevConsole::log(L"OnD3D11ResizedSwapChain");
+	std::wstringstream wss;
+	wss << L"New Window Size = " << pBackBufferSurfaceDesc->Width << L"x" << pBackBufferSurfaceDesc->Height;
+	DevConsole::log(&wss);
 	HRESULT hr;
-	DevConsole::log(L"resized");
 
 	V_RETURN(DevConsole::OnD3D11ResizedSwapChain(pd3dDevice,pBackBufferSurfaceDesc));
 
@@ -69,8 +74,6 @@ void CALLBACK OnFrameMove( double fTime, float fElapsedTime, void* pUserContext 
 void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dImmediateContext,
 								 double fTime, float fElapsedTime, void* pUserContext )
 {
-	static int i = 0;
-	i++;
 	// Clear render target and the depth stencil 
 	float ClearColor[4] = { 1.0f, 0.196f, 0.667f, 0.0f };
 
@@ -79,8 +82,9 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 	pd3dImmediateContext->ClearRenderTargetView( pRTV, ClearColor );
 	pd3dImmediateContext->ClearDepthStencilView( pDSV, D3D11_CLEAR_DEPTH, 1.0, 0 );
 
-	//DevConsole::log(std::to_wstring(i).c_str());
-	DevConsole::draw();
+	if (devConsoleFocused) {
+		DevConsole::draw();
+	}
 
 }
 
@@ -90,6 +94,7 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 //--------------------------------------------------------------------------------------
 void CALLBACK OnD3D11ReleasingSwapChain( void* pUserContext )
 {
+	DevConsole::log(L"OnD3D11ReleasingSwapChain");
 	DevConsole::OnD3D11ReleasingSwapChain();
 }
 
@@ -99,6 +104,7 @@ void CALLBACK OnD3D11ReleasingSwapChain( void* pUserContext )
 //--------------------------------------------------------------------------------------
 void CALLBACK OnD3D11DestroyDevice( void* pUserContext )
 {
+	DevConsole::log(L"OnD3D11DestroyDevice");
 	DevConsole::OnD3D11DestroyDevice();
 }
 
@@ -109,17 +115,26 @@ void CALLBACK OnD3D11DestroyDevice( void* pUserContext )
 LRESULT CALLBACK MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 						 bool* pbNoFurtherProcessing, void* pUserContext )
 {
-
+	if (uMsg == WM_CHAR) {
+		if (wParam == 96) {
+			devConsoleFocused = !devConsoleFocused;
+		}
+		else {
+			if (devConsoleFocused) {
+				DevConsole::OnCharacter(wParam);
+			}
+		}
+	}
 	return 0;
 }
 
 
 //--------------------------------------------------------------------------------------
-// Handle key presses
+// Handle key presses. For raw key input, this is always called before MsgProc
 //--------------------------------------------------------------------------------------
 void CALLBACK OnKeyboard( UINT nChar, bool bKeyDown, bool bAltDown, void* pUserContext )
 {
-	DevConsole::OnKeyboard(nChar,bKeyDown,bAltDown,pUserContext);
+	
 }
 
 
@@ -138,6 +153,7 @@ void CALLBACK OnMouse( bool bLeftButtonDown, bool bRightButtonDown, bool bMiddle
 //--------------------------------------------------------------------------------------
 bool CALLBACK OnDeviceRemoved( void* pUserContext )
 {
+	DevConsole::log(L"OnDeviceRemoved");
 	return true;
 }
 

@@ -1,18 +1,85 @@
 #include "DXUT.h"
 #include "DevConsole.h"
 #include "DebugText.h"
+#include <sstream>
+#include <time.h>
 
 #define DEBUG_TEXT_LINE_HEIGHT 15
+#define LINES_TO_DISPLAY 15
+#define CONSOLE_MAX_CHARACTERS 1024
 
-DebugTextArray dta = DebugTextArray(2000);
+void processConsoleInput(WCHAR* input);
+
+DebugTextArray dta = DebugTextArray(2000,1.0f,1.0f,0.0f,1.0f);
+
+
+WCHAR currentInput[CONSOLE_MAX_CHARACTERS];
+int currentInputCursor = 0;
 
 void DevConsole::draw() {
-	DebugText::RenderSingleLine(L"SINGLE LINE", 0, 0);
-	dta.render(0,15,15,0,20);
+	dta.render(0,0,DEBUG_TEXT_LINE_HEIGHT,0,LINES_TO_DISPLAY);
+	time_t seconds = time(NULL);
+
+	if (seconds % 2 == 0) {
+		DebugText::RenderSingleLine(currentInput, 0, DEBUG_TEXT_LINE_HEIGHT * LINES_TO_DISPLAY);
+	}
+	else {
+		//Draw a blinking cursor
+		size_t linelen = wcslen(currentInput);
+		WCHAR* inputCopy = new WCHAR[linelen+2];
+		wcscpy_s(inputCopy,linelen+1,currentInput);
+
+		inputCopy[currentInputCursor] = L'|';
+		DebugText::RenderSingleLine(inputCopy, 0, DEBUG_TEXT_LINE_HEIGHT * LINES_TO_DISPLAY);
+		delete[] inputCopy;
+	}
 }
 
 void DevConsole::log(const WCHAR* line) {
 	dta.addDebugLine(line);
+}
+
+void DevConsole::log(std::wstringstream* wss) {
+	DevConsole::log(wss->str().c_str());
+}
+
+void DevConsole::OnCharacter(WPARAM wParam) {
+	//Percentage symbol - causes a crash!
+	if (wParam == 37) {
+		return;
+	}
+
+	//Enter key
+	if (wParam == 13) {
+		DevConsole::processConsoleInput(currentInput);
+		SecureZeroMemory(currentInput, CONSOLE_MAX_CHARACTERS*sizeof(WCHAR));
+		currentInputCursor = 0;
+	}
+	//Backspace key
+	else if (wParam == 8) {
+		if (currentInputCursor != 0) {
+			currentInputCursor--;
+			currentInput[currentInputCursor] = NULL;
+		}
+	}
+	//Actual characters
+	else if (wParam >= 31) {
+		if (currentInputCursor < CONSOLE_MAX_CHARACTERS) {
+			currentInput[currentInputCursor] = WCHAR(wParam);
+			currentInputCursor++;
+		}
+	}
+}
+
+void DevConsole::processConsoleInput(WCHAR* input) {
+	DevConsole::log(input);
+	size_t linelen = wcslen(input);
+	if (linelen == 0) {
+		return;
+	}
+	std::wstringstream wss;
+	wss << L"Input Error:" << input;
+	DevConsole::log(&wss);
 }
 
 HRESULT DevConsole::OnD3D11CreateDevice( ID3D11Device* pd3dDevice)
@@ -33,8 +100,4 @@ void DevConsole::OnD3D11ReleasingSwapChain()
 void DevConsole::OnD3D11DestroyDevice()
 {
 	DebugText::OnD3D11DestroyDevice();
-}
-
-void DevConsole::OnKeyboard( UINT nChar, bool bKeyDown, bool bAltDown, void* pUserContext ) {
-	DevConsole::log(L"On Keyboard!");
 }

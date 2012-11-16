@@ -17,7 +17,10 @@ namespace DebugText{
 
 class DebugTextArray {
 public:
-	DebugTextArray(int historyLength) : size(historyLength), curString(0), saturated(false), colourR(1.0f), colourG(1.0f), colourB(1.0f), colourA(1.0f){
+	DebugTextArray(int historyLength, FLOAT colourR = 1.0f, FLOAT colourG = 1.0f,
+		FLOAT colourB = 1.0f, FLOAT colourA = 1.0f)
+		: size(historyLength), curString(0), saturated(false), colourR(colourR),
+		colourG(colourG), colourB(colourB), colourA(colourA){
 		textArray = new WCHAR*[historyLength]();
 	}
 	~DebugTextArray() {
