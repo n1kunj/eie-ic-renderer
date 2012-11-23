@@ -3,15 +3,6 @@
 #include <sstream>
 #include <time.h>
 
-#define DEBUG_TEXT_LINE_HEIGHT 15
-#define LINES_TO_DISPLAY 15
-#define CONSOLE_MAX_CHARACTERS 1024
-
-void processConsoleInput(WCHAR* input);
-
-WCHAR currentInput[CONSOLE_MAX_CHARACTERS];
-int currentInputCursor = 0;
-
 void DevConsole::OnD3D11FrameRender()
 {
 	debugText->RenderDebugTextArray(debugTextArray,0,0,DEBUG_TEXT_LINE_HEIGHT,0,LINES_TO_DISPLAY);

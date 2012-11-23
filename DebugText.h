@@ -1,7 +1,7 @@
 #ifndef DEBUG_TEXT_H
 #define DEBUG_TEXT_H
 
-#include <DXUT.h>
+#include "DXUT.h"
 #include "SDKmisc.h"
 #include <string>
 
@@ -34,12 +34,11 @@ public:
 class DebugText{
 public:
 	DebugText(): dxutTextHelper(NULL) {
-		
 	}
 	~DebugText() {
 		delete dxutTextHelper;
 	}
-	HRESULT OnD3D11CreateDevice(ID3D11Device* pd3dDevice, int lineHeight, CDXUTDialogResourceManager* dxutResourceManager);
+	HRESULT OnD3D11CreateDevice(ID3D11Device* pd3dDevice, CDXUTDialogResourceManager* dxutResourceManager);
 	void OnD3D11DestroyDevice();
 	void RenderDebugTextArray(const DebugTextArray* dta, int x, int y, int spacing, int startIndex, int numToDisplay);
 	void RenderSingleLine(const WCHAR* line, int x, int y,

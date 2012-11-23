@@ -29,9 +29,9 @@ private:
 
 	DebugText* debugText;
 
-	static CD3DSettingsDlg g_SettingsDlg; // Device settings dialog
-	CDXUTDialog g_HUD; // dialog for standard controls
-	CDXUTDialog g_SampleUI; // dialog for sample specific controls
+	static CD3DSettingsDlg settingsDlg; // Device settings dialog
+	CDXUTDialog hud; // dialog for standard controls
+	CDXUTDialog sampleUI; // dialog for sample specific controls
 };
 
 #endif

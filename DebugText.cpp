@@ -1,12 +1,13 @@
 #include "DXUT.h"
 #include "DebugText.h"
-#include "DXUTgui.h"
 
-HRESULT DebugText::OnD3D11CreateDevice( ID3D11Device* pd3dDevice, int lineHeight, CDXUTDialogResourceManager* dxutResourceManager )
+#define DXUTLINEHEIGHT 15
+
+HRESULT DebugText::OnD3D11CreateDevice( ID3D11Device* pd3dDevice, CDXUTDialogResourceManager* dxutResourceManager )
 {
 	ID3D11DeviceContext* pd3dImmediateContext = DXUTGetD3D11DeviceContext();
 
-	dxutTextHelper = new CDXUTTextHelper( pd3dDevice, pd3dImmediateContext, dxutResourceManager, lineHeight );
+	dxutTextHelper = new CDXUTTextHelper( pd3dDevice, pd3dImmediateContext, dxutResourceManager, DXUTLINEHEIGHT );
 
 	return S_OK;
 }

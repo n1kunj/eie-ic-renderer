@@ -12,7 +12,7 @@
 
 #define FOCUSED_GUI 0
 #define FOCUSED_CONSOLE 1
-#define FOCUSED_NONE 2
+#define FOCUSED_RENDERER 2
 
 CDXUTDialogResourceManager dxutDialogResourceManager; // manager for shared resources of dialogs
 
@@ -29,6 +29,7 @@ bool CALLBACK IsD3D11DeviceAcceptable( const CD3D11EnumAdapterInfo *AdapterInfo,
 									  DXGI_FORMAT BackBufferFormat, bool bWindowed, void* pUserContext )
 {
 	devConsole.log(L"IsD3D11DeviceAcceptable");
+
 	return true;
 }
 
@@ -39,6 +40,7 @@ bool CALLBACK IsD3D11DeviceAcceptable( const CD3D11EnumAdapterInfo *AdapterInfo,
 bool CALLBACK ModifyDeviceSettings( DXUTDeviceSettings* pDeviceSettings, void* pUserContext )
 {
 	devConsole.log(L"ModifyDeviceSettings");
+
 	return true;
 }
 
@@ -50,12 +52,12 @@ HRESULT CALLBACK OnD3D11CreateDevice( ID3D11Device* pd3dDevice, const DXGI_SURFA
 									 void* pUserContext )
 {
 	devConsole.log(L"OnD3D11CreateDevice");
+
 	HRESULT hr;
 
 	ID3D11DeviceContext* pd3dImmediateContext = DXUTGetD3D11DeviceContext();
 	V_RETURN( dxutDialogResourceManager.OnD3D11CreateDevice( pd3dDevice, pd3dImmediateContext ) );
-
-	V_RETURN(debugText.OnD3D11CreateDevice(pd3dDevice,15,&dxutDialogResourceManager));
+	V_RETURN(debugText.OnD3D11CreateDevice(pd3dDevice,&dxutDialogResourceManager));
 	V_RETURN (gui.OnD3D11CreateDevice(pd3dDevice));
 	//V_RETURN (Renderer::OnD3D11CreateDevice(pd3dDevice));
 
@@ -70,13 +72,14 @@ HRESULT CALLBACK OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, IDXGISwapCha
 										 const DXGI_SURFACE_DESC* pBackBufferSurfaceDesc, void* pUserContext )
 {
 	devConsole.log(L"OnD3D11ResizedSwapChain");
+
 	std::wstringstream wss;
 	wss << L"New Window Size = " << pBackBufferSurfaceDesc->Width << L"x" << pBackBufferSurfaceDesc->Height;
 	devConsole.log(&wss);
+
 	HRESULT hr;
 
 	V_RETURN(dxutDialogResourceManager.OnD3D11ResizedSwapChain( pd3dDevice, pBackBufferSurfaceDesc ) );
-
 	V_RETURN(gui.OnD3D11ResizedSwapChain(pd3dDevice,pBackBufferSurfaceDesc));
 
 	return S_OK;
@@ -143,7 +146,6 @@ void CALLBACK OnD3D11DestroyDevice( void* pUserContext )
 	devConsole.log(L"OnD3D11DestroyDevice");
 
 	dxutDialogResourceManager.OnD3D11DestroyDevice();
-
 	gui.OnD3D11DestroyDevice();
 	debugText.OnD3D11DestroyDevice();
 }
@@ -163,14 +165,14 @@ LRESULT CALLBACK MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 	//If tilde gets pressed, toggle between console/gui display modes
 	if (uMsg == WM_CHAR && wParam == 96) {
 
-		if (focusedUI == FOCUSED_NONE) {
+		if (focusedUI == FOCUSED_RENDERER) {
 			focusedUI = FOCUSED_GUI;
 		}
 		else if (focusedUI == FOCUSED_GUI) {
 			focusedUI = FOCUSED_CONSOLE;
 		}
 		else if (focusedUI == FOCUSED_CONSOLE) {
-			focusedUI = FOCUSED_NONE;
+			focusedUI = FOCUSED_RENDERER;
 		}
 
 		*pbNoFurtherProcessing = true;
