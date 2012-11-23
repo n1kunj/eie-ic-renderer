@@ -1,9 +1,7 @@
 #include "DXUT.h"
 #include "DebugText.h"
 #include "DXUTgui.h"
-#include "SDKmisc.h"
 
-CDXUTDialogResourceManager dxutResourceManager;
 CDXUTTextHelper* dxutTextHelper = NULL;
 
 void DebugTextArray::addDebugLine(const WCHAR* line) {
@@ -73,36 +71,18 @@ void DebugTextArray::setTextColour(FLOAT r, FLOAT g, FLOAT b, FLOAT a) {
 	colourA = a;
 }
 
-HRESULT DebugText::OnD3D11CreateDevice(ID3D11Device* pd3dDevice, int lineHeight)
+HRESULT DebugText::OnD3D11CreateDevice( ID3D11Device* pd3dDevice, int lineHeight, CDXUTDialogResourceManager* dxutResourceManager )
 {
 	ID3D11DeviceContext* pd3dImmediateContext = DXUTGetD3D11DeviceContext();
 
-	HRESULT hr;
-	V_RETURN (dxutResourceManager.OnD3D11CreateDevice(pd3dDevice, pd3dImmediateContext));
-	
 	SAFE_DELETE(dxutTextHelper);
-	dxutTextHelper = new CDXUTTextHelper( pd3dDevice, pd3dImmediateContext, &dxutResourceManager, lineHeight );
+	dxutTextHelper = new CDXUTTextHelper( pd3dDevice, pd3dImmediateContext, dxutResourceManager, lineHeight );
 
 	return S_OK;
-}
-
-HRESULT DebugText::OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, const DXGI_SURFACE_DESC* pBackBufferSurfaceDesc )
-{
-	HRESULT hr;
-
-	V_RETURN(dxutResourceManager.OnD3D11ResizedSwapChain(pd3dDevice, pBackBufferSurfaceDesc));
-
-	return S_OK;
-}
-
-void DebugText::OnD3D11ReleasingSwapChain()
-{
-	dxutResourceManager.OnD3D11ReleasingSwapChain();
 }
 
 void DebugText::OnD3D11DestroyDevice() 
 {
-	dxutResourceManager.OnD3D11DestroyDevice();
 	SAFE_DELETE( dxutTextHelper );
 }
 

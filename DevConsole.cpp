@@ -12,7 +12,6 @@ void processConsoleInput(WCHAR* input);
 
 DebugTextArray dta = DebugTextArray(2000,1.0f,1.0f,0.0f,1.0f);
 
-
 WCHAR currentInput[CONSOLE_MAX_CHARACTERS];
 int currentInputCursor = 0;
 
@@ -80,26 +79,6 @@ void DevConsole::OnCharacter(WPARAM wParam) {
 			currentInputCursor++;
 		}
 	}
-}
-
-HRESULT DevConsole::OnD3D11CreateDevice( ID3D11Device* pd3dDevice)
-{
-	return DebugText::OnD3D11CreateDevice(pd3dDevice,DEBUG_TEXT_LINE_HEIGHT);
-}
-
-HRESULT DevConsole::OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, const DXGI_SURFACE_DESC* pBackBufferSurfaceDesc )
-{
-	return DebugText::OnD3D11ResizedSwapChain(pd3dDevice,pBackBufferSurfaceDesc);
-}
-
-void DevConsole::OnD3D11ReleasingSwapChain()
-{
-	DebugText::OnD3D11ReleasingSwapChain();
-}
-
-void DevConsole::OnD3D11DestroyDevice()
-{
-	DebugText::OnD3D11DestroyDevice();
 }
 
 void processConsoleInput(WCHAR* input) {

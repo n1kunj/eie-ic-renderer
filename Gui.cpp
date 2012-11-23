@@ -1,10 +1,8 @@
 #include "DXUT.h"
 #include "Gui.h"
 #include "DXUTSettingsDlg.h"
-#include "SDKmisc.h"
 #include "DebugText.h"
 
-CDXUTDialogResourceManager g_DialogResourceManager; // manager for shared resources of dialogs
 CD3DSettingsDlg g_SettingsDlg;          // Device settings dialog
 CDXUTDialog g_HUD;                  // dialog for standard controls
 CDXUTDialog g_SampleUI;             // dialog for sample specific controls
@@ -18,11 +16,11 @@ void CALLBACK OnGUIEvent( UINT nEvent, int nControlID, CDXUTControl* pControl, v
 #define IDC_TOGGLEREF           2
 #define IDC_CHANGEDEVICE        3
 
-void Gui::guiInit()
+void Gui::guiInit(CDXUTDialogResourceManager* g_DialogResourceManager )
 {
-	g_SettingsDlg.Init( &g_DialogResourceManager );
-	g_HUD.Init( &g_DialogResourceManager );
-	g_SampleUI.Init( &g_DialogResourceManager );
+	g_SettingsDlg.Init( g_DialogResourceManager );
+	g_HUD.Init( g_DialogResourceManager );
+	g_SampleUI.Init( g_DialogResourceManager );
 
 	g_HUD.SetCallback( OnGUIEvent );
 	int iY = 30;
@@ -38,9 +36,6 @@ HRESULT Gui::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 {
 	HRESULT hr;
 
-	ID3D11DeviceContext* pd3dImmediateContext = DXUTGetD3D11DeviceContext();
-
-	V_RETURN( g_DialogResourceManager.OnD3D11CreateDevice( pd3dDevice, pd3dImmediateContext ) );
 	V_RETURN( g_SettingsDlg.OnD3D11CreateDevice( pd3dDevice ) );
 
 	return S_OK;
@@ -49,8 +44,6 @@ HRESULT Gui::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 HRESULT Gui::OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, const DXGI_SURFACE_DESC* pBackBufferSurfaceDesc )
 {
 	HRESULT hr;
-
-	V_RETURN( g_DialogResourceManager.OnD3D11ResizedSwapChain( pd3dDevice, pBackBufferSurfaceDesc ) );
 	V_RETURN( g_SettingsDlg.OnD3D11ResizedSwapChain( pd3dDevice, pBackBufferSurfaceDesc ) );
 
 	g_HUD.SetLocation( pBackBufferSurfaceDesc->Width - 170, 0 );
@@ -69,14 +62,8 @@ void Gui::OnD3D11FrameRender( float fElapsedTime )
 	DebugText::RenderSingleLine(DXUTGetDeviceStats(), 5, 20, 1.0f, 1.0f, 0.0f);
 }
 
-void Gui::OnD3D11ReleasingSwapChain()
-{
-	g_DialogResourceManager.OnD3D11ReleasingSwapChain();
-}
-
 void Gui::OnD3D11DestroyDevice()
 {
-	g_DialogResourceManager.OnD3D11DestroyDevice();
 	g_SettingsDlg.OnD3D11DestroyDevice();
 	DXUTGetGlobalResourceCache().OnDestroyDevice();
 }

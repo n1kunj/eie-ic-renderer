@@ -2,12 +2,11 @@
 #define DEBUG_TEXT_H
 
 #include <DXUT.h>
+#include "SDKmisc.h"
 #include <string>
 
 namespace DebugText{
-	HRESULT OnD3D11CreateDevice(ID3D11Device* pd3dDevice, int lineHeight);
-	HRESULT OnD3D11ResizedSwapChain(ID3D11Device* pd3dDevice, const DXGI_SURFACE_DESC* pBackBufferSurfaceDesc);
-	void OnD3D11ReleasingSwapChain();
+	HRESULT OnD3D11CreateDevice(ID3D11Device* pd3dDevice, int lineHeight, CDXUTDialogResourceManager* dxutResourceManager);
 	void OnD3D11DestroyDevice();
 
 	void RenderSingleLine(const WCHAR* line, int x, int y,
