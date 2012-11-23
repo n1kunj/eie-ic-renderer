@@ -16,7 +16,8 @@ DebugTextArray dta = DebugTextArray(2000,1.0f,1.0f,0.0f,1.0f);
 WCHAR currentInput[CONSOLE_MAX_CHARACTERS];
 int currentInputCursor = 0;
 
-void DevConsole::draw() {
+void DevConsole::OnD3D11FrameRender()
+{
 	dta.render(0,0,DEBUG_TEXT_LINE_HEIGHT,0,LINES_TO_DISPLAY);
 	time_t seconds = time(NULL);
 
@@ -43,6 +44,16 @@ void DevConsole::log(std::wstringstream* wss) {
 	DevConsole::log(wss->str().c_str());
 }
 
+LRESULT DevConsole::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
+		bool* pbNoFurtherProcessing, void* pUserContext ) {
+	if (uMsg == WM_CHAR) {
+		DevConsole::OnCharacter(wParam);
+		*pbNoFurtherProcessing = true;
+	}
+	return 0;
+}
+
+
 void DevConsole::OnCharacter(WPARAM wParam) {
 	//Percentage symbol - causes a crash!
 	if (wParam == 37) {
@@ -51,7 +62,7 @@ void DevConsole::OnCharacter(WPARAM wParam) {
 
 	//Enter key
 	if (wParam == 13) {
-		DevConsole::processConsoleInput(currentInput);
+		processConsoleInput(currentInput);
 		SecureZeroMemory(currentInput, CONSOLE_MAX_CHARACTERS*sizeof(WCHAR));
 		currentInputCursor = 0;
 	}
@@ -69,17 +80,6 @@ void DevConsole::OnCharacter(WPARAM wParam) {
 			currentInputCursor++;
 		}
 	}
-}
-
-void DevConsole::processConsoleInput(WCHAR* input) {
-	DevConsole::log(input);
-	size_t linelen = wcslen(input);
-	if (linelen == 0) {
-		return;
-	}
-	std::wstringstream wss;
-	wss << L"Input Error:" << input;
-	DevConsole::log(&wss);
 }
 
 HRESULT DevConsole::OnD3D11CreateDevice( ID3D11Device* pd3dDevice)
@@ -100,4 +100,15 @@ void DevConsole::OnD3D11ReleasingSwapChain()
 void DevConsole::OnD3D11DestroyDevice()
 {
 	DebugText::OnD3D11DestroyDevice();
+}
+
+void processConsoleInput(WCHAR* input) {
+	DevConsole::log(input);
+	size_t linelen = wcslen(input);
+	if (linelen == 0) {
+		return;
+	}
+	std::wstringstream wss;
+	wss << L"Input Error:" << input;
+	DevConsole::log(&wss);
 }

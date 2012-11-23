@@ -385,6 +385,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="DebugText.cpp" />
+    <ClCompile Include="Gui.cpp" />
+    <ClCompile Include="Renderer.cpp" />
     <None Include="DXUT\Optional\directx.ico" />
     <ClInclude Include="DebugText.h" />
     <ClInclude Include="DevConsole.h" />
@@ -413,11 +415,13 @@
     <ClCompile Include="DXUT\Optional\SDKmisc.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Gui.h" />
+    <ClInclude Include="Renderer.h" />
     <CLInclude Include="resource.h" />
     <ResourceCompile Include="EmptyProject11.rc" />
   </ItemGroup>

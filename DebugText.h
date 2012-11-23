@@ -10,7 +10,7 @@ namespace DebugText{
 	void OnD3D11ReleasingSwapChain();
 	void OnD3D11DestroyDevice();
 
-	void RenderSingleLine( WCHAR* line, int x, int y,
+	void RenderSingleLine(const WCHAR* line, int x, int y,
 		FLOAT colourR = 1.0f, FLOAT colourG = 1.0f,
 		FLOAT colourB = 1.0f, FLOAT colourA = 1.0f );
 }

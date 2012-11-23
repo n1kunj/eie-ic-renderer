@@ -106,7 +106,7 @@ void DebugText::OnD3D11DestroyDevice()
 	SAFE_DELETE( dxutTextHelper );
 }
 
-void DebugText::RenderSingleLine( WCHAR* line, int x, int y,
+void DebugText::RenderSingleLine(const WCHAR* line, int x, int y,
 							   FLOAT colourR, FLOAT colourG,
 							   FLOAT colourB, FLOAT colourA )
 {
