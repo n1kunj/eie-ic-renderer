@@ -5,14 +5,15 @@
 #include "SDKmisc.h"
 #include <string>
 
-namespace DebugText{
+class DebugText{
+public:
 	HRESULT OnD3D11CreateDevice(ID3D11Device* pd3dDevice, int lineHeight, CDXUTDialogResourceManager* dxutResourceManager);
 	void OnD3D11DestroyDevice();
 
 	void RenderSingleLine(const WCHAR* line, int x, int y,
 		FLOAT colourR = 1.0f, FLOAT colourG = 1.0f,
 		FLOAT colourB = 1.0f, FLOAT colourA = 1.0f );
-}
+};
 
 class DebugTextArray {
 public:

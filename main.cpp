@@ -1,5 +1,6 @@
 //Based off Empty Project in DX SDK Samples
 #include "DXUT.h"
+#include "DebugText.h"
 #include "DevConsole.h"
 #include "Gui.h"
 #include "Renderer.h"
@@ -13,10 +14,13 @@
 #define FOCUSED_CONSOLE 1
 #define FOCUSED_NONE 2
 
-CDXUTDialogResourceManager g_DialogResourceManager; // manager for shared resources of dialogs
+CDXUTDialogResourceManager dxutDialogResourceManager; // manager for shared resources of dialogs
+
+DebugText debugText = DebugText();
+DevConsole devConsole = DevConsole(&debugText);
+Gui gui = Gui(&debugText);
 
 UINT focusedUI = FOCUSED_GUI;
-
 
 //--------------------------------------------------------------------------------------
 // Reject any D3D11 devices that aren't acceptable by returning false
@@ -24,7 +28,7 @@ UINT focusedUI = FOCUSED_GUI;
 bool CALLBACK IsD3D11DeviceAcceptable( const CD3D11EnumAdapterInfo *AdapterInfo, UINT Output, const CD3D11EnumDeviceInfo *DeviceInfo,
 									  DXGI_FORMAT BackBufferFormat, bool bWindowed, void* pUserContext )
 {
-	DevConsole::log(L"IsD3D11DeviceAcceptable");
+	devConsole.log(L"IsD3D11DeviceAcceptable");
 	return true;
 }
 
@@ -34,7 +38,7 @@ bool CALLBACK IsD3D11DeviceAcceptable( const CD3D11EnumAdapterInfo *AdapterInfo,
 //--------------------------------------------------------------------------------------
 bool CALLBACK ModifyDeviceSettings( DXUTDeviceSettings* pDeviceSettings, void* pUserContext )
 {
-	DevConsole::log(L"ModifyDeviceSettings");
+	devConsole.log(L"ModifyDeviceSettings");
 	return true;
 }
 
@@ -45,14 +49,14 @@ bool CALLBACK ModifyDeviceSettings( DXUTDeviceSettings* pDeviceSettings, void* p
 HRESULT CALLBACK OnD3D11CreateDevice( ID3D11Device* pd3dDevice, const DXGI_SURFACE_DESC* pBackBufferSurfaceDesc,
 									 void* pUserContext )
 {
-	DevConsole::log(L"OnD3D11CreateDevice");
+	devConsole.log(L"OnD3D11CreateDevice");
 	HRESULT hr;
 
 	ID3D11DeviceContext* pd3dImmediateContext = DXUTGetD3D11DeviceContext();
-	V_RETURN( g_DialogResourceManager.OnD3D11CreateDevice( pd3dDevice, pd3dImmediateContext ) );
+	V_RETURN( dxutDialogResourceManager.OnD3D11CreateDevice( pd3dDevice, pd3dImmediateContext ) );
 
-	V_RETURN(DebugText::OnD3D11CreateDevice(pd3dDevice,15,&g_DialogResourceManager));
-	V_RETURN (Gui::OnD3D11CreateDevice(pd3dDevice));
+	V_RETURN(debugText.OnD3D11CreateDevice(pd3dDevice,15,&dxutDialogResourceManager));
+	V_RETURN (gui.OnD3D11CreateDevice(pd3dDevice));
 	//V_RETURN (Renderer::OnD3D11CreateDevice(pd3dDevice));
 
 	return S_OK;
@@ -65,15 +69,15 @@ HRESULT CALLBACK OnD3D11CreateDevice( ID3D11Device* pd3dDevice, const DXGI_SURFA
 HRESULT CALLBACK OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, IDXGISwapChain* pSwapChain,
 										 const DXGI_SURFACE_DESC* pBackBufferSurfaceDesc, void* pUserContext )
 {
-	DevConsole::log(L"OnD3D11ResizedSwapChain");
+	devConsole.log(L"OnD3D11ResizedSwapChain");
 	std::wstringstream wss;
 	wss << L"New Window Size = " << pBackBufferSurfaceDesc->Width << L"x" << pBackBufferSurfaceDesc->Height;
-	DevConsole::log(&wss);
+	devConsole.log(&wss);
 	HRESULT hr;
 
-	V_RETURN( g_DialogResourceManager.OnD3D11ResizedSwapChain( pd3dDevice, pBackBufferSurfaceDesc ) );
+	V_RETURN(dxutDialogResourceManager.OnD3D11ResizedSwapChain( pd3dDevice, pBackBufferSurfaceDesc ) );
 
-	V_RETURN(Gui::OnD3D11ResizedSwapChain(pd3dDevice,pBackBufferSurfaceDesc));
+	V_RETURN(gui.OnD3D11ResizedSwapChain(pd3dDevice,pBackBufferSurfaceDesc));
 
 	return S_OK;
 
@@ -95,8 +99,8 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 								 double fTime, float fElapsedTime, void* pUserContext )
 {
 	//Draw settings dialog above all else
-	if (Gui::IsSettingsDialogueActive()) {
-		Gui::RenderSettingsDialogue(fElapsedTime);
+	if (gui.IsSettingsDialogueActive()) {
+		gui.RenderSettingsDialogue(fElapsedTime);
 	}
 	else {
 		// Clear render target and the depth stencil 
@@ -110,10 +114,10 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 		//Draw the normal stuff
 
 		if (focusedUI == FOCUSED_GUI) {
-			Gui::OnD3D11FrameRender(fElapsedTime);
+			gui.OnD3D11FrameRender(fElapsedTime);
 		}
 		else if (focusedUI == FOCUSED_CONSOLE) {
-			DevConsole::OnD3D11FrameRender();
+			devConsole.OnD3D11FrameRender();
 		}
 
 	}
@@ -125,9 +129,9 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 //--------------------------------------------------------------------------------------
 void CALLBACK OnD3D11ReleasingSwapChain( void* pUserContext )
 {
-	DevConsole::log(L"OnD3D11ReleasingSwapChain");
+	devConsole.log(L"OnD3D11ReleasingSwapChain");
 
-	g_DialogResourceManager.OnD3D11ReleasingSwapChain();
+	dxutDialogResourceManager.OnD3D11ReleasingSwapChain();
 }
 
 
@@ -136,14 +140,13 @@ void CALLBACK OnD3D11ReleasingSwapChain( void* pUserContext )
 //--------------------------------------------------------------------------------------
 void CALLBACK OnD3D11DestroyDevice( void* pUserContext )
 {
-	DevConsole::log(L"OnD3D11DestroyDevice");
+	devConsole.log(L"OnD3D11DestroyDevice");
 
-	g_DialogResourceManager.OnD3D11DestroyDevice();
+	dxutDialogResourceManager.OnD3D11DestroyDevice();
 
-	Gui::OnD3D11DestroyDevice();
-	DebugText::OnD3D11DestroyDevice();
+	gui.OnD3D11DestroyDevice();
+	debugText.OnD3D11DestroyDevice();
 }
-
 
 //--------------------------------------------------------------------------------------
 // Handle messages to the application
@@ -152,8 +155,8 @@ LRESULT CALLBACK MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 						 bool* pbNoFurtherProcessing, void* pUserContext )
 {
 	//Settings dialog takes message priority
-	if (Gui::IsSettingsDialogueActive()) {
-		Gui::SettingsDialogueMsgProc(hWnd,uMsg,wParam,lParam,pbNoFurtherProcessing,pUserContext);
+	if (gui.IsSettingsDialogueActive()) {
+		gui.SettingsDialogueMsgProc(hWnd,uMsg,wParam,lParam,pbNoFurtherProcessing,pUserContext);
 		return 0;
 	}
 
@@ -178,10 +181,10 @@ LRESULT CALLBACK MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 	}
 
 	if (focusedUI == FOCUSED_GUI) {
-		Gui::MsgProc(hWnd,uMsg,wParam,lParam,pbNoFurtherProcessing,pUserContext);
+		gui.MsgProc(hWnd,uMsg,wParam,lParam,pbNoFurtherProcessing,pUserContext);
 	}
 	else if (focusedUI == FOCUSED_CONSOLE) {
-		DevConsole::MsgProc(hWnd,uMsg,wParam,lParam,pbNoFurtherProcessing,pUserContext);
+		devConsole.MsgProc(hWnd,uMsg,wParam,lParam,pbNoFurtherProcessing,pUserContext);
 	}
 
 	if (*pbNoFurtherProcessing) {
@@ -217,7 +220,7 @@ void CALLBACK OnMouse( bool bLeftButtonDown, bool bRightButtonDown, bool bMiddle
 //--------------------------------------------------------------------------------------
 bool CALLBACK OnDeviceRemoved( void* pUserContext )
 {
-	DevConsole::log(L"OnDeviceRemoved");
+	devConsole.log(L"OnDeviceRemoved");
 	return true;
 }
 
@@ -249,7 +252,7 @@ int WINAPI wWinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdL
 	DXUTSetCallbackD3D11DeviceDestroyed( OnD3D11DestroyDevice );
 
 	// Perform any application-level initialization here
-	Gui::guiInit(&g_DialogResourceManager);
+	gui.init(&dxutDialogResourceManager);
 
 	DXUTInit( true, true, NULL ); // Parse the command line, show msgboxes on error, no extra command line params
 	DXUTSetCursorSettings( true, true ); // Show the cursor and clip it when in full screen

@@ -2,9 +2,14 @@
 #define GUI_H
 
 #include "SDKmisc.h"
+#include "DebugText.h"
+#include "DXUTSettingsDlg.h"
 
-namespace Gui {
-	void guiInit(CDXUTDialogResourceManager* g_DialogResourceManager);
+class Gui {
+public:
+	Gui(DebugText* dt): debugText(dt)  {
+	}
+	void init(CDXUTDialogResourceManager* g_DialogResourceManager);
 	HRESULT OnD3D11CreateDevice(ID3D11Device* pd3dDevice);
 	HRESULT OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice,
 		const DXGI_SURFACE_DESC* pBackBufferSurfaceDesc );
@@ -19,6 +24,14 @@ namespace Gui {
 
 	LRESULT SettingsDialogueMsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 		bool* pbNoFurtherProcessing, void* pUserContext );
-}
+private:
+	static void CALLBACK OnGUIEvent( UINT nEvent, int nControlID, CDXUTControl* pControl, void* pUserContext );
+
+	DebugText* debugText;
+
+	static CD3DSettingsDlg g_SettingsDlg; // Device settings dialog
+	CDXUTDialog g_HUD; // dialog for standard controls
+	CDXUTDialog g_SampleUI; // dialog for sample specific controls
+};
 
 #endif

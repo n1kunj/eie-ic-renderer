@@ -1,13 +1,5 @@
 #include "DXUT.h"
 #include "Gui.h"
-#include "DXUTSettingsDlg.h"
-#include "DebugText.h"
-
-CD3DSettingsDlg g_SettingsDlg;          // Device settings dialog
-CDXUTDialog g_HUD;                  // dialog for standard controls
-CDXUTDialog g_SampleUI;             // dialog for sample specific controls
-
-void CALLBACK OnGUIEvent( UINT nEvent, int nControlID, CDXUTControl* pControl, void* pUserContext );
 
 //--------------------------------------------------------------------------------------
 // UI control IDs
@@ -16,20 +8,22 @@ void CALLBACK OnGUIEvent( UINT nEvent, int nControlID, CDXUTControl* pControl, v
 #define IDC_TOGGLEREF           2
 #define IDC_CHANGEDEVICE        3
 
-void Gui::guiInit(CDXUTDialogResourceManager* g_DialogResourceManager )
+CD3DSettingsDlg Gui::g_SettingsDlg;
+
+void Gui::init(CDXUTDialogResourceManager* g_DialogResourceManager )
 {
 	g_SettingsDlg.Init( g_DialogResourceManager );
 	g_HUD.Init( g_DialogResourceManager );
 	g_SampleUI.Init( g_DialogResourceManager );
 
-	g_HUD.SetCallback( OnGUIEvent );
+	g_HUD.SetCallback(&Gui::OnGUIEvent);
 	int iY = 30;
 	int iYo = 26;
 	g_HUD.AddButton( IDC_TOGGLEFULLSCREEN, L"Toggle full screen", 0, iY, 170, 22 );
 	g_HUD.AddButton( IDC_TOGGLEREF, L"Toggle REF (F3)", 0, iY += iYo, 170, 22, VK_F3 );
 	g_HUD.AddButton( IDC_CHANGEDEVICE, L"Change device (F2)", 0, iY += iYo, 170, 22, VK_F2 );
 
-	g_SampleUI.SetCallback( OnGUIEvent ); iY = 10;
+	g_SampleUI.SetCallback(&Gui::OnGUIEvent); iY = 10;
 }
 
 HRESULT Gui::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
@@ -58,8 +52,8 @@ void Gui::OnD3D11FrameRender( float fElapsedTime )
 {
 	g_HUD.OnRender( fElapsedTime );
 	g_SampleUI.OnRender( fElapsedTime );
-	DebugText::RenderSingleLine(DXUTGetFrameStats( DXUTIsVsyncEnabled() ), 5, 5, 1.0f, 1.0f, 0.0f);
-	DebugText::RenderSingleLine(DXUTGetDeviceStats(), 5, 20, 1.0f, 1.0f, 0.0f);
+	debugText->RenderSingleLine(DXUTGetFrameStats( DXUTIsVsyncEnabled() ), 5, 5, 1.0f, 1.0f, 0.0f);
+	debugText->RenderSingleLine(DXUTGetDeviceStats(), 5, 20, 1.0f, 1.0f, 0.0f);
 }
 
 void Gui::OnD3D11DestroyDevice()
@@ -95,7 +89,7 @@ LRESULT Gui::SettingsDialogueMsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 	return 0;
 }
 
-void CALLBACK OnGUIEvent( UINT nEvent, int nControlID, CDXUTControl* pControl, void* pUserContext )
+void CALLBACK Gui::OnGUIEvent( UINT nEvent, int nControlID, CDXUTControl* pControl, void* pUserContext )
 {
 	switch( nControlID )
 	{

@@ -1,6 +1,5 @@
 #include "DXUT.h"
 #include "DevConsole.h"
-#include "DebugText.h"
 #include <sstream>
 #include <time.h>
 
@@ -10,18 +9,16 @@
 
 void processConsoleInput(WCHAR* input);
 
-DebugTextArray dta = DebugTextArray(2000,1.0f,1.0f,0.0f,1.0f);
-
 WCHAR currentInput[CONSOLE_MAX_CHARACTERS];
 int currentInputCursor = 0;
 
 void DevConsole::OnD3D11FrameRender()
 {
-	dta.render(0,0,DEBUG_TEXT_LINE_HEIGHT,0,LINES_TO_DISPLAY);
+	debugTextArray->render(0,0,DEBUG_TEXT_LINE_HEIGHT,0,LINES_TO_DISPLAY);
 	time_t seconds = time(NULL);
 
 	if (seconds % 2 == 0) {
-		DebugText::RenderSingleLine(currentInput, 0, DEBUG_TEXT_LINE_HEIGHT * LINES_TO_DISPLAY);
+		debugText->RenderSingleLine(currentInput, 0, DEBUG_TEXT_LINE_HEIGHT * LINES_TO_DISPLAY);
 	}
 	else {
 		//Draw a blinking cursor
@@ -30,13 +27,13 @@ void DevConsole::OnD3D11FrameRender()
 		wcscpy_s(inputCopy,linelen+1,currentInput);
 
 		inputCopy[currentInputCursor] = L'|';
-		DebugText::RenderSingleLine(inputCopy, 0, DEBUG_TEXT_LINE_HEIGHT * LINES_TO_DISPLAY);
+		debugText->RenderSingleLine(inputCopy, 0, DEBUG_TEXT_LINE_HEIGHT * LINES_TO_DISPLAY);
 		delete[] inputCopy;
 	}
 }
 
 void DevConsole::log(const WCHAR* line) {
-	dta.addDebugLine(line);
+	debugTextArray->addDebugLine(line);
 }
 
 void DevConsole::log(std::wstringstream* wss) {
@@ -81,7 +78,7 @@ void DevConsole::OnCharacter(WPARAM wParam) {
 	}
 }
 
-void processConsoleInput(WCHAR* input) {
+void DevConsole::processConsoleInput(WCHAR* input) {
 	DevConsole::log(input);
 	size_t linelen = wcslen(input);
 	if (linelen == 0) {
