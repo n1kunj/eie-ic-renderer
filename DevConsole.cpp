@@ -14,7 +14,7 @@ int currentInputCursor = 0;
 
 void DevConsole::OnD3D11FrameRender()
 {
-	debugTextArray->render(0,0,DEBUG_TEXT_LINE_HEIGHT,0,LINES_TO_DISPLAY);
+	debugText->RenderDebugTextArray(debugTextArray,0,0,DEBUG_TEXT_LINE_HEIGHT,0,LINES_TO_DISPLAY);
 	time_t seconds = time(NULL);
 
 	if (seconds % 2 == 0) {
