@@ -19,6 +19,7 @@ CDXUTDialogResourceManager dxutDialogResourceManager; // manager for shared reso
 DebugText debugText = DebugText();
 DevConsole devConsole = DevConsole(&debugText);
 Gui gui = Gui(&debugText);
+Renderer renderer = Renderer(&devConsole);
 
 UINT focusedUI = FOCUSED_GUI;
 
@@ -29,7 +30,6 @@ bool CALLBACK IsD3D11DeviceAcceptable( const CD3D11EnumAdapterInfo *AdapterInfo,
 									  DXGI_FORMAT BackBufferFormat, bool bWindowed, void* pUserContext )
 {
 	devConsole.log(L"IsD3D11DeviceAcceptable");
-
 	return true;
 }
 
@@ -40,7 +40,6 @@ bool CALLBACK IsD3D11DeviceAcceptable( const CD3D11EnumAdapterInfo *AdapterInfo,
 bool CALLBACK ModifyDeviceSettings( DXUTDeviceSettings* pDeviceSettings, void* pUserContext )
 {
 	devConsole.log(L"ModifyDeviceSettings");
-
 	return true;
 }
 
@@ -56,10 +55,10 @@ HRESULT CALLBACK OnD3D11CreateDevice( ID3D11Device* pd3dDevice, const DXGI_SURFA
 	HRESULT hr;
 
 	ID3D11DeviceContext* pd3dImmediateContext = DXUTGetD3D11DeviceContext();
-	V_RETURN( dxutDialogResourceManager.OnD3D11CreateDevice( pd3dDevice, pd3dImmediateContext ) );
+	V_RETURN(dxutDialogResourceManager.OnD3D11CreateDevice( pd3dDevice, pd3dImmediateContext ) );
 	V_RETURN(debugText.OnD3D11CreateDevice(pd3dDevice,&dxutDialogResourceManager));
-	V_RETURN (gui.OnD3D11CreateDevice(pd3dDevice));
-	//V_RETURN (Renderer::OnD3D11CreateDevice(pd3dDevice));
+	V_RETURN(gui.OnD3D11CreateDevice(pd3dDevice));
+	V_RETURN(renderer.OnD3D11CreateDevice(pd3dDevice));
 
 	return S_OK;
 }
@@ -81,6 +80,7 @@ HRESULT CALLBACK OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, IDXGISwapCha
 
 	V_RETURN(dxutDialogResourceManager.OnD3D11ResizedSwapChain( pd3dDevice, pBackBufferSurfaceDesc ) );
 	V_RETURN(gui.OnD3D11ResizedSwapChain(pd3dDevice,pBackBufferSurfaceDesc));
+	V_RETURN(renderer.OnD3D11ResizedSwapChain(pd3dDevice,pBackBufferSurfaceDesc));
 
 	return S_OK;
 
@@ -92,6 +92,7 @@ HRESULT CALLBACK OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, IDXGISwapCha
 //--------------------------------------------------------------------------------------
 void CALLBACK OnFrameMove( double fTime, float fElapsedTime, void* pUserContext )
 {
+	renderer.OnFrameMove( fTime, fElapsedTime, pUserContext );
 }
 
 
@@ -106,16 +107,10 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 		gui.RenderSettingsDialogue(fElapsedTime);
 	}
 	else {
-		// Clear render target and the depth stencil 
-		float ClearColor[4] = { 1.0f, 0.196f, 0.667f, 0.0f };
+		//Draw what the renderer wants to draw
+		renderer.OnD3D11FrameRender(pd3dDevice,pd3dImmediateContext,fTime,fElapsedTime,pUserContext);
 
-		ID3D11RenderTargetView* pRTV = DXUTGetD3D11RenderTargetView();
-		ID3D11DepthStencilView* pDSV = DXUTGetD3D11DepthStencilView();
-		pd3dImmediateContext->ClearRenderTargetView( pRTV, ClearColor );
-		pd3dImmediateContext->ClearDepthStencilView( pDSV, D3D11_CLEAR_DEPTH, 1.0, 0 );
-
-		//Draw the normal stuff
-
+		//Draw the overlays
 		if (focusedUI == FOCUSED_GUI) {
 			gui.OnD3D11FrameRender(fElapsedTime);
 		}
@@ -148,6 +143,7 @@ void CALLBACK OnD3D11DestroyDevice( void* pUserContext )
 	dxutDialogResourceManager.OnD3D11DestroyDevice();
 	gui.OnD3D11DestroyDevice();
 	debugText.OnD3D11DestroyDevice();
+	renderer.OnD3D11DestroyDevice();
 }
 
 //--------------------------------------------------------------------------------------
@@ -193,7 +189,8 @@ LRESULT CALLBACK MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 		return 0;
 	}
 
-	//TODO: MsgProc for actual renderer
+	renderer.MsgProc(hWnd,uMsg,wParam,lParam,pbNoFurtherProcessing,pUserContext);
+
 	return 0;
 }
 
@@ -255,6 +252,7 @@ int WINAPI wWinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdL
 
 	// Perform any application-level initialization here
 	gui.init(&dxutDialogResourceManager);
+	renderer.init();
 
 	DXUTInit( true, true, NULL ); // Parse the command line, show msgboxes on error, no extra command line params
 	DXUTSetCursorSettings( true, true ); // Show the cursor and clip it when in full screen
@@ -264,7 +262,7 @@ int WINAPI wWinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdL
 	DXUTMainLoop(); // Enter into the DXUT render loop
 
 	// Perform any application-level cleanup here
-	Renderer::OnExit();
+	renderer.OnExit();
 
 	return DXUTGetExitCode();
 }

@@ -83,8 +83,8 @@
     </ResourceCompile>
     <ClInclude Include="DebugText.h" />
     <ClInclude Include="DevConsole.h" />
-    <ClInclude Include="Renderer.h" />
     <ClInclude Include="Gui.h" />
+    <ClInclude Include="Renderer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugText.cpp" />
