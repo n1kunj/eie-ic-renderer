@@ -1,7 +1,16 @@
 #include "DXUT.h"
 #include "DevConsole.h"
+#include "DebugText.h"
 #include <sstream>
 #include <time.h>
+
+DevConsole::DevConsole(DebugText* dt): debugText(dt), currentInputCursor(0){
+	debugTextArray = new DebugTextArray(2000,1.0f,1.0f,0.0f,1.0f);
+}
+
+DevConsole::~DevConsole() {
+	delete debugTextArray;
+}
 
 void DevConsole::OnD3D11FrameRender()
 {
@@ -43,9 +52,9 @@ LRESULT DevConsole::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 
 void DevConsole::OnCharacter(WPARAM wParam) {
 	//Percentage symbol - causes a crash!
-	if (wParam == 37) {
-		return;
-	}
+	//if (wParam == 37) {
+	//	return;
+	//}
 
 	//Enter key
 	if (wParam == 13) {

@@ -1,21 +1,20 @@
 #ifndef DEV_CONSOLE_H
 #define DEV_CONSOLE_H
 
-#include "DebugText.h"
 #include "SDKmisc.h"
+#include <string>
 
 #define DEBUG_TEXT_LINE_HEIGHT 15
 #define LINES_TO_DISPLAY 15
 #define CONSOLE_MAX_CHARACTERS 1024
 
+class DebugText;
+class DebugTextArray;
+
 class DevConsole {
 public:
-	DevConsole(DebugText* dt): debugText(dt), currentInputCursor(0){
-		debugTextArray = new DebugTextArray(2000,1.0f,1.0f,0.0f,1.0f);
-	}
-	~DevConsole() {
-		delete debugTextArray;
-	}
+	DevConsole(DebugText* dt);
+	~DevConsole();
 	void OnD3D11FrameRender();
 	void log(const WCHAR* line);
 	void log(std::wstringstream* wss);
