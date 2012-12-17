@@ -26,7 +26,6 @@ private:
 	DebugTextArray* debugTextArray;
 	int currentInputCursor;
 	void processConsoleInput(WCHAR* input);
-
 	WCHAR currentInput[CONSOLE_MAX_CHARACTERS];
 };
 

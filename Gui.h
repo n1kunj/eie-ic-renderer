@@ -2,8 +2,9 @@
 #define GUI_H
 
 #include "SDKmisc.h"
-#include "DebugText.h"
 #include "DXUTSettingsDlg.h"
+
+class DebugText;
 
 class Gui {
 public:

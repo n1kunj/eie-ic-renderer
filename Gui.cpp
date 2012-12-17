@@ -1,5 +1,6 @@
 #include "DXUT.h"
 #include "Gui.h"
+#include "DebugText.h"
 
 //--------------------------------------------------------------------------------------
 // UI control IDs
