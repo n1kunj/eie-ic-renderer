@@ -3,8 +3,7 @@
 #include "DXUTcamera.h"
 #include "SDKmesh.h"
 #include "DevConsole.h"
-
-HRESULT CompileShaderFromFile( WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut );
+#include "Utils/ShaderTools.h"
 
 struct CB_VS_PER_OBJECT
 {
@@ -109,10 +108,10 @@ HRESULT RendererImplementation::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 
 	// Compile the shaders using the lowest possible profile for broadest feature level support
 	ID3DBlob* pVertexShaderBuffer = NULL;
-	V_RETURN( CompileShaderFromFile( L"BasicHLSL11_VS.hlsl", "VSMain", "vs_4_0_level_9_1", &pVertexShaderBuffer ) );
+	V_RETURN( ShaderTools::CompileShaderFromFile( L"BasicHLSL11_VS.hlsl", "VSMain", "vs_4_0_level_9_1", &pVertexShaderBuffer ) );
 
 	ID3DBlob* pPixelShaderBuffer = NULL;
-	V_RETURN( CompileShaderFromFile( L"BasicHLSL11_PS.hlsl", "PSMain", "ps_4_0_level_9_1", &pPixelShaderBuffer ) );
+	V_RETURN( ShaderTools::CompileShaderFromFile( L"BasicHLSL11_PS.hlsl", "PSMain", "ps_4_0_level_9_1", &pPixelShaderBuffer ) );
 
 	// Create the shaders
 	V_RETURN( pd3dDevice->CreateVertexShader( pVertexShaderBuffer->GetBufferPointer(),
@@ -336,8 +335,6 @@ void RendererImplementation::OnD3D11DestroyDevice()
 	SAFE_RELEASE( g_pcbPSPerFrame );
 }
 
-
-
 //Public interface
 
 Renderer::Renderer(DevConsole* devConsole) {
@@ -382,39 +379,4 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 
 void Renderer::OnD3D11DestroyDevice() {
 	_impl->OnD3D11DestroyDevice();
-}
-
-//--------------------------------------------------------------------------------------
-// Find and compile the specified shader
-//--------------------------------------------------------------------------------------
-HRESULT CompileShaderFromFile( WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut )
-{
-	HRESULT hr = S_OK;
-
-	// find the file
-	WCHAR str[MAX_PATH];
-	V_RETURN( DXUTFindDXSDKMediaFileCch( str, MAX_PATH, szFileName ) );
-
-	DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
-#if defined( DEBUG ) || defined( _DEBUG )
-	// Set the D3DCOMPILE_DEBUG flag to embed debug information in the shaders.
-	// Setting this flag improves the shader debugging experience, but still allows 
-	// the shaders to be optimized and to run exactly the way they will run in 
-	// the release configuration of this program.
-	dwShaderFlags |= D3DCOMPILE_DEBUG;
-#endif
-
-	ID3DBlob* pErrorBlob;
-	hr = D3DX11CompileFromFile( str, NULL, NULL, szEntryPoint, szShaderModel, 
-		dwShaderFlags, 0, NULL, ppBlobOut, &pErrorBlob, NULL );
-	if( FAILED(hr) )
-	{
-		if( pErrorBlob != NULL )
-			OutputDebugStringA( (char*)pErrorBlob->GetBufferPointer() );
-		SAFE_RELEASE( pErrorBlob );
-		return hr;
-	}
-	SAFE_RELEASE( pErrorBlob );
-
-	return S_OK;
 }

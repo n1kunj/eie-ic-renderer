@@ -387,6 +387,8 @@
     <ClCompile Include="DebugText.cpp" />
     <ClCompile Include="Gui.cpp" />
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="Utils\ShaderTools.cpp" />
+    <ClInclude Include="Utils\ShaderTools.h" />
     <None Include="DXUT\Optional\directx.ico" />
     <ClInclude Include="DebugText.h" />
     <ClInclude Include="DevConsole.h" />
