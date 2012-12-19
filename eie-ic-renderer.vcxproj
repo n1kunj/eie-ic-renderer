@@ -386,9 +386,11 @@
   <ItemGroup>
     <ClCompile Include="DebugText.cpp" />
     <ClCompile Include="Gui.cpp" />
+    <ClCompile Include="Meshes\Cube.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Textures\Textures.cpp" />
     <ClCompile Include="Utils\ShaderTools.cpp" />
+    <ClInclude Include="Meshes\Cube.h" />
     <ClInclude Include="Textures\Textures.h" />
     <ClInclude Include="Utils\ShaderTools.h" />
     <None Include="DXUT\Optional\directx.ico" />
@@ -422,12 +424,18 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Shaders\Tutorial03.fx">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Effect</ShaderType>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </ExcludedFromBuild>
+      <FileType>Document</FileType>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Gui.h" />
     <ClInclude Include="Renderer.h" />
     <CLInclude Include="resource.h" />
-    <ResourceCompile Include="EmptyProject11.rc" />
+    <ResourceCompile Include="eie-ic-renderer.rc" />
   </ItemGroup>
   <ItemGroup>
   </ItemGroup>

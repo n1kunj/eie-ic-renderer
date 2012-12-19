@@ -14,6 +14,12 @@
     <Filter Include="Textures">
       <UniqueIdentifier>{a06afe3e-ffef-4d5b-8c20-ec4b5bd2f822}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Meshes">
+      <UniqueIdentifier>{b454b8f0-873f-483e-bda8-40c84618c5cb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{1f9b2b67-6a2c-4227-8219-e012b4665d9c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="DXUT\Optional\directx.ico">
@@ -79,14 +85,14 @@
     <ClCompile Include="DXUT\Optional\SDKmisc.cpp">
       <Filter>DXUT</Filter>
     </ClCompile>
+    <None Include="Shaders\Tutorial03.fx">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <CLInclude Include="resource.h">
       <Filter>Resource Files</Filter>
     </CLInclude>
-    <ResourceCompile Include="EmptyProject11.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
     <ClInclude Include="DebugText.h" />
     <ClInclude Include="DevConsole.h" />
     <ClInclude Include="Gui.h" />
@@ -96,6 +102,9 @@
     </ClInclude>
     <ClInclude Include="Textures\Textures.h">
       <Filter>Textures</Filter>
+    </ClInclude>
+    <ClInclude Include="Meshes\Cube.h">
+      <Filter>Meshes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -110,5 +119,13 @@
     <ClCompile Include="Textures\Textures.cpp">
       <Filter>Textures</Filter>
     </ClCompile>
+    <ClCompile Include="Meshes\Cube.cpp">
+      <Filter>Meshes</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="eie-ic-renderer.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

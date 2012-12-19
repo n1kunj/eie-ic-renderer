@@ -1,9 +1,7 @@
 #include "DXUT.h"
 #include "Renderer.h"
-#include "DXUTcamera.h"
-#include "SDKmesh.h"
 #include "DevConsole.h"
-#include "Utils/ShaderTools.h"
+#include "Meshes/Cube.h"
 
 class RendererImplementation {
 public:
@@ -24,9 +22,9 @@ public:
 
 	void OnD3D11DestroyDevice();
 	void OnExit();
-
-private:
 	DevConsole* devConsole;
+	CubeMesh cube;
+
 };
 
 void RendererImplementation::init()
@@ -66,6 +64,12 @@ void RendererImplementation::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D1
 	ID3D11DepthStencilView* pDSV = DXUTGetD3D11DepthStencilView();
 	pd3dImmediateContext->ClearRenderTargetView( pRTV, ClearColor );
 	pd3dImmediateContext->ClearDepthStencilView( pDSV, D3D11_CLEAR_DEPTH, 1.0, 0 );
+
+	if (cube.dirty == false) {
+		cube.init(pd3dDevice,pd3dImmediateContext);
+	}
+	cube.draw(pd3dImmediateContext);
+
 }
 
 void RendererImplementation::OnExit()
@@ -76,6 +80,7 @@ void RendererImplementation::OnExit()
 
 void RendererImplementation::OnD3D11DestroyDevice()
 {
+	cube.cleanup();
 }
 
 //Public interface
