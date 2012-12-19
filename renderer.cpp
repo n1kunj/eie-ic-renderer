@@ -23,8 +23,7 @@ struct CB_PS_PER_FRAME
 
 class RendererImplementation {
 public:
-	RendererImplementation(DevConsole* devConsole) {
-		this->devConsole = devConsole;
+	RendererImplementation(DevConsole* devConsole) : devConsole(devConsole) {
 		g_iCBVSPerObjectBind = 0;
 		g_iCBPSPerObjectBind = 0;
 		g_iCBPSPerFrameBind = 1;

@@ -52,9 +52,9 @@ LRESULT DevConsole::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 
 void DevConsole::OnCharacter(WPARAM wParam) {
 	//Percentage symbol - causes a crash!
-	//if (wParam == 37) {
-	//	return;
-	//}
+	if (wParam == 37) {
+		return;
+	}
 
 	//Enter key
 	if (wParam == 13) {
