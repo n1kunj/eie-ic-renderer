@@ -5,22 +5,6 @@
 #include "DevConsole.h"
 #include "Utils/ShaderTools.h"
 
-struct CB_VS_PER_OBJECT
-{
-	D3DXMATRIX m_WorldViewProj;
-	D3DXMATRIX m_World;
-};
-
-struct CB_PS_PER_OBJECT
-{
-	D3DXVECTOR4 m_vObjectColor;
-};
-
-struct CB_PS_PER_FRAME
-{
-	D3DXVECTOR4 m_vLightDirAmbient;
-};
-
 class RendererImplementation {
 public:
 	RendererImplementation(DevConsole* devConsole) : devConsole(devConsole) {
@@ -88,6 +72,22 @@ void RendererImplementation::init()
 	D3DXVec3Normalize( &vLightDir, &vLightDir );
 	g_LightControl.SetLightDirection( vLightDir );
 }
+
+struct CB_VS_PER_OBJECT
+{
+	D3DXMATRIX m_WorldViewProj;
+	D3DXMATRIX m_World;
+};
+
+struct CB_PS_PER_OBJECT
+{
+	D3DXVECTOR4 m_vObjectColor;
+};
+
+struct CB_PS_PER_FRAME
+{
+	D3DXVECTOR4 m_vLightDirAmbient;
+};
 
 HRESULT RendererImplementation::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 {

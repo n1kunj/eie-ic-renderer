@@ -387,7 +387,9 @@
     <ClCompile Include="DebugText.cpp" />
     <ClCompile Include="Gui.cpp" />
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="Textures\Textures.cpp" />
     <ClCompile Include="Utils\ShaderTools.cpp" />
+    <ClInclude Include="Textures\Textures.h" />
     <ClInclude Include="Utils\ShaderTools.h" />
     <None Include="DXUT\Optional\directx.ico" />
     <ClInclude Include="DebugText.h" />

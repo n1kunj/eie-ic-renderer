@@ -11,6 +11,9 @@
     <Filter Include="Utils">
       <UniqueIdentifier>{3690bdac-74a9-4988-8056-b31c3ab49f90}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Textures">
+      <UniqueIdentifier>{a06afe3e-ffef-4d5b-8c20-ec4b5bd2f822}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="DXUT\Optional\directx.ico">
@@ -91,6 +94,9 @@
     <ClInclude Include="Utils\ShaderTools.h">
       <Filter>Utils</Filter>
     </ClInclude>
+    <ClInclude Include="Textures\Textures.h">
+      <Filter>Textures</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugText.cpp" />
@@ -100,6 +106,9 @@
     <ClCompile Include="Gui.cpp" />
     <ClCompile Include="Utils\ShaderTools.cpp">
       <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Textures\Textures.cpp">
+      <Filter>Textures</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
