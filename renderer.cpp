@@ -3,6 +3,8 @@
 #include "DevConsole.h"
 #include "Meshes/Cube.h"
 
+CubeMesh cube;
+
 class RendererImplementation {
 public:
 	RendererImplementation(DevConsole* devConsole) : devConsole(devConsole) {
@@ -22,9 +24,9 @@ public:
 
 	void OnD3D11DestroyDevice();
 	void OnExit();
-	DevConsole* devConsole;
-	CubeMesh cube;
 
+	DXGI_SURFACE_DESC surfaceDescription;
+	DevConsole* devConsole;
 };
 
 void RendererImplementation::init()
@@ -42,7 +44,7 @@ HRESULT RendererImplementation::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 HRESULT RendererImplementation::OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, const DXGI_SURFACE_DESC* pBackBufferSurfaceDesc )
 {
 	devConsole->log(L"Renderer OnD3D11ResizedSwapChain");
-
+	this->surfaceDescription = *pBackBufferSurfaceDesc;
 	return S_OK;
 }
 
@@ -65,8 +67,8 @@ void RendererImplementation::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D1
 	pd3dImmediateContext->ClearRenderTargetView( pRTV, ClearColor );
 	pd3dImmediateContext->ClearDepthStencilView( pDSV, D3D11_CLEAR_DEPTH, 1.0, 0 );
 
-	if (cube.dirty == false) {
-		cube.init(pd3dDevice,pd3dImmediateContext);
+	if (cube.compiled == false) {
+		cube.init(pd3dDevice,pd3dImmediateContext,&surfaceDescription);
 	}
 	cube.draw(pd3dImmediateContext);
 
