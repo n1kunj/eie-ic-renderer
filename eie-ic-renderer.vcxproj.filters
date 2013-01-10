@@ -17,8 +17,11 @@
     <Filter Include="Meshes">
       <UniqueIdentifier>{b454b8f0-873f-483e-bda8-40c84618c5cb}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\Shaders">
+      <UniqueIdentifier>{a6ee4ba7-9ddb-4c29-8d21-3da1d47a680e}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Shaders">
-      <UniqueIdentifier>{1f9b2b67-6a2c-4227-8219-e012b4665d9c}</UniqueIdentifier>
+      <UniqueIdentifier>{92abcaf0-17eb-41b1-8bc7-416f6c0abaed}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -85,8 +88,8 @@
     <ClCompile Include="DXUT\Optional\SDKmisc.cpp">
       <Filter>DXUT</Filter>
     </ClCompile>
-    <None Include="Shaders\Tutorial03.fx">
-      <Filter>Shaders</Filter>
+    <None Include="Media\Shaders\Tutorial03.fx">
+      <Filter>Resource Files\Shaders</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -106,6 +109,9 @@
     <ClInclude Include="Meshes\Cube.h">
       <Filter>Meshes</Filter>
     </ClInclude>
+    <ClInclude Include="Shaders\ShaderBase.h">
+      <Filter>Shaders</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugText.cpp" />
@@ -121,6 +127,9 @@
     </ClCompile>
     <ClCompile Include="Meshes\Cube.cpp">
       <Filter>Meshes</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders\ShaderBase.cpp">
+      <Filter>Shaders</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
