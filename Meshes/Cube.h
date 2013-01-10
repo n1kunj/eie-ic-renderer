@@ -11,9 +11,12 @@ public:
 	CubeMesh();
 	~CubeMesh();
 
-	HRESULT init(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dImmediateContext, const DXGI_SURFACE_DESC* pBackBufferSurfaceDesc);
+	HRESULT draw(ID3D11Device* d3dDevice, ID3D11DeviceContext* d3dContext, const DXGI_SURFACE_DESC* surfaceDesc);
+
 	void cleanup();
-	void draw(ID3D11DeviceContext* pd3dImmediateContext);
+
+private:
+	HRESULT init(ID3D11Device* d3dDevice, ID3D11DeviceContext* d3dContext, const DXGI_SURFACE_DESC* surfaceDesc);
 
 //Static members
 public:

@@ -34,56 +34,10 @@ void RendererImplementation::init()
 	devConsole->log(L"Renderer Initialisation");
 }
 
-D3D11_QUERY_DESC queryDesc;
-const int NUMQUERIES = 8000;
-ID3D11Query *newQuery[NUMQUERIES];
-bool queryFin[NUMQUERIES];
-UINT64 queryResult[NUMQUERIES];
-int queryDelay[NUMQUERIES];
-
-ID3D11DepthStencilState * pDSState;
-
 
 HRESULT RendererImplementation::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 {
 	devConsole->log(L"Renderer OnD3D11CreateDevice");
-
-	queryDesc.Query = D3D11_QUERY_OCCLUSION;
-
-	for (int i = 0; i< NUMQUERIES; i++) {
-		pd3dDevice->CreateQuery(&queryDesc, &newQuery[i]);
-		queryFin[i] = true;
-		//SAFE_RELEASE(newQuery[i]);
-	} 	
-
-	D3D11_DEPTH_STENCIL_DESC dsDesc;
-
-	// Depth test parameters
-	dsDesc.DepthEnable = false;
-	dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-	dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
-
-	// Stencil test parameters
-	dsDesc.StencilEnable = true;
-	dsDesc.StencilReadMask = 0xFF;
-	dsDesc.StencilWriteMask = 0xFF;
-
-	// Stencil operations if pixel is front-facing
-	dsDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
-	dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-
-	// Stencil operations if pixel is back-facing
-	dsDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
-	dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-
-	// Create depth stencil state
-	pd3dDevice->CreateDepthStencilState(&dsDesc, &pDSState);
-
-
 	return S_OK;
 }
 
@@ -113,38 +67,7 @@ void RendererImplementation::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D1
 	pd3dImmediateContext->ClearRenderTargetView( pRTV, ClearColor );
 	pd3dImmediateContext->ClearDepthStencilView( pDSV, D3D11_CLEAR_DEPTH, 1.0, 0 );
 
-	pd3dImmediateContext->OMSetDepthStencilState(pDSState, 1);
-
-	if (cube.compiled == false) {
-		cube.init(pd3dDevice,pd3dImmediateContext,&surfaceDescription);
-	}
-
-	for (int i = 0; i < NUMQUERIES; i++) {
-		if(S_OK == pd3dImmediateContext->GetData(newQuery[i], &queryResult[i], sizeof(UINT64), 0)) {
-			queryFin[i] = true;
-		}
-		else {
-			queryDelay[i]++;
-		}
-	}
-
-	for (int i = 0; i < NUMQUERIES; i++) {
-
-		if (queryFin[i] == true) {
-			pd3dImmediateContext->Begin(newQuery[i]);
-			cube.draw(pd3dImmediateContext);
-			pd3dImmediateContext->End(newQuery[i]);
-			queryFin[i] = false;
-			queryDelay[i] = 0;
-		}
-		else {
-			cube.draw(pd3dImmediateContext);
-		}
-	}
-
-	//for (int i = 0; i < NUMQUERIES; i++) {
-	//	cube.draw(pd3dImmediateContext);
-	//}
+	cube.draw(pd3dDevice,pd3dImmediateContext,&surfaceDescription);
 
 }
 
