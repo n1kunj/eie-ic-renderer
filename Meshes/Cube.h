@@ -1,32 +1,31 @@
 #ifndef MESHES_CUBE_H
 #define MESHES_CUBE_H
+#include "DXUT.h"
+#include "Mesh.h"
 #include <xnamath.h>
 
-class CubeMesh {
+class CubeMesh : public BaseMesh {
 public:
-	XMMATRIX worldViewMatrix;
-	XMMATRIX viewMatrix;
-	XMMATRIX projectionMatrix;
 
 	CubeMesh();
 	~CubeMesh();
 
-	HRESULT draw(ID3D11Device* d3dDevice, ID3D11DeviceContext* d3dContext, const DXGI_SURFACE_DESC* surfaceDesc);
+	HRESULT draw(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, const DXGI_SURFACE_DESC* pSurfaceDesc);
 	void cleanup();
 
-private:
-	HRESULT init(ID3D11Device* d3dDevice, ID3D11DeviceContext* d3dContext, const DXGI_SURFACE_DESC* surfaceDesc);
+protected:
+	HRESULT init(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, const DXGI_SURFACE_DESC* pSurfaceDesc);
 
 //Static members
 public:
-	static boolean initialised;
+	static boolean sInitialised;
 private:
-	static ID3D11VertexShader*     vertexShader;
-	static ID3D11PixelShader*      pixelShader;
-	static ID3D11InputLayout*      vertexLayout;
-	static ID3D11Buffer*           vertexBuffer;
-	static ID3D11Buffer*           indexBuffer;
-	static ID3D11Buffer*           constantBuffer;
+	static ID3D11VertexShader*     sVertexShader;
+	static ID3D11PixelShader*      sPixelShader;
+	static ID3D11InputLayout*      sVertexLayout;
+	static ID3D11Buffer*           sVertexBuffer;
+	static ID3D11Buffer*           sIndexBuffer;
+	static ID3D11Buffer*           sConstantBuffer;
 };
 
 #endif

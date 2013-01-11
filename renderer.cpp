@@ -3,10 +3,10 @@
 #include "DevConsole.h"
 #include "Meshes/Cube.h"
 
-
 class RendererImplementation {
 public:
 	RendererImplementation(DevConsole* devConsole) : devConsole(devConsole) {
+		cube = new CubeMesh();
 	};
 	~RendererImplementation() {
 		// TODO: Destruct
@@ -26,7 +26,7 @@ public:
 
 	DXGI_SURFACE_DESC surfaceDescription;
 	DevConsole* devConsole;
-	CubeMesh cube;
+	BaseMesh* cube;
 
 };
 
@@ -68,7 +68,7 @@ void RendererImplementation::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D1
 	pd3dImmediateContext->ClearRenderTargetView( pRTV, ClearColor );
 	pd3dImmediateContext->ClearDepthStencilView( pDSV, D3D11_CLEAR_DEPTH, 1.0, 0 );
 
-	cube.draw(pd3dDevice,pd3dImmediateContext,&surfaceDescription);
+	cube->draw(pd3dDevice,pd3dImmediateContext,&surfaceDescription);
 
 }
 
@@ -80,7 +80,7 @@ void RendererImplementation::OnExit()
 
 void RendererImplementation::OnD3D11DestroyDevice()
 {
-	cube.cleanup();
+	cube->cleanup();
 }
 
 //Public interface

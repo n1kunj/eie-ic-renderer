@@ -515,11 +515,13 @@
     <ClCompile Include="DebugText.cpp" />
     <ClCompile Include="Gui.cpp" />
     <ClCompile Include="Meshes\Cube.cpp" />
+    <ClCompile Include="Meshes\Mesh.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Shaders\ShaderBase.cpp" />
     <ClCompile Include="Textures\Textures.cpp" />
     <ClCompile Include="Utils\ShaderTools.cpp" />
     <ClInclude Include="Meshes\Cube.h" />
+    <ClInclude Include="Meshes\Mesh.h" />
     <ClInclude Include="Shaders\ShaderBase.h" />
     <ClInclude Include="Textures\Textures.h" />
     <ClInclude Include="Utils\ShaderTools.h" />

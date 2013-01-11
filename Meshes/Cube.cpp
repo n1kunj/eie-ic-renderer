@@ -4,7 +4,7 @@
 
 struct SimpleVertex
 {
-	XMFLOAT3 Pos;  // Position
+	XMFLOAT3 Pos;
 	XMFLOAT4 Color;
 };
 
@@ -27,31 +27,31 @@ CubeMesh::~CubeMesh()
 
 }
 
-boolean CubeMesh::initialised = false;
+boolean CubeMesh::sInitialised = false;
 
-ID3D11VertexShader* CubeMesh::vertexShader = NULL;
-ID3D11PixelShader* CubeMesh::pixelShader = NULL;
-ID3D11InputLayout* CubeMesh::vertexLayout = NULL;
-ID3D11Buffer* CubeMesh::vertexBuffer = NULL;
-ID3D11Buffer* CubeMesh::indexBuffer = NULL;
-ID3D11Buffer* CubeMesh::constantBuffer = NULL;
+ID3D11VertexShader* CubeMesh::sVertexShader = NULL;
+ID3D11PixelShader* CubeMesh::sPixelShader = NULL;
+ID3D11InputLayout* CubeMesh::sVertexLayout = NULL;
+ID3D11Buffer* CubeMesh::sVertexBuffer = NULL;
+ID3D11Buffer* CubeMesh::sIndexBuffer = NULL;
+ID3D11Buffer* CubeMesh::sConstantBuffer = NULL;
 
 void CubeMesh::cleanup() {
-	initialised = false;
-	SAFE_RELEASE(vertexShader);
-	SAFE_RELEASE(pixelShader);
-	SAFE_RELEASE(vertexLayout);
-	SAFE_RELEASE(vertexBuffer);
-	SAFE_RELEASE(indexBuffer);
-	SAFE_RELEASE(constantBuffer);
+	sInitialised = false;
+	SAFE_RELEASE(sVertexShader);
+	SAFE_RELEASE(sPixelShader);
+	SAFE_RELEASE(sVertexLayout);
+	SAFE_RELEASE(sVertexBuffer);
+	SAFE_RELEASE(sIndexBuffer);
+	SAFE_RELEASE(sConstantBuffer);
 }
 
-HRESULT CubeMesh::init( ID3D11Device* d3dDevice, ID3D11DeviceContext* d3dContext, const DXGI_SURFACE_DESC* surfaceDesc )
+HRESULT CubeMesh::init( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, const DXGI_SURFACE_DESC* pSurfaceDesc )
 {
-	if (initialised) {
+	if (sInitialised) {
 		return S_OK;
 	}
-	initialised = true;
+	sInitialised = true;
 
 	HRESULT hr = S_OK;
 
@@ -66,7 +66,7 @@ HRESULT CubeMesh::init( ID3D11Device* d3dDevice, ID3D11DeviceContext* d3dContext
 	}
 
 	// Create the vertex shader
-	hr = d3dDevice->CreateVertexShader( pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, &vertexShader );
+	hr = pd3dDevice->CreateVertexShader( pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, &sVertexShader );
 	if( FAILED( hr ) )
 	{	
 		pVSBlob->Release();
@@ -82,8 +82,8 @@ HRESULT CubeMesh::init( ID3D11Device* d3dDevice, ID3D11DeviceContext* d3dContext
 	UINT numElements = ARRAYSIZE( layout );
 
 	// Create the input layout
-	hr = d3dDevice->CreateInputLayout( layout, numElements, pVSBlob->GetBufferPointer(),
-		pVSBlob->GetBufferSize(), &vertexLayout );
+	hr = pd3dDevice->CreateInputLayout( layout, numElements, pVSBlob->GetBufferPointer(),
+		pVSBlob->GetBufferSize(), &sVertexLayout );
 	pVSBlob->Release();
 	V_RETURN(hr);
 
@@ -98,7 +98,7 @@ HRESULT CubeMesh::init( ID3D11Device* d3dDevice, ID3D11DeviceContext* d3dContext
 	}
 
 	// Create the pixel shader
-	hr = d3dDevice->CreatePixelShader( pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), NULL, &pixelShader );
+	hr = pd3dDevice->CreatePixelShader( pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), NULL, &sPixelShader );
 	pPSBlob->Release();
 	V_RETURN(hr);
 
@@ -124,7 +124,7 @@ HRESULT CubeMesh::init( ID3D11Device* d3dDevice, ID3D11DeviceContext* d3dContext
 	D3D11_SUBRESOURCE_DATA InitData;
 	ZeroMemory( &InitData, sizeof(InitData) );
 	InitData.pSysMem = vertices;
-	hr = d3dDevice->CreateBuffer( &bd, &InitData, &vertexBuffer );
+	hr = pd3dDevice->CreateBuffer( &bd, &InitData, &sVertexBuffer );
 	if( FAILED( hr ) )
 		return hr;
 
@@ -155,7 +155,7 @@ HRESULT CubeMesh::init( ID3D11Device* d3dDevice, ID3D11DeviceContext* d3dContext
 	bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	bd.CPUAccessFlags = 0;
 	InitData.pSysMem = indices;
-	hr = d3dDevice->CreateBuffer( &bd, &InitData, &indexBuffer );
+	hr = pd3dDevice->CreateBuffer( &bd, &InitData, &sIndexBuffer );
 	if( FAILED( hr ) )
 		return hr;
 
@@ -164,32 +164,32 @@ HRESULT CubeMesh::init( ID3D11Device* d3dDevice, ID3D11DeviceContext* d3dContext
 	bd.ByteWidth = sizeof(ConstantBuffer);
 	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	bd.CPUAccessFlags = 0;
-	hr = d3dDevice->CreateBuffer( &bd, NULL, &constantBuffer );
+	hr = pd3dDevice->CreateBuffer( &bd, NULL, &sConstantBuffer );
 
 	if( FAILED( hr ) )
 		return hr;
 
 	// Initialize the world matrix
-	worldViewMatrix = XMMatrixIdentity();
+	mWorldViewMatrix = XMMatrixIdentity();
 
 	// Initialize the view matrix
 	XMVECTOR Eye = XMVectorSet( 0.0f, 1.0f, -5.0f, 0.0f );
 	XMVECTOR At = XMVectorSet( 0.0f, 1.0f, 0.0f, 0.0f );
 	XMVECTOR Up = XMVectorSet( 0.0f, 1.0f, 0.0f, 0.0f );
-	this->viewMatrix = XMMatrixLookAtLH( Eye, At, Up );
+	this->mViewMatrix = XMMatrixLookAtLH( Eye, At, Up );
 
 
 	// Initialize the projection matrix
-	this->projectionMatrix = XMMatrixPerspectiveFovLH( XM_PIDIV2, surfaceDesc->Width / (FLOAT)surfaceDesc->Height, 0.01f, 100.0f );
+	this->mProjectionMatrix = XMMatrixPerspectiveFovLH( XM_PIDIV2, pSurfaceDesc->Width / (FLOAT)pSurfaceDesc->Height, 0.01f, 100.0f );
 
 	return S_OK;
 }
 
-HRESULT CubeMesh::draw( ID3D11Device* d3dDevice, ID3D11DeviceContext* d3dContext, const DXGI_SURFACE_DESC* surfaceDesc )
+HRESULT CubeMesh::draw( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, const DXGI_SURFACE_DESC* pSurfaceDesc )
 {
-	if (initialised == false) {
+	if (sInitialised == false) {
 		HRESULT hr;
-		V_RETURN(init(d3dDevice,d3dContext,surfaceDesc));
+		V_RETURN(init(pd3dDevice,pd3dContext,pSurfaceDesc));
 	}
 	static float t = 0.0f;
 	static DWORD dwTimeStart = 0;
@@ -199,32 +199,32 @@ HRESULT CubeMesh::draw( ID3D11Device* d3dDevice, ID3D11DeviceContext* d3dContext
 		dwTimeStart = dwTimeCur;
 	t = ( dwTimeCur - dwTimeStart ) / 1000.0f;
 
-	worldViewMatrix = XMMatrixRotationY( t );
+	mWorldViewMatrix = XMMatrixRotationY( t );
 
 
 	// Update variables
 	ConstantBuffer cb;
-	cb.mWorld = XMMatrixTranspose( worldViewMatrix );
-	cb.mView = XMMatrixTranspose( viewMatrix );
-	cb.mProjection = XMMatrixTranspose( projectionMatrix );
+	cb.mWorld = XMMatrixTranspose( mWorldViewMatrix );
+	cb.mView = XMMatrixTranspose( mViewMatrix );
+	cb.mProjection = XMMatrixTranspose( mProjectionMatrix );
 	cb.Time = t;
 
 	// Renders a triangle
-	d3dContext->UpdateSubresource( this->constantBuffer, 0, NULL, &cb, 0, 0 );
+	pd3dContext->UpdateSubresource( this->sConstantBuffer, 0, NULL, &cb, 0, 0 );
 
-	d3dContext->IASetInputLayout( vertexLayout );
+	pd3dContext->IASetInputLayout( sVertexLayout );
 
 	UINT stride = sizeof( SimpleVertex );
 	UINT offset = 0;
-	d3dContext->IASetVertexBuffers( 0, 1, &vertexBuffer, &stride, &offset );
+	pd3dContext->IASetVertexBuffers( 0, 1, &sVertexBuffer, &stride, &offset );
 
-	d3dContext->IASetIndexBuffer( indexBuffer, DXGI_FORMAT_R16_UINT, 0 );
-	d3dContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
+	pd3dContext->IASetIndexBuffer( sIndexBuffer, DXGI_FORMAT_R16_UINT, 0 );
+	pd3dContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
 
-	d3dContext->VSSetShader( vertexShader, NULL, 0 );
-	d3dContext->VSSetConstantBuffers( 0, 1, &constantBuffer );
-	d3dContext->PSSetShader( pixelShader, NULL, 0 );
-	d3dContext->DrawIndexed( 36, 0, 0 );        // 36 vertices needed for 12 triangles in a triangle list
+	pd3dContext->VSSetShader( sVertexShader, NULL, 0 );
+	pd3dContext->VSSetConstantBuffers( 0, 1, &sConstantBuffer );
+	pd3dContext->PSSetShader( sPixelShader, NULL, 0 );
+	pd3dContext->DrawIndexed( 36, 0, 0 );        // 36 vertices needed for 12 triangles in a triangle list
 
 	return S_OK;
 }
