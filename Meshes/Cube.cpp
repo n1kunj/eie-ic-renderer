@@ -27,7 +27,7 @@ CubeMesh::~CubeMesh()
 
 }
 
-boolean CubeMesh::compiled = false;
+boolean CubeMesh::initialised = false;
 
 ID3D11VertexShader* CubeMesh::vertexShader = NULL;
 ID3D11PixelShader* CubeMesh::pixelShader = NULL;
@@ -37,7 +37,7 @@ ID3D11Buffer* CubeMesh::indexBuffer = NULL;
 ID3D11Buffer* CubeMesh::constantBuffer = NULL;
 
 void CubeMesh::cleanup() {
-	compiled = false;
+	initialised = false;
 	SAFE_RELEASE(vertexShader);
 	SAFE_RELEASE(pixelShader);
 	SAFE_RELEASE(vertexLayout);
@@ -48,10 +48,10 @@ void CubeMesh::cleanup() {
 
 HRESULT CubeMesh::init( ID3D11Device* d3dDevice, ID3D11DeviceContext* d3dContext, const DXGI_SURFACE_DESC* surfaceDesc )
 {
-	if (compiled) {
+	if (initialised) {
 		return S_OK;
 	}
-	compiled = true;
+	initialised = true;
 
 	HRESULT hr = S_OK;
 
@@ -187,7 +187,7 @@ HRESULT CubeMesh::init( ID3D11Device* d3dDevice, ID3D11DeviceContext* d3dContext
 
 HRESULT CubeMesh::draw( ID3D11Device* d3dDevice, ID3D11DeviceContext* d3dContext, const DXGI_SURFACE_DESC* surfaceDesc )
 {
-	if (compiled == false) {
+	if (initialised == false) {
 		HRESULT hr;
 		V_RETURN(init(d3dDevice,d3dContext,surfaceDesc));
 	}

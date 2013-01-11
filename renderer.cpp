@@ -3,7 +3,6 @@
 #include "DevConsole.h"
 #include "Meshes/Cube.h"
 
-CubeMesh cube;
 
 class RendererImplementation {
 public:
@@ -27,6 +26,8 @@ public:
 
 	DXGI_SURFACE_DESC surfaceDescription;
 	DevConsole* devConsole;
+	CubeMesh cube;
+
 };
 
 void RendererImplementation::init()

@@ -12,7 +12,6 @@ public:
 	~CubeMesh();
 
 	HRESULT draw(ID3D11Device* d3dDevice, ID3D11DeviceContext* d3dContext, const DXGI_SURFACE_DESC* surfaceDesc);
-
 	void cleanup();
 
 private:
@@ -20,7 +19,7 @@ private:
 
 //Static members
 public:
-	static boolean compiled;
+	static boolean initialised;
 private:
 	static ID3D11VertexShader*     vertexShader;
 	static ID3D11PixelShader*      pixelShader;
