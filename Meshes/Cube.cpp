@@ -24,7 +24,7 @@ CubeMesh::CubeMesh()
 
 CubeMesh::~CubeMesh()
 {
-
+	
 }
 
 boolean CubeMesh::sInitialised = false;
