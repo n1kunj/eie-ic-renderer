@@ -115,6 +115,9 @@
     <ClInclude Include="Meshes\Mesh.h">
       <Filter>Meshes</Filter>
     </ClInclude>
+    <ClInclude Include="Shaders\DefaultShader.h">
+      <Filter>Shaders</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugText.cpp" />
@@ -136,6 +139,9 @@
     </ClCompile>
     <ClCompile Include="Meshes\Mesh.cpp">
       <Filter>Meshes</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders\DefaultShader.cpp">
+      <Filter>Shaders</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
