@@ -112,12 +112,8 @@
     <ClInclude Include="Shaders\DefaultShader.h">
       <Filter>Shaders</Filter>
     </ClInclude>
-    <ClInclude Include="Shaders\DrawableShaderInterface.h">
-      <Filter>Shaders</Filter>
-    </ClInclude>
-    <ClInclude Include="Meshes\DrawableMesh.h">
-      <Filter>Meshes</Filter>
-    </ClInclude>
+    <ClInclude Include="DrawableMesh.h" />
+    <ClInclude Include="DrawableShaderInterface.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugText.cpp" />
@@ -137,9 +133,7 @@
     <ClCompile Include="Shaders\DefaultShader.cpp">
       <Filter>Shaders</Filter>
     </ClCompile>
-    <ClCompile Include="Meshes\DrawableMesh.cpp">
-      <Filter>Meshes</Filter>
-    </ClCompile>
+    <ClCompile Include="DrawableMesh.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="eie-ic-renderer.rc">

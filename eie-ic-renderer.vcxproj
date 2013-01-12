@@ -513,17 +513,17 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="DebugText.cpp" />
+    <ClCompile Include="DrawableMesh.cpp" />
     <ClCompile Include="Gui.cpp" />
     <ClCompile Include="Meshes\Cube.cpp" />
-    <ClCompile Include="Meshes\DrawableMesh.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Shaders\DefaultShader.cpp" />
     <ClCompile Include="Textures\Textures.cpp" />
     <ClCompile Include="Utils\ShaderTools.cpp" />
+    <ClInclude Include="DrawableMesh.h" />
+    <ClInclude Include="DrawableShaderInterface.h" />
     <ClInclude Include="Meshes\Cube.h" />
-    <ClInclude Include="Meshes\DrawableMesh.h" />
     <ClInclude Include="Shaders\DefaultShader.h" />
-    <ClInclude Include="Shaders\DrawableShaderInterface.h" />
     <ClInclude Include="Textures\Textures.h" />
     <ClInclude Include="Utils\ShaderTools.h" />
     <None Include="DXUT\Optional\directx.ico" />

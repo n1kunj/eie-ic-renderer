@@ -1,6 +1,6 @@
 #ifndef SHADERS_DRAWABLESHADERINTERFACE_H
 #define SHADERS_DRAWABLESHADERINTERFACE_H
-#include "../Meshes/DrawableMesh.h"
+#include "DrawableMesh.h"
 
 class DrawableShaderInterface {
 public:

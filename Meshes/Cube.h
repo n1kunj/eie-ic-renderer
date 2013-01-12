@@ -1,6 +1,6 @@
 #ifndef MESHES_CUBE_H
 #define MESHES_CUBE_H
-#include "DrawableMesh.h"
+#include "..\DrawableMesh.h"
 #include <xnamath.h>
 
 class CubeMesh : public DrawableMesh {

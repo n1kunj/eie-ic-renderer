@@ -1,6 +1,6 @@
 #ifndef SHADERS_DEFAULTSHADER_H
 #define SHADERS_DEFAULTSHADER_H
-#include "DrawableShaderInterface.h"
+#include "..\DrawableShaderInterface.h"
 
 class DefaultShader : public DrawableShaderInterface {
 public:
