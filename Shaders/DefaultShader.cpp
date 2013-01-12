@@ -18,7 +18,6 @@ UINT numLayoutElements = ARRAYSIZE(vertexLayout);
 
 struct ConstantBuffer
 {
-	FLOAT Time;
 	XMMATRIX World;
 	XMMATRIX View;
 	XMMATRIX Projection;
@@ -31,9 +30,33 @@ ID3D11PixelShader* DefaultShader::sPixelShader = NULL;
 ID3D11InputLayout* DefaultShader::sVertexLayout = NULL;
 ID3D11Buffer* DefaultShader::sConstantBuffer = NULL;
 
-void DefaultShader::DrawMesh( const BaseMesh* pMesh )
+void DefaultShader::DrawMesh(ID3D11DeviceContext* pd3dContext, const BaseMesh* pMesh)
 {
 	assert(sCompiled == TRUE);
+
+	// Update constant buffer
+	ConstantBuffer cb;
+	cb.World = XMMatrixTranspose( pMesh->mWorldViewMatrix );
+	cb.View = XMMatrixTranspose( pMesh->mViewMatrix );
+	cb.Projection = XMMatrixTranspose(pMesh->mProjectionMatrix );
+
+	pd3dContext->UpdateSubresource( sConstantBuffer, 0, NULL, &cb, 0, 0 );
+	pd3dContext->VSSetConstantBuffers( 0, 1, &sConstantBuffer );
+
+	//Set vertex layout and bind buffers
+	pd3dContext->IASetInputLayout( sVertexLayout );
+
+	UINT stride = sizeof( Vertex );
+	UINT offset = 0;
+	pd3dContext->IASetVertexBuffers( 0, 1, &pMesh->mVertexBuffer, &stride, &offset );
+
+	pd3dContext->IASetIndexBuffer( pMesh->mIndexBuffer, DXGI_FORMAT_R16_UINT, 0 );
+	pd3dContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
+
+	//Set shaders
+
+	pd3dContext->VSSetShader( sVertexShader, NULL, 0 );
+	pd3dContext->PSSetShader( sPixelShader, NULL, 0 );
 
 }
 

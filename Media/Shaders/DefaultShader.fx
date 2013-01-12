@@ -9,7 +9,6 @@
 //--------------------------------------------------------------------------------------
 cbuffer ConstantBuffer : register( b0 )
 {
-	float Time;
 	matrix World;
 	matrix View;
 	matrix Projection;
@@ -21,7 +20,6 @@ struct VS_OUTPUT
 {
     float4 Pos : SV_POSITION;
     float4 Color : COLOR0;
-	float Time : TIME;
 };
 
 //--------------------------------------------------------------------------------------
@@ -34,7 +32,6 @@ VS_OUTPUT VS( float4 Pos : POSITION, float4 Color : COLOR)
     output.Pos = mul( output.Pos, View );
     output.Pos = mul( output.Pos, Projection );
     output.Color = Color;
-	output.Time = Time;
     return output;
 }
 
@@ -44,9 +41,5 @@ VS_OUTPUT VS( float4 Pos : POSITION, float4 Color : COLOR)
 //--------------------------------------------------------------------------------------
 float4 PS( VS_OUTPUT input ) : SV_Target
 {
-    // return input.Color;
-
-	float t = input.Time % 2;
-	t = t > 1 ? 2-t : t; 
-	return float4(t,0.5f,0.5f,1);
+	return input.Color;
 }

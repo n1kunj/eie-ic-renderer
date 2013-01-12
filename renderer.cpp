@@ -2,11 +2,13 @@
 #include "Renderer.h"
 #include "DevConsole.h"
 #include "Meshes/Cube.h"
+#include "Shaders/DefaultShader.h"
 
 class RendererImplementation {
 public:
 	RendererImplementation(DevConsole* devConsole) : devConsole(devConsole) {
 		cube = new CubeMesh();
+		defaultShader = new DefaultShader();
 	};
 	~RendererImplementation() {
 		// TODO: Destruct
@@ -27,6 +29,7 @@ public:
 	DXGI_SURFACE_DESC surfaceDescription;
 	DevConsole* devConsole;
 	BaseMesh* cube;
+	ShaderInterface* defaultShader;
 
 };
 
@@ -39,6 +42,7 @@ void RendererImplementation::init()
 HRESULT RendererImplementation::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 {
 	devConsole->log(L"Renderer OnD3D11CreateDevice");
+	defaultShader->OnD3D11CreateDevice(pd3dDevice);
 	return S_OK;
 }
 
@@ -80,7 +84,8 @@ void RendererImplementation::OnExit()
 
 void RendererImplementation::OnD3D11DestroyDevice()
 {
-	cube->cleanup();
+	cube->OnD3D11DestroyDevice();
+	defaultShader->OnD3D11DestroyDevice();
 }
 
 //Public interface

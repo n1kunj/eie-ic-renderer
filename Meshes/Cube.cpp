@@ -10,7 +10,6 @@ struct SimpleVertex
 
 struct ConstantBuffer
 {
-	FLOAT Time;
 	XMMATRIX mWorld;
 	XMMATRIX mView;
 	XMMATRIX mProjection;
@@ -31,21 +30,21 @@ boolean CubeMesh::sInitialised = false;
 ID3D11VertexShader* CubeMesh::sVertexShader = NULL;
 ID3D11PixelShader* CubeMesh::sPixelShader = NULL;
 ID3D11InputLayout* CubeMesh::sVertexLayout = NULL;
-ID3D11Buffer* CubeMesh::sVertexBuffer = NULL;
-ID3D11Buffer* CubeMesh::sIndexBuffer = NULL;
+//ID3D11Buffer* CubeMesh::mVertexBuffer = NULL;
+//ID3D11Buffer* CubeMesh::mIndexBuffer = NULL;
 ID3D11Buffer* CubeMesh::sConstantBuffer = NULL;
 
-void CubeMesh::cleanup() {
+void CubeMesh::OnD3D11DestroyDevice() {
 	sInitialised = false;
 	SAFE_RELEASE(sVertexShader);
 	SAFE_RELEASE(sPixelShader);
 	SAFE_RELEASE(sVertexLayout);
-	SAFE_RELEASE(sVertexBuffer);
-	SAFE_RELEASE(sIndexBuffer);
+	SAFE_RELEASE(mVertexBuffer);
+	SAFE_RELEASE(mIndexBuffer);
 	SAFE_RELEASE(sConstantBuffer);
 }
 
-HRESULT CubeMesh::init( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, const DXGI_SURFACE_DESC* pSurfaceDesc )
+HRESULT CubeMesh::OnD3D11CreateDevice( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, const DXGI_SURFACE_DESC* pSurfaceDesc )
 {
 	if (sInitialised) {
 		return S_OK;
@@ -99,7 +98,7 @@ HRESULT CubeMesh::init( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dConte
 	D3D11_SUBRESOURCE_DATA InitData;
 	ZeroMemory( &InitData, sizeof(InitData) );
 	InitData.pSysMem = vertices;
-	V_RETURN(pd3dDevice->CreateBuffer( &bd, &InitData, &sVertexBuffer ));
+	V_RETURN(pd3dDevice->CreateBuffer( &bd, &InitData, &mVertexBuffer ));
 
 	// Create index buffer
 	WORD indices[] =
@@ -128,7 +127,7 @@ HRESULT CubeMesh::init( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dConte
 	bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	bd.CPUAccessFlags = 0;
 	InitData.pSysMem = indices;
-	V_RETURN(hr = pd3dDevice->CreateBuffer( &bd, &InitData, &sIndexBuffer ));
+	V_RETURN(hr = pd3dDevice->CreateBuffer( &bd, &InitData, &mIndexBuffer ));
 
 	// Create the constant buffer
 	bd.Usage = D3D11_USAGE_DEFAULT;
@@ -158,7 +157,7 @@ HRESULT CubeMesh::draw( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dConte
 {
 	if (sInitialised == false) {
 		HRESULT hr;
-		V_RETURN(init(pd3dDevice,pd3dContext,pSurfaceDesc));
+		V_RETURN(OnD3D11CreateDevice(pd3dDevice,pd3dContext,pSurfaceDesc));
 	}
 
 	static float t = 0.0f;
@@ -177,7 +176,6 @@ HRESULT CubeMesh::draw( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dConte
 	cb.mWorld = XMMatrixTranspose( mWorldViewMatrix );
 	cb.mView = XMMatrixTranspose( mViewMatrix );
 	cb.mProjection = XMMatrixTranspose( mProjectionMatrix );
-	cb.Time = t;
 
 	pd3dContext->UpdateSubresource( sConstantBuffer, 0, NULL, &cb, 0, 0 );
 
@@ -188,9 +186,9 @@ HRESULT CubeMesh::draw( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dConte
 
 	UINT stride = sizeof( SimpleVertex );
 	UINT offset = 0;
-	pd3dContext->IASetVertexBuffers( 0, 1, &sVertexBuffer, &stride, &offset );
+	pd3dContext->IASetVertexBuffers( 0, 1, &mVertexBuffer, &stride, &offset );
 
-	pd3dContext->IASetIndexBuffer( sIndexBuffer, DXGI_FORMAT_R16_UINT, 0 );
+	pd3dContext->IASetIndexBuffer( mIndexBuffer, DXGI_FORMAT_R16_UINT, 0 );
 	pd3dContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
 
 	//Set shaders

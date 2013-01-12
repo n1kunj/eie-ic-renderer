@@ -11,10 +11,10 @@ public:
 	~CubeMesh();
 
 	HRESULT draw(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, const DXGI_SURFACE_DESC* pSurfaceDesc);
-	void cleanup();
+	void OnD3D11DestroyDevice();
 
 protected:
-	HRESULT init(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, const DXGI_SURFACE_DESC* pSurfaceDesc);
+	HRESULT OnD3D11CreateDevice(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, const DXGI_SURFACE_DESC* pSurfaceDesc);
 
 //Static members
 public:
@@ -23,8 +23,8 @@ private:
 	static ID3D11VertexShader*     sVertexShader;
 	static ID3D11PixelShader*      sPixelShader;
 	static ID3D11InputLayout*      sVertexLayout;
-	static ID3D11Buffer*           sVertexBuffer;
-	static ID3D11Buffer*           sIndexBuffer;
+	//static ID3D11Buffer*           sVertexBuffer;
+	//static ID3D11Buffer*           sIndexBuffer;
 	static ID3D11Buffer*           sConstantBuffer;
 };
 

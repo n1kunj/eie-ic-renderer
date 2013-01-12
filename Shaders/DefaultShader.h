@@ -4,7 +4,7 @@
 
 class DefaultShader : public ShaderInterface {
 public:
-	void DrawMesh(const BaseMesh* pMesh );
+	void DrawMesh(ID3D11DeviceContext* pd3dContext, const BaseMesh* pMesh);
 	HRESULT OnD3D11CreateDevice(ID3D11Device* pd3dDevice);
 	void OnD3D11DestroyDevice();
 
