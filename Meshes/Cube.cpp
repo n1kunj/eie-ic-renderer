@@ -14,7 +14,6 @@ struct ConstantBuffer
 	XMMATRIX mWorld;
 	XMMATRIX mView;
 	XMMATRIX mProjection;
-
 };
 
 CubeMesh::CubeMesh()
@@ -51,56 +50,33 @@ HRESULT CubeMesh::init( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dConte
 	if (sInitialised) {
 		return S_OK;
 	}
-	sInitialised = true;
 
 	HRESULT hr = S_OK;
 
 	// Compile the vertex shader
 	ID3DBlob* pVSBlob = NULL;
-	hr = ShaderTools::CompileShaderFromFile( L"Shaders\\Tutorial03.fx", "VS", "vs_4_0", &pVSBlob );
-	if( FAILED( hr ) )
-	{
-		MessageBox( NULL,
-			L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK );
-		return hr;
-	}
+	V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\DefaultShader.fx", "VS", "vs_4_0", &pVSBlob ));
 
 	// Create the vertex shader
-	hr = pd3dDevice->CreateVertexShader( pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, &sVertexShader );
-	if( FAILED( hr ) )
-	{	
-		pVSBlob->Release();
-		return hr;
-	}
+	V_RELEASE_IF_RETURN(pVSBlob,pd3dDevice->CreateVertexShader( pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, &sVertexShader ));
 
 	// Define the input layout
-	D3D11_INPUT_ELEMENT_DESC layout[] =
+	D3D11_INPUT_ELEMENT_DESC vertexLayout[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	};
-	UINT numElements = ARRAYSIZE( layout );
+	UINT numLayoutElements = ARRAYSIZE( vertexLayout );
 
 	// Create the input layout
-	hr = pd3dDevice->CreateInputLayout( layout, numElements, pVSBlob->GetBufferPointer(),
-		pVSBlob->GetBufferSize(), &sVertexLayout );
-	pVSBlob->Release();
-	V_RETURN(hr);
+	V_RELEASE_AND_RETURN(pVSBlob,pd3dDevice->CreateInputLayout( vertexLayout, numLayoutElements, pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), &sVertexLayout ));
 
 	// Compile the pixel shader
 	ID3DBlob* pPSBlob = NULL;
-	hr = ShaderTools::CompileShaderFromFile( L"Shaders\\Tutorial03.fx", "PS", "ps_4_0", &pPSBlob );
-	if( FAILED( hr ) )
-	{
-		MessageBox( NULL,
-			L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK );
-		return hr;
-	}
+	V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\DefaultShader.fx", "PS", "ps_4_0", &pPSBlob ));
 
 	// Create the pixel shader
-	hr = pd3dDevice->CreatePixelShader( pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), NULL, &sPixelShader );
-	pPSBlob->Release();
-	V_RETURN(hr);
+	V_RELEASE_AND_RETURN(pPSBlob, pd3dDevice->CreatePixelShader( pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), NULL, &sPixelShader ));
 
 	// Create vertex buffer
 	SimpleVertex vertices[] =
@@ -123,9 +99,7 @@ HRESULT CubeMesh::init( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dConte
 	D3D11_SUBRESOURCE_DATA InitData;
 	ZeroMemory( &InitData, sizeof(InitData) );
 	InitData.pSysMem = vertices;
-	hr = pd3dDevice->CreateBuffer( &bd, &InitData, &sVertexBuffer );
-	if( FAILED( hr ) )
-		return hr;
+	V_RETURN(pd3dDevice->CreateBuffer( &bd, &InitData, &sVertexBuffer ));
 
 	// Create index buffer
 	WORD indices[] =
@@ -154,19 +128,14 @@ HRESULT CubeMesh::init( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dConte
 	bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	bd.CPUAccessFlags = 0;
 	InitData.pSysMem = indices;
-	hr = pd3dDevice->CreateBuffer( &bd, &InitData, &sIndexBuffer );
-	if( FAILED( hr ) )
-		return hr;
+	V_RETURN(hr = pd3dDevice->CreateBuffer( &bd, &InitData, &sIndexBuffer ));
 
 	// Create the constant buffer
 	bd.Usage = D3D11_USAGE_DEFAULT;
 	bd.ByteWidth = sizeof(ConstantBuffer);
 	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	bd.CPUAccessFlags = 0;
-	hr = pd3dDevice->CreateBuffer( &bd, NULL, &sConstantBuffer );
-
-	if( FAILED( hr ) )
-		return hr;
+	V_RETURN(hr = pd3dDevice->CreateBuffer( &bd, NULL, &sConstantBuffer ));
 
 	// Initialize the world matrix
 	mWorldViewMatrix = XMMatrixIdentity();
@@ -181,6 +150,7 @@ HRESULT CubeMesh::init( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dConte
 	// Initialize the projection matrix
 	this->mProjectionMatrix = XMMatrixPerspectiveFovLH( XM_PIDIV2, pSurfaceDesc->Width / (FLOAT)pSurfaceDesc->Height, 0.01f, 100.0f );
 
+	sInitialised = true;
 	return S_OK;
 }
 
@@ -190,6 +160,7 @@ HRESULT CubeMesh::draw( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dConte
 		HRESULT hr;
 		V_RETURN(init(pd3dDevice,pd3dContext,pSurfaceDesc));
 	}
+
 	static float t = 0.0f;
 	static DWORD dwTimeStart = 0;
 
@@ -201,16 +172,18 @@ HRESULT CubeMesh::draw( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dConte
 	mWorldViewMatrix = XMMatrixRotationY( t );
 
 
-	// Update variables
+	// Update constant buffer
 	ConstantBuffer cb;
 	cb.mWorld = XMMatrixTranspose( mWorldViewMatrix );
 	cb.mView = XMMatrixTranspose( mViewMatrix );
 	cb.mProjection = XMMatrixTranspose( mProjectionMatrix );
 	cb.Time = t;
 
-	// Renders a triangle
-	pd3dContext->UpdateSubresource( this->sConstantBuffer, 0, NULL, &cb, 0, 0 );
+	pd3dContext->UpdateSubresource( sConstantBuffer, 0, NULL, &cb, 0, 0 );
 
+	pd3dContext->VSSetConstantBuffers( 0, 1, &sConstantBuffer );
+
+	//Set vertex layout and bind buffers
 	pd3dContext->IASetInputLayout( sVertexLayout );
 
 	UINT stride = sizeof( SimpleVertex );
@@ -220,10 +193,14 @@ HRESULT CubeMesh::draw( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dConte
 	pd3dContext->IASetIndexBuffer( sIndexBuffer, DXGI_FORMAT_R16_UINT, 0 );
 	pd3dContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
 
+	//Set shaders
+
 	pd3dContext->VSSetShader( sVertexShader, NULL, 0 );
-	pd3dContext->VSSetConstantBuffers( 0, 1, &sConstantBuffer );
 	pd3dContext->PSSetShader( sPixelShader, NULL, 0 );
-	pd3dContext->DrawIndexed( 36, 0, 0 );        // 36 vertices needed for 12 triangles in a triangle list
+
+	//Draw
+	//36 indices
+	pd3dContext->DrawIndexed( 36, 0, 0 );
 
 	return S_OK;
 }

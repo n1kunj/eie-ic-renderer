@@ -103,12 +103,24 @@
 #ifndef V_RETURN
 #define V_RETURN(x)    { hr = (x); if( FAILED(hr) ) { return DXUTTrace( __FILE__, (DWORD)__LINE__, hr, L#x, true ); } }
 #endif
+#ifndef V_RELEASE_AND_RETURN
+#define V_RELEASE_AND_RETURN(p,x)    { hr = (x); SAFE_RELEASE(p); if( FAILED(hr) ) { return DXUTTrace( __FILE__, (DWORD)__LINE__, hr, L#x, true ); } }
+#endif
+#ifndef V_RELEASE_IF_RETURN
+#define V_RELEASE_IF_RETURN(p,x)    { hr = (x); if( FAILED(hr) ) { SAFE_RELEASE(p); return DXUTTrace( __FILE__, (DWORD)__LINE__, hr, L#x, true ); } }
+#endif
 #else
 #ifndef V
 #define V(x)           { hr = (x); }
 #endif
 #ifndef V_RETURN
 #define V_RETURN(x)    { hr = (x); if( FAILED(hr) ) { return hr; } }
+#endif
+#ifndef V_RELEASE_AND_RETURN
+#define V_RELEASE_AND_RETURN(p,x)    { hr = (x); SAFE_RELEASE(p); if( FAILED(hr) ) { return hr; } }
+#endif
+#ifndef V_RELEASE_IF_RETURN
+#define V_RELEASE_IF_RETURN(p,x)    { hr = (x); if( FAILED(hr) ) { SAFE_RELEASE(p); return hr; } }
 #endif
 #endif
 
