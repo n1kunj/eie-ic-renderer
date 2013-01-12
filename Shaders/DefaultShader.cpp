@@ -2,10 +2,11 @@
 #include "DefaultShader.h"
 #include "..\Utils\ShaderTools.h"
 
-struct Vertex
+struct ConstantBuffer
 {
-	XMFLOAT3 POSITION;
-	XMFLOAT4 COLOR;
+	XMMATRIX World;
+	XMMATRIX View;
+	XMMATRIX Projection;
 };
 
 D3D11_INPUT_ELEMENT_DESC vertexLayout[] =
@@ -14,14 +15,7 @@ D3D11_INPUT_ELEMENT_DESC vertexLayout[] =
 	{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 };
 
-UINT numLayoutElements = ARRAYSIZE(vertexLayout);
-
-struct ConstantBuffer
-{
-	XMMATRIX World;
-	XMMATRIX View;
-	XMMATRIX Projection;
-};
+const UINT numLayoutElements = ARRAYSIZE(vertexLayout);
 
 boolean DefaultShader::sCompiled = false;
 
@@ -30,7 +24,7 @@ ID3D11PixelShader* DefaultShader::sPixelShader = NULL;
 ID3D11InputLayout* DefaultShader::sVertexLayout = NULL;
 ID3D11Buffer* DefaultShader::sConstantBuffer = NULL;
 
-void DefaultShader::DrawMesh(ID3D11DeviceContext* pd3dContext, const BaseMesh* pMesh)
+void DefaultShader::DrawMesh(ID3D11DeviceContext* pd3dContext, const DrawableMesh* pMesh)
 {
 	assert(sCompiled == TRUE);
 
@@ -58,6 +52,10 @@ void DefaultShader::DrawMesh(ID3D11DeviceContext* pd3dContext, const BaseMesh* p
 	pd3dContext->VSSetShader( sVertexShader, NULL, 0 );
 	pd3dContext->PSSetShader( sPixelShader, NULL, 0 );
 
+	//Draw
+	//36 indices
+	pd3dContext->DrawIndexed( 36, 0, 0 );
+
 }
 
 HRESULT DefaultShader::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
@@ -81,6 +79,13 @@ HRESULT DefaultShader::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 	//Create the input layout
 	V_RELEASE_AND_RETURN(pVSBlob,pd3dDevice->CreateInputLayout( vertexLayout, numLayoutElements, pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), &sVertexLayout ));
 
+	// Compile the pixel shader
+	ID3DBlob* pPSBlob = NULL;
+	V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\DefaultShader.fx", "PS", "ps_4_0", &pPSBlob ));
+
+	// Create the pixel shader
+	V_RELEASE_AND_RETURN(pPSBlob, pd3dDevice->CreatePixelShader( pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), NULL, &sPixelShader ));
+
 	// Create the constant buffer
 	D3D11_BUFFER_DESC bd;
 	ZeroMemory( &bd, sizeof(bd) );
@@ -100,4 +105,14 @@ void DefaultShader::OnD3D11DestroyDevice() {
 	SAFE_RELEASE(sVertexLayout);
 	SAFE_RELEASE(sConstantBuffer);
 	sCompiled = FALSE;
+}
+
+DefaultShader::DefaultShader()
+{
+
+}
+
+DefaultShader::~DefaultShader()
+{
+
 }

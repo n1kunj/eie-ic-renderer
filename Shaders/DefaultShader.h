@@ -1,12 +1,15 @@
 #ifndef SHADERS_DEFAULTSHADER_H
 #define SHADERS_DEFAULTSHADER_H
-#include "ShaderInterface.h"
+#include "DrawableShaderInterface.h"
 
-class DefaultShader : public ShaderInterface {
+class DefaultShader : public DrawableShaderInterface {
 public:
-	void DrawMesh(ID3D11DeviceContext* pd3dContext, const BaseMesh* pMesh);
+	void DrawMesh(ID3D11DeviceContext* pd3dContext, const DrawableMesh* pMesh);
 	HRESULT OnD3D11CreateDevice(ID3D11Device* pd3dDevice);
 	void OnD3D11DestroyDevice();
+
+	DefaultShader();
+	~DefaultShader();
 
 	//Statics
 private:
