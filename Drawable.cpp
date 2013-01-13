@@ -6,9 +6,6 @@
 
 void Drawable::Draw(ID3D11DeviceContext* pd3dContext)
 {
-	assert(mShader!=NULL);
-	assert(mMesh!=NULL);
-	assert(mCamera!=NULL);
 	mShader->DrawMesh(pd3dContext,mMesh,&mState,mCamera);
 }
 

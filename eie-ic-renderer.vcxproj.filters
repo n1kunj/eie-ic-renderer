@@ -140,6 +140,7 @@
     </ClCompile>
     <ClCompile Include="Drawable.cpp" />
     <ClCompile Include="DrawableShader.cpp" />
+    <ClCompile Include="Camera.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="eie-ic-renderer.rc">

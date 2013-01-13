@@ -512,6 +512,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="DebugText.cpp" />
     <ClCompile Include="Drawable.cpp" />
     <ClCompile Include="DrawableMesh.cpp" />

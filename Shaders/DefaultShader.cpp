@@ -7,9 +7,10 @@
 
 struct ConstantBuffer
 {
-	XMMATRIX World;
+	XMMATRIX Model;
 	XMMATRIX View;
 	XMMATRIX Projection;
+	XMMATRIX MVP;
 };
 
 boolean DefaultShader::sCompiled = false;
@@ -22,13 +23,18 @@ ID3D11Buffer* DefaultShader::sConstantBuffer = NULL;
 void DefaultShader::DrawMesh(ID3D11DeviceContext* pd3dContext, const DrawableMesh* pMesh, const DrawableState* pState, const Camera* pCamera)
 {
 	assert(sCompiled == TRUE);
+	assert(pMesh!= NULL);
 	assert(pMesh->mInitialised == TRUE);
+	assert(pState != NULL);
+	assert(pCamera != NULL);
 
 	// Update constant buffer
 	ConstantBuffer cb;
-	cb.World = XMMatrixTranspose( pState->mWorldViewMatrix );
-	cb.View = XMMatrixTranspose( pState->mViewMatrix );
-	cb.Projection = XMMatrixTranspose(pState->mProjectionMatrix );
+	cb.Model = (pState->mModelMatrix );
+	cb.View = ( pCamera->mViewMatrix );
+	cb.Projection = (pCamera->mProjectionMatrix );
+
+	cb.MVP = XMMatrixMultiply(pState->mModelMatrix,pCamera->mViewProjectionMatrix);
 
 	pd3dContext->UpdateSubresource( sConstantBuffer, 0, NULL, &cb, 0, 0 );
 	pd3dContext->VSSetConstantBuffers( 0, 1, &sConstantBuffer );

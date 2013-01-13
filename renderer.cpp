@@ -79,6 +79,7 @@ LRESULT RendererImplementation::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LP
 
 void RendererImplementation::OnFrameMove( double fTime, float fElapsedTime, void* pUserContext )
 {
+	camera->updateMatrices(surfaceDescription);
 }
 
 void RendererImplementation::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dImmediateContext, double fTime, float fElapsedTime, void* pUserContext )
@@ -100,8 +101,7 @@ void RendererImplementation::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D1
 		dwTimeStart = dwTimeCur;
 	t = ( dwTimeCur - dwTimeStart ) / 1000.0f;
 
-	cubeDrawable->mState.mWorldViewMatrix = XMMatrixRotationY( t );
-	cubeDrawable->mState.mProjectionMatrix = XMMatrixPerspectiveFovLH( XM_PIDIV2, surfaceDescription.Width / (FLOAT)surfaceDescription.Height, 0.01f, 100.0f );
+	cubeDrawable->mState.mModelMatrix = XMMatrixRotationY( t );
 	
 	cubeDrawable->Draw(pd3dImmediateContext);
 

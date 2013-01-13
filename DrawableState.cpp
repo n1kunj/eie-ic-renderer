@@ -1,16 +1,9 @@
 #include "DXUT.h"
 #include "DrawableState.h"
-DrawableState::DrawableState() : mDirty(TRUE)
+DrawableState::DrawableState() : mDirty(TRUE), mPosition(0,0,0), mRotation(0,0,0)
 {
 	// Initialize the world matrix
-	mWorldViewMatrix = XMMatrixIdentity();
-
-	// Initialize the view matrix
-	XMVECTOR Eye = XMVectorSet( 0.0f, 1.0f, -5.0f, 0.0f );
-	XMVECTOR At = XMVectorSet( 0.0f, 1.0f, 0.0f, 0.0f );
-	XMVECTOR Up = XMVectorSet( 0.0f, 1.0f, 0.0f, 0.0f );
-	this->mViewMatrix = XMMatrixLookAtLH( Eye, At, Up );
-
+	mModelMatrix = XMMatrixIdentity();
 }
 
 DrawableState::~DrawableState()
@@ -18,12 +11,14 @@ DrawableState::~DrawableState()
 
 }
 
-void DrawableState::update()
+void DrawableState::updateMatrices()
 {
 	if (mDirty) {
 		return;
 	}
 	mDirty = FALSE;
+
+
 
 
 }

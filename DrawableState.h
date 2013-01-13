@@ -8,13 +8,11 @@ public:
 	XMFLOAT3 mPosition;
 	XMFLOAT3 mRotation;
 
-	XMMATRIX mWorldViewMatrix;
-	XMMATRIX mViewMatrix;
-	XMMATRIX mProjectionMatrix;
+	XMMATRIX mModelMatrix;
 
 	boolean mDirty;
 
-	void update();
+	void updateMatrices();
 
 	DrawableState();
 	~DrawableState();
