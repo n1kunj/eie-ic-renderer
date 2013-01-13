@@ -21,6 +21,7 @@ const UINT numLayoutElements = ARRAYSIZE(vertexLayout);
 
 class DrawableMesh {
 public:
+	WCHAR* mModelHandle;
 	ID3D11Buffer* mVertexBuffer;
 	ID3D11Buffer* mIndexBuffer;
 	UINT mNumVertices;
@@ -31,7 +32,7 @@ public:
 	virtual HRESULT OnD3D11CreateDevice(ID3D11Device* pd3dDevice);
 	virtual void OnD3D11DestroyDevice();
 
-	DrawableMesh(MeshLoaderInterface* pMeshLoader);
+	DrawableMesh(const WCHAR* pModelHandle, MeshLoaderInterface* pMeshLoader);
 	virtual ~DrawableMesh();
 
 private:

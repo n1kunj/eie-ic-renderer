@@ -10,7 +10,7 @@ class RendererImplementation {
 public:
 	RendererImplementation(DevConsole* devConsole) : devConsole(devConsole) {
 		cubeLoader = new CubeMeshLoader();
-		cubeMesh = new DrawableMesh(cubeLoader);
+		cubeMesh = new DrawableMesh(L"CubeMesh",cubeLoader);
 		defaultShader = new DefaultShader();
 		cubeDrawable = new Drawable(cubeMesh,defaultShader);
 	};

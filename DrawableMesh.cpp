@@ -1,10 +1,12 @@
 #include "DXUT.h"
 #include "DrawableMesh.h"
 
-DrawableMesh::DrawableMesh(MeshLoaderInterface* pMeshLoader) : 
+DrawableMesh::DrawableMesh(const WCHAR* pModelHandle, MeshLoaderInterface* pMeshLoader) : 
 	mMeshLoader(pMeshLoader), mVertexBuffer(NULL), mIndexBuffer(NULL), mInitialised(FALSE), mIndexBufferFormat(DXGI_FORMAT_R32_UINT)
 {
-
+	size_t linelen = wcslen(pModelHandle);
+	mModelHandle = new WCHAR[linelen+1];
+	wcscpy_s(mModelHandle,linelen+1,pModelHandle);
 }
 
 DrawableMesh::~DrawableMesh()
