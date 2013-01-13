@@ -1,3 +1,4 @@
+#pragma once
 #ifndef MESHES_CUBE_H
 #define MESHES_CUBE_H
 #include "..\DrawableMesh.h"

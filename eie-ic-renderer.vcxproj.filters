@@ -116,6 +116,7 @@
     <ClInclude Include="Meshes\CubeMeshLoader.h">
       <Filter>Meshes</Filter>
     </ClInclude>
+    <ClInclude Include="Camera.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugText.cpp" />

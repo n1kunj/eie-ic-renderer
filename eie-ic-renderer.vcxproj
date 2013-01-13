@@ -523,6 +523,7 @@
     <ClCompile Include="Shaders\DefaultShader.cpp" />
     <ClCompile Include="Textures\Textures.cpp" />
     <ClCompile Include="Utils\ShaderTools.cpp" />
+    <ClInclude Include="Camera.h" />
     <ClInclude Include="Drawable.h" />
     <ClInclude Include="DrawableMesh.h" />
     <ClInclude Include="DrawableShader.h" />

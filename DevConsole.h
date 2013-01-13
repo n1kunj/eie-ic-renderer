@@ -1,3 +1,4 @@
+#pragma once
 #ifndef DEV_CONSOLE_H
 #define DEV_CONSOLE_H
 

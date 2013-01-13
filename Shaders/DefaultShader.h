@@ -1,10 +1,11 @@
+#pragma once
 #ifndef SHADERS_DEFAULTSHADER_H
 #define SHADERS_DEFAULTSHADER_H
 #include "..\DrawableShader.h"
 
 class DefaultShader : public DrawableShader {
 public:
-	void DrawMesh(ID3D11DeviceContext* pd3dContext, const DrawableMesh* pMesh, const DrawableState* pState);
+	void DrawMesh(ID3D11DeviceContext* pd3dContext, const DrawableMesh* pMesh, const DrawableState* pState, const Camera* pCamera);
 	HRESULT OnD3D11CreateDevice(ID3D11Device* pd3dDevice);
 	void OnD3D11DestroyDevice();
 

@@ -5,16 +5,22 @@
 #include "Shaders/DefaultShader.h"
 #include "DrawableState.h"
 #include "Drawable.h"
+#include "Camera.h"
+
+#include <sstream>
 
 class RendererImplementation {
 public:
-	RendererImplementation(DevConsole* devConsole) : devConsole(devConsole) {
+	RendererImplementation(DevConsole* devConsole) : devConsole(devConsole){
+		camera = new Camera();
 		cubeLoader = new CubeMeshLoader();
 		cubeMesh = new DrawableMesh(L"CubeMesh",cubeLoader);
 		defaultShader = new DefaultShader();
-		cubeDrawable = new Drawable(cubeMesh,defaultShader);
+
+		cubeDrawable = new Drawable(cubeMesh,defaultShader,camera);
 	};
 	~RendererImplementation() {
+		SAFE_DELETE(camera);
 		SAFE_DELETE(cubeLoader);
 		SAFE_DELETE(cubeMesh);
 		SAFE_DELETE(defaultShader);
@@ -39,6 +45,7 @@ public:
 	DrawableShader* defaultShader;
 	CubeMeshLoader* cubeLoader;
 	Drawable* cubeDrawable;
+	Camera* camera;
 };
 
 void RendererImplementation::init()
@@ -62,8 +69,11 @@ HRESULT RendererImplementation::OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevic
 	return S_OK;
 }
 
-LRESULT RendererImplementation::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool* pbNoFurtherProcessing,
-								   void* pUserContext ) {
+LRESULT RendererImplementation::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool* pbNoFurtherProcessing,void* pUserContext )
+{
+	std::wstringstream wss;
+	wss << L"uMsg:" << uMsg << L" wParam:" << wParam << L" lParam:" << lParam;
+	devConsole->log(&wss);
 	return 0;
 }
 
@@ -93,7 +103,6 @@ void RendererImplementation::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D1
 	cubeDrawable->mState.mWorldViewMatrix = XMMatrixRotationY( t );
 	cubeDrawable->mState.mProjectionMatrix = XMMatrixPerspectiveFovLH( XM_PIDIV2, surfaceDescription.Width / (FLOAT)surfaceDescription.Height, 0.01f, 100.0f );
 	
-	//Draw cube with default shader and rotated state
 	cubeDrawable->Draw(pd3dImmediateContext);
 
 }

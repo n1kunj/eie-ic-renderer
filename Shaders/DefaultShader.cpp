@@ -2,6 +2,7 @@
 #include "DefaultShader.h"
 #include "..\DrawableMesh.h"
 #include "..\DrawableState.h"
+#include "..\Camera.h"
 #include "..\Utils\ShaderTools.h"
 
 struct ConstantBuffer
@@ -18,7 +19,7 @@ ID3D11PixelShader* DefaultShader::sPixelShader = NULL;
 ID3D11InputLayout* DefaultShader::sVertexLayout = NULL;
 ID3D11Buffer* DefaultShader::sConstantBuffer = NULL;
 
-void DefaultShader::DrawMesh(ID3D11DeviceContext* pd3dContext, const DrawableMesh* pMesh, const DrawableState* pState)
+void DefaultShader::DrawMesh(ID3D11DeviceContext* pd3dContext, const DrawableMesh* pMesh, const DrawableState* pState, const Camera* pCamera)
 {
 	assert(sCompiled == TRUE);
 	assert(pMesh->mInitialised == TRUE);

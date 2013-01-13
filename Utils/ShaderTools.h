@@ -1,3 +1,4 @@
+#pragma once
 #ifndef UTILS_SHADERTOOLS_H
 #define UTILS_SHADERTOOLS_H
 
