@@ -1,6 +1,8 @@
-#ifndef MESHES_MESH_H
-#define MESHES_MESH_H
+#ifndef DRAWABLE_MESH_H
+#define DRAWABLE_MESH_H
 #include <xnamath.h>
+
+class MeshLoaderInterface;
 
 struct Vertex
 {
@@ -8,28 +10,49 @@ struct Vertex
 	XMFLOAT4 COLOR;
 };
 
-class DrawableMesh {
-public:
-	XMMATRIX mWorldViewMatrix;
-	XMMATRIX mViewMatrix;
-	XMMATRIX mProjectionMatrix;
-
-	boolean mInitialised;
-	ID3D11Buffer* mVertexBuffer;
-	ID3D11Buffer* mIndexBuffer;
-
-	virtual HRESULT draw(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, const DXGI_SURFACE_DESC* pSurfaceDesc) = 0;
-	virtual void OnD3D11DestroyDevice();
-
-	DrawableMesh();
-
-	virtual ~DrawableMesh();
-
-protected:
-	virtual HRESULT OnD3D11CreateDevice(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, const DXGI_SURFACE_DESC* pSurfaceDesc) = 0;
-	
+const D3D11_INPUT_ELEMENT_DESC vertexLayout[] =
+{
+	{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 };
 
+const UINT numLayoutElements = ARRAYSIZE(vertexLayout);
 
+class DrawableMesh {
+public:
+	ID3D11Buffer* mVertexBuffer;
+	ID3D11Buffer* mIndexBuffer;
+	UINT mNumVertices;
+	UINT mNumIndices;
+	DXGI_FORMAT mIndexBufferFormat;
+	boolean mInitialised;
+
+	virtual HRESULT OnD3D11CreateDevice(ID3D11Device* pd3dDevice);
+	virtual void OnD3D11DestroyDevice();
+
+	DrawableMesh(MeshLoaderInterface* pMeshLoader);
+	virtual ~DrawableMesh();
+
+private:
+	MeshLoaderInterface* mMeshLoader;
+};
+
+class MeshLoaderInterface {
+public:
+	/**Returns a dynamically allocated array of type Vertex
+	Remains allocated until you call cleanup or destroy the object
+	Pass in a UINT pointer to get number of verts returned**/
+	virtual Vertex* loadVertices(UINT* retNumVertices) = 0;
+
+	/**Returns a dynamically allocated array of indices
+	Remains allocated until you call cleanup or destroy the object
+	Pass in a UINT pointer to get number of indices returned*/
+	virtual UINT* loadIndices(UINT* retNumIndices) = 0;
+
+	virtual void cleanup() = 0;
+
+	MeshLoaderInterface() {};
+	virtual ~MeshLoaderInterface() {};
+};
 
 #endif

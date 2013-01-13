@@ -7,11 +7,16 @@
 class RendererImplementation {
 public:
 	RendererImplementation(DevConsole* devConsole) : devConsole(devConsole) {
-		cube = new CubeMesh();
+		cubeLoader = new CubeMeshLoader();
+		cube = new DrawableMesh(cubeLoader);
 		defaultShader = new DefaultShader();
+		cubeState = new DrawableState();
 	};
 	~RendererImplementation() {
-		// TODO: Destruct
+		SAFE_DELETE(cubeLoader);
+		SAFE_DELETE(cube);
+		SAFE_DELETE(defaultShader);
+		SAFE_DELETE(cubeState);
 	};
 
 	void init();
@@ -30,7 +35,8 @@ public:
 	DevConsole* devConsole;
 	DrawableMesh* cube;
 	DrawableShaderInterface* defaultShader;
-
+	DrawableState* cubeState;
+	CubeMeshLoader* cubeLoader;
 };
 
 void RendererImplementation::init()
@@ -43,6 +49,7 @@ HRESULT RendererImplementation::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 {
 	devConsole->log(L"Renderer OnD3D11CreateDevice");
 	defaultShader->OnD3D11CreateDevice(pd3dDevice);
+	cube->OnD3D11CreateDevice(pd3dDevice);
 	return S_OK;
 }
 
@@ -67,13 +74,25 @@ void RendererImplementation::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D1
 	// Clear render target and the depth stencil 
 	float ClearColor[4] = { 1.0f, 0.196f, 0.667f, 0.0f };
 
-	ID3D11RenderTargetView* pRTV = DXUTGetD3D11RenderTargetView();
-	ID3D11DepthStencilView* pDSV = DXUTGetD3D11DepthStencilView();
-	pd3dImmediateContext->ClearRenderTargetView( pRTV, ClearColor );
-	pd3dImmediateContext->ClearDepthStencilView( pDSV, D3D11_CLEAR_DEPTH, 1.0, 0 );
+	ID3D11RenderTargetView* rtv = DXUTGetD3D11RenderTargetView();
+	ID3D11DepthStencilView* dsv = DXUTGetD3D11DepthStencilView();
+	pd3dImmediateContext->ClearRenderTargetView( rtv, ClearColor );
+	pd3dImmediateContext->ClearDepthStencilView( dsv, D3D11_CLEAR_DEPTH, 1.0, 0 );
 
-	cube->draw(pd3dDevice,pd3dImmediateContext,&surfaceDescription);
-	defaultShader->DrawMesh(pd3dImmediateContext,cube);
+	//Rotate cube state
+	static float t = 0.0f;
+	static DWORD dwTimeStart = 0;
+
+	DWORD dwTimeCur = GetTickCount();
+	if( dwTimeStart == 0 )
+		dwTimeStart = dwTimeCur;
+	t = ( dwTimeCur - dwTimeStart ) / 1000.0f;
+
+	cubeState->mWorldViewMatrix = XMMatrixRotationY( t );
+	cubeState->mProjectionMatrix = XMMatrixPerspectiveFovLH( XM_PIDIV2, surfaceDescription.Width / (FLOAT)surfaceDescription.Height, 0.01f, 100.0f );
+	
+	//Draw cube with default shader and rotated state
+	defaultShader->DrawMesh(pd3dImmediateContext,cube,cubeState);
 
 }
 

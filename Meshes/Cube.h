@@ -3,16 +3,17 @@
 #include "..\DrawableMesh.h"
 #include <xnamath.h>
 
-class CubeMesh : public DrawableMesh {
+class CubeMeshLoader : public MeshLoaderInterface {
 public:
 
-	CubeMesh();
-	virtual ~CubeMesh();
+	CubeMeshLoader();
+	~CubeMeshLoader();
 
-	HRESULT draw(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, const DXGI_SURFACE_DESC* pSurfaceDesc);
+	Vertex* loadVertices( UINT* retNumVertices );
+	UINT* loadIndices( UINT* retNumIndices );
 
-protected:
-	HRESULT OnD3D11CreateDevice(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, const DXGI_SURFACE_DESC* pSurfaceDesc);
+	void cleanup();
+
 };
 
 #endif
