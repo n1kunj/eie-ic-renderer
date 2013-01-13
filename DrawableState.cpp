@@ -13,12 +13,14 @@ DrawableState::~DrawableState()
 
 void DrawableState::updateMatrices()
 {
-	if (mDirty) {
+	if (mDirty == FALSE) {
 		return;
 	}
 	mDirty = FALSE;
 
+	XMMATRIX translateMatrix = XMMatrixTranslation(mPosition.x,mPosition.y,mPosition.z);
+	XMMATRIX rotateMatrix = XMMatrixRotationRollPitchYaw(mRotation.x,mRotation.y,mRotation.z);
 
-
+	mModelMatrix = XMMatrixMultiply(translateMatrix, rotateMatrix);
 
 }

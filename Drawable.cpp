@@ -6,6 +6,7 @@
 
 void Drawable::Draw(ID3D11DeviceContext* pd3dContext)
 {
+	mState.updateMatrices();
 	mShader->DrawMesh(pd3dContext,mMesh,&mState,mCamera);
 }
 

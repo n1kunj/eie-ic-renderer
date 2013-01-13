@@ -92,16 +92,9 @@ void RendererImplementation::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D1
 	pd3dImmediateContext->ClearRenderTargetView( rtv, ClearColor );
 	pd3dImmediateContext->ClearDepthStencilView( dsv, D3D11_CLEAR_DEPTH, 1.0, 0 );
 
-	//Rotate cube state
-	static float t = 0.0f;
-	static DWORD dwTimeStart = 0;
-
-	DWORD dwTimeCur = GetTickCount();
-	if( dwTimeStart == 0 )
-		dwTimeStart = dwTimeCur;
-	t = ( dwTimeCur - dwTimeStart ) / 1000.0f;
-
-	cubeDrawable->mState.mModelMatrix = XMMatrixRotationY( t );
+	cubeDrawable->mState.mRotation.x = fTime;
+	cubeDrawable->mState.mRotation.y = fTime;
+	cubeDrawable->mState.mDirty = TRUE;
 	
 	cubeDrawable->Draw(pd3dImmediateContext);
 
