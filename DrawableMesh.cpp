@@ -12,6 +12,7 @@ DrawableMesh::DrawableMesh(const WCHAR* pModelHandle, MeshLoaderInterface* pMesh
 DrawableMesh::~DrawableMesh()
 {
 	OnD3D11DestroyDevice();
+	SAFE_DELETE_ARRAY(mModelHandle);
 }
 
 void DrawableMesh::OnD3D11DestroyDevice()
