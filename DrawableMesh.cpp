@@ -51,6 +51,5 @@ HRESULT DrawableMesh::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 	V_RETURN(hr = pd3dDevice->CreateBuffer( &bd, &InitData, &mIndexBuffer ));
 
 	mInitialised = true;
-	mMeshLoader->cleanup();
 	return S_OK;
 }

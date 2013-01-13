@@ -11,6 +11,9 @@ public:
 	DrawableState();
 
 	~DrawableState();
+
+private:
+	DrawableState(const DrawableState& copy);
 };
 
 #endif

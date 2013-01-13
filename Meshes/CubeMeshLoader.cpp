@@ -1,5 +1,5 @@
 #include "DXUT.h"
-#include "Cube.h"
+#include "CubeMeshLoader.h"
 
 Vertex vertices[] =
 {

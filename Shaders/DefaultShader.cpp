@@ -1,5 +1,7 @@
 #include "DXUT.h"
 #include "DefaultShader.h"
+#include "..\DrawableMesh.h"
+#include "..\DrawableState.h"
 #include "..\Utils\ShaderTools.h"
 
 struct ConstantBuffer
@@ -96,9 +98,9 @@ void DefaultShader::OnD3D11DestroyDevice() {
 	sCompiled = FALSE;
 }
 
-DefaultShader::DefaultShader()
+DefaultShader::DefaultShader() : DrawableShader(L"DefaultShader")
 {
-
+	
 }
 
 DefaultShader::~DefaultShader()

@@ -1,6 +1,7 @@
 #ifndef DRAWABLE_MESH_H
 #define DRAWABLE_MESH_H
 #include <xnamath.h>
+#include <string>
 
 class MeshLoaderInterface;
 

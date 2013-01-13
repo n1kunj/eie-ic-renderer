@@ -1,9 +1,8 @@
 #ifndef SHADERS_DEFAULTSHADER_H
 #define SHADERS_DEFAULTSHADER_H
-#include "DXUT.h"
-#include "..\DrawableShaderInterface.h"
+#include "..\DrawableShader.h"
 
-class DefaultShader : public DrawableShaderInterface {
+class DefaultShader : public DrawableShader {
 public:
 	void DrawMesh(ID3D11DeviceContext* pd3dContext, const DrawableMesh* pMesh, const DrawableState* pState);
 	HRESULT OnD3D11CreateDevice(ID3D11Device* pd3dDevice);

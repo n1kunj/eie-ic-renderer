@@ -106,15 +106,16 @@
     <ClInclude Include="Textures\Textures.h">
       <Filter>Textures</Filter>
     </ClInclude>
-    <ClInclude Include="Meshes\Cube.h">
-      <Filter>Meshes</Filter>
-    </ClInclude>
     <ClInclude Include="Shaders\DefaultShader.h">
       <Filter>Shaders</Filter>
     </ClInclude>
     <ClInclude Include="DrawableMesh.h" />
-    <ClInclude Include="DrawableShaderInterface.h" />
     <ClInclude Include="DrawableState.h" />
+    <ClInclude Include="Drawable.h" />
+    <ClInclude Include="DrawableShader.h" />
+    <ClInclude Include="Meshes\CubeMeshLoader.h">
+      <Filter>Meshes</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugText.cpp" />
@@ -128,14 +129,16 @@
     <ClCompile Include="Textures\Textures.cpp">
       <Filter>Textures</Filter>
     </ClCompile>
-    <ClCompile Include="Meshes\Cube.cpp">
-      <Filter>Meshes</Filter>
-    </ClCompile>
     <ClCompile Include="Shaders\DefaultShader.cpp">
       <Filter>Shaders</Filter>
     </ClCompile>
     <ClCompile Include="DrawableMesh.cpp" />
     <ClCompile Include="DrawableState.cpp" />
+    <ClCompile Include="Meshes\CubeMeshLoader.cpp">
+      <Filter>Meshes</Filter>
+    </ClCompile>
+    <ClCompile Include="Drawable.cpp" />
+    <ClCompile Include="DrawableShader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="eie-ic-renderer.rc">
