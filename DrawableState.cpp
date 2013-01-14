@@ -1,5 +1,8 @@
 #include "DXUT.h"
 #include "DrawableState.h"
+
+using namespace DirectX;
+
 DrawableState::DrawableState() : mDirty(TRUE), mPosition(0,0,0), mRotation(0,0,0)
 {
 	// Initialize the world matrix

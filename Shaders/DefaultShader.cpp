@@ -5,6 +5,8 @@
 #include "..\Camera.h"
 #include "..\Utils\ShaderTools.h"
 
+using namespace DirectX;
+
 struct ConstantBuffer
 {
 	XMMATRIX Model;

@@ -23,6 +23,9 @@
     <Filter Include="Shaders">
       <UniqueIdentifier>{92abcaf0-17eb-41b1-8bc7-416f6c0abaed}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DirectXMath">
+      <UniqueIdentifier>{a724cea4-e292-4ca7-8221-e28a54f911bf}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="DXUT\Optional\directx.ico">
@@ -91,6 +94,24 @@
     <None Include="Media\Shaders\Tutorial03.fx">
       <Filter>Resource Files\Shaders</Filter>
     </None>
+    <None Include="DirectXMath\DirectXCollision.inl">
+      <Filter>DirectXMath</Filter>
+    </None>
+    <None Include="DirectXMath\DirectXMathConvert.inl">
+      <Filter>DirectXMath</Filter>
+    </None>
+    <None Include="DirectXMath\DirectXMathMatrix.inl">
+      <Filter>DirectXMath</Filter>
+    </None>
+    <None Include="DirectXMath\DirectXMathMisc.inl">
+      <Filter>DirectXMath</Filter>
+    </None>
+    <None Include="DirectXMath\DirectXMathVector.inl">
+      <Filter>DirectXMath</Filter>
+    </None>
+    <None Include="DirectXMath\DirectXPackedVector.inl">
+      <Filter>DirectXMath</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <CLInclude Include="resource.h">
@@ -117,6 +138,15 @@
       <Filter>Meshes</Filter>
     </ClInclude>
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="DirectXMath\DirectXCollision.h">
+      <Filter>DirectXMath</Filter>
+    </ClInclude>
+    <ClInclude Include="DirectXMath\DirectXMath.h">
+      <Filter>DirectXMath</Filter>
+    </ClInclude>
+    <ClInclude Include="DirectXMath\DirectXPackedVector.h">
+      <Filter>DirectXMath</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugText.cpp" />

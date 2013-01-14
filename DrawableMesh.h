@@ -1,15 +1,15 @@
 #pragma once
 #ifndef DRAWABLE_MESH_H
 #define DRAWABLE_MESH_H
-#include <xnamath.h>
+#include "DirectXMath\DirectXMath.h"
 #include <string>
 
 class MeshLoaderInterface;
 
 struct Vertex
 {
-	XMFLOAT3 POSITION;
-	XMFLOAT4 COLOR;
+	DirectX::XMFLOAT3 POSITION;
+	DirectX::XMFLOAT4 COLOR;
 };
 
 const D3D11_INPUT_ELEMENT_DESC vertexLayout[] =

@@ -8,8 +8,6 @@
 
 using namespace DirectX;
 
-//TODO: make camera be updated on message rather than on frame
-
 void Camera::update(DXGI_SURFACE_DESC pSurfaceDesc)
 {
 	XMVECTOR lookAt = XMVectorAdd(mEye,mLookVector);
@@ -31,44 +29,41 @@ Camera::Camera() : mouseLook(FALSE), mMouseStart(0,0), mMouseEnd(0,0), mMouseDis
 
 LRESULT Camera::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool* pbNoFurtherProcessing, void* pUserContext )
 {
-	*pbNoFurtherProcessing = TRUE;
-
 	switch (uMsg)
 	{
 	case WM_LBUTTONDOWN:
 		{
 			mouseLook = TRUE;
-			if (mMouseStart.x == mMouseEnd.x && mMouseStart.y == mMouseEnd.y) {
-				mMouseStart = XMINT2(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
-				mMouseEnd = mMouseStart;
-			}
-			else {
-				INT deltaX = mMouseEnd.x - mMouseStart.x;
-				INT deltaY = mMouseEnd.y - mMouseEnd.y;
-
-				mMouseStart = XMINT2(GET_X_LPARAM(lParam) - deltaX, GET_Y_LPARAM(lParam) - deltaY);
-				mMouseEnd = XMINT2(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
-			}
+			SetCapture( hWnd );
+			mMouseStart = XMINT2(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
+			*pbNoFurtherProcessing = TRUE;
 			break;
 		}
 	case WM_LBUTTONUP:
 		{
-			mouseLook = FALSE;
+			if (mouseLook == TRUE) {
+				ReleaseCapture();
+				mouseLook = FALSE;
+				*pbNoFurtherProcessing = TRUE;
+			}
 			break;
 		}
 	case WM_MOUSEMOVE:
 		{
 			if (mouseLook == TRUE) {
 				mMouseEnd = XMINT2(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
-				XMINT2 mouseDelta = XMINT2(mMouseEnd.x - mMouseStart.x, mMouseEnd.y - mMouseStart.y);
+				XMINT2 mouseDelta = XMINT2(mMouseStart.x - mMouseEnd.x, mMouseEnd.y - mMouseStart.y);
+				mMouseStart = mMouseEnd;
+				mMouseEnd = XMINT2(0,0);
+
 				updateCamera(mouseDelta);
+				*pbNoFurtherProcessing = TRUE;
 			}
 			break;
 		}
-	default:
+	case WM_CAPTURECHANGED:
 		{
-			*pbNoFurtherProcessing = FALSE;
-			break;
+			mouseLook = FALSE;
 		}
 	}
 
@@ -77,16 +72,20 @@ LRESULT Camera::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, boo
 
 void Camera::updateCamera(XMINT2 pMouseDelta) {
 
-		mMouseStart = mMouseEnd;
-		mMouseEnd = XMINT2((SHORT)0,(SHORT)0);
-
 		mMouseDistanceX += pMouseDelta.x;
 		mMouseDistanceY += pMouseDelta.y;
 
+		if (mMouseDistanceX > 2 * M_PI / CAMERALOOKSCALE) {
+			mMouseDistanceX-= 2 * M_PI / CAMERALOOKSCALE;
+		}
+		else if (mMouseDistanceX < -2 * M_PI / CAMERALOOKSCALE) {
+			mMouseDistanceX+= 2 * M_PI / CAMERALOOKSCALE;
+		}
+
 		//Set X axis vars
 		DOUBLE curx = mMouseDistanceX;
-		DOUBLE sinx = sin(CAMERALOOKSCALE*(DOUBLE)curx);
-		DOUBLE cosx = cos(CAMERALOOKSCALE*(DOUBLE)curx);
+		DOUBLE sinx = sin(CAMERALOOKSCALE*curx);
+		DOUBLE cosx = cos(CAMERALOOKSCALE*curx);
 
 		//Set Y axis vars
 		DOUBLE cury = mMouseDistanceY;

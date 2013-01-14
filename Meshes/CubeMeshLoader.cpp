@@ -1,5 +1,8 @@
 #include "DXUT.h"
 #include "CubeMeshLoader.h"
+#include "..\DirectXMath\DirectXMath.h"
+
+using namespace DirectX;
 
 Vertex vertices[] =
 {

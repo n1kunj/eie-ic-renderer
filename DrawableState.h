@@ -1,14 +1,14 @@
 #pragma once
 #ifndef DRAWABLE_STATE_H
 #define DRAWABLE_STATE_H
-#include <xnamath.h>
+#include "DirectXMath\DirectXMath.h"
 
 class DrawableState {
 public:
-	XMFLOAT3 mPosition;
-	XMFLOAT3 mRotation;
+	DirectX::XMFLOAT3 mPosition;
+	DirectX::XMFLOAT3 mRotation;
 
-	XMMATRIX mModelMatrix;
+	DirectX::XMMATRIX mModelMatrix;
 
 	boolean mDirty;
 
