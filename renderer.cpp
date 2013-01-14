@@ -71,6 +71,10 @@ HRESULT RendererImplementation::OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevic
 
 LRESULT RendererImplementation::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool* pbNoFurtherProcessing,void* pUserContext )
 {
+	camera->MsgProc(hWnd,uMsg,wParam,lParam,pbNoFurtherProcessing,pUserContext);
+	if (*pbNoFurtherProcessing) {
+		return 0;
+	}
 	std::wstringstream wss;
 	wss << L"uMsg:" << uMsg << L" wParam:" << wParam << L" lParam:" << lParam;
 	devConsole->log(&wss);
@@ -79,7 +83,7 @@ LRESULT RendererImplementation::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LP
 
 void RendererImplementation::OnFrameMove( double fTime, float fElapsedTime, void* pUserContext )
 {
-	camera->updateMatrices(surfaceDescription);
+	camera->update(surfaceDescription);
 }
 
 void RendererImplementation::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dImmediateContext, double fTime, float fElapsedTime, void* pUserContext )
@@ -92,9 +96,9 @@ void RendererImplementation::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D1
 	pd3dImmediateContext->ClearRenderTargetView( rtv, ClearColor );
 	pd3dImmediateContext->ClearDepthStencilView( dsv, D3D11_CLEAR_DEPTH, 1.0, 0 );
 
-	cubeDrawable->mState.mRotation.x = fTime;
-	cubeDrawable->mState.mRotation.y = fTime;
-	cubeDrawable->mState.mDirty = TRUE;
+	//cubeDrawable->mState.mRotation.x = (FLOAT) fTime;
+	//cubeDrawable->mState.mRotation.y = (FLOAT) fTime;
+	//cubeDrawable->mState.mDirty = TRUE;
 	
 	cubeDrawable->Draw(pd3dImmediateContext);
 
