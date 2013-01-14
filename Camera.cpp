@@ -6,6 +6,8 @@
 
 #define CAMERALOOKSCALE 0.005
 
+using namespace DirectX;
+
 //TODO: make camera be updated on message rather than on frame
 
 void Camera::update(DXGI_SURFACE_DESC pSurfaceDesc)
@@ -19,7 +21,7 @@ void Camera::update(DXGI_SURFACE_DESC pSurfaceDesc)
 	mViewProjectionMatrix = XMMatrixMultiply(mViewMatrix,mProjectionMatrix);
 }
 
-Camera::Camera() : mouseLook(FALSE), mMouseStart((SHORT)0,(SHORT)0), mMouseEnd((SHORT)0,(SHORT)0), mMouseDistanceX(0), mMouseDistanceY(0)
+Camera::Camera() : mouseLook(FALSE), mMouseStart(0,0), mMouseEnd(0,0), mMouseDistanceX(0), mMouseDistanceY(0)
 {
 	// Initialize the view matrix
 	mEye = XMVectorSet( 0.0f, 2.0f, 5.0f, 0.0f );
@@ -37,15 +39,15 @@ LRESULT Camera::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, boo
 		{
 			mouseLook = TRUE;
 			if (mMouseStart.x == mMouseEnd.x && mMouseStart.y == mMouseEnd.y) {
-				mMouseStart = XMSHORT2((SHORT)GET_X_LPARAM(lParam),(SHORT)GET_Y_LPARAM(lParam));
+				mMouseStart = XMINT2(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
 				mMouseEnd = mMouseStart;
 			}
 			else {
-				SHORT deltaX = mMouseEnd.x - mMouseStart.x;
-				SHORT deltaY = mMouseEnd.y - mMouseEnd.y;
+				INT deltaX = mMouseEnd.x - mMouseStart.x;
+				INT deltaY = mMouseEnd.y - mMouseEnd.y;
 
-				mMouseStart = XMSHORT2((SHORT) (GET_X_LPARAM(lParam) - deltaX),(SHORT) (GET_Y_LPARAM(lParam) - deltaY) );
-				mMouseEnd = XMSHORT2((SHORT)GET_X_LPARAM(lParam),(SHORT)GET_Y_LPARAM(lParam));
+				mMouseStart = XMINT2(GET_X_LPARAM(lParam) - deltaX, GET_Y_LPARAM(lParam) - deltaY);
+				mMouseEnd = XMINT2(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
 			}
 			break;
 		}
@@ -57,8 +59,8 @@ LRESULT Camera::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, boo
 	case WM_MOUSEMOVE:
 		{
 			if (mouseLook == TRUE) {
-				mMouseEnd = XMSHORT2((SHORT)GET_X_LPARAM(lParam),(SHORT)GET_Y_LPARAM(lParam));
-				XMSHORT2 mouseDelta = XMSHORT2((SHORT) (mMouseEnd.x - mMouseStart.x),(SHORT) (mMouseEnd.y - mMouseStart.y));
+				mMouseEnd = XMINT2(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
+				XMINT2 mouseDelta = XMINT2(mMouseEnd.x - mMouseStart.x, mMouseEnd.y - mMouseStart.y);
 				updateCamera(mouseDelta);
 			}
 			break;
@@ -73,10 +75,10 @@ LRESULT Camera::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, boo
 	return 0;
 }
 
-void Camera::updateCamera(XMSHORT2 pMouseDelta) {
+void Camera::updateCamera(XMINT2 pMouseDelta) {
 
 		mMouseStart = mMouseEnd;
-		mMouseEnd = XMSHORT2((SHORT)0,(SHORT)0);
+		mMouseEnd = XMINT2((SHORT)0,(SHORT)0);
 
 		mMouseDistanceX += pMouseDelta.x;
 		mMouseDistanceY += pMouseDelta.y;

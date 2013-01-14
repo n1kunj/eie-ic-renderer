@@ -3,8 +3,11 @@
 #define CAMERA_H
 //#include <xnamath.h>
 #include <DirectXMath.h>
+#include <DirectXPackedVector.h>
+#include <DirectXCollision.h>
 
 //TODO: DirectXMath
+using namespace DirectX;
 
 class Camera {
 public:
@@ -24,15 +27,15 @@ public:
 	~Camera();
 
 private:
-	XMSHORT2 mMouseStart;
-	XMSHORT2 mMouseEnd;
+	XMINT2 mMouseStart;
+	XMINT2 mMouseEnd;
 	DOUBLE mMouseDistanceX;
 	DOUBLE mMouseDistanceY;
 
 	boolean mouseLook;
 
 	Camera(const Camera& camera);
-	void updateCamera(XMSHORT2 pMouseDelta);
+	void updateCamera(XMINT2 pMouseDelta);
 };
 
 #endif
