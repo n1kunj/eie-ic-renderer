@@ -32,11 +32,15 @@ void DefaultShader::DrawMesh(ID3D11DeviceContext* pd3dContext, const DrawableMes
 
 	// Update constant buffer
 	ConstantBuffer cb;
-	cb.Model = (pState->mModelMatrix );
-	cb.View = ( pCamera->mViewMatrix );
-	cb.Projection = (pCamera->mProjectionMatrix );
+	//cb.Model = pState->mModelMatrix;
+	//cb.View = pCamera->mViewMatrix;
+	//cb.Projection = pCamera->mProjectionMatrix;
+	//cb.MVP = XMMatrixMultiply(pState->mModelMatrix,pCamera->mViewProjectionMatrix);
 
-	cb.MVP = XMMatrixMultiply(pState->mModelMatrix,pCamera->mViewProjectionMatrix);
+	cb.Model = XMMatrixTranspose(pState->mModelMatrix);
+	cb.View = XMMatrixTranspose(pCamera->mViewMatrix);
+	cb.Projection = XMMatrixTranspose(pCamera->mProjectionMatrix);
+	cb.MVP = XMMatrixMultiplyTranspose(pState->mModelMatrix,pCamera->mViewProjectionMatrix);
 
 	pd3dContext->UpdateSubresource( sConstantBuffer, 0, NULL, &cb, 0, 0 );
 	pd3dContext->VSSetConstantBuffers( 0, 1, &sConstantBuffer );
