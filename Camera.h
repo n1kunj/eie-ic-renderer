@@ -3,6 +3,20 @@
 #define CAMERA_H
 #include "DirectXMath/DirectXMath.h"
 
+class CameraButton{
+public:
+	CameraButton();
+
+	void Push();
+	void Release();
+	DWORD GetTicksPressedFor();
+
+private:
+	BOOLEAN mPushed;
+	DWORD mDownTime;
+	DWORD mUpTime;
+	DWORD mLastProcessed;
+};
 class Camera {
 public:
 	DirectX::XMVECTOR mEye;
@@ -29,7 +43,16 @@ private:
 	boolean mouseLook;
 
 	Camera(const Camera& camera);
-	void updateCamera(DirectX::XMINT2 pMouseDelta);
+	void updateCameraLook(DirectX::XMINT2 pMoveDelta);
+	void updateCameraMove();
+	void keyInteracted(UINT uMsg, WPARAM wParam, bool* pbNoFurtherProcessing);
+
+	CameraButton mCamMoveForward;
+	CameraButton mCamMoveBackward;
+	CameraButton mCamStrafeLeft;
+	CameraButton mCamStrafeRight;
+	CameraButton mCamMoveDown;
+	CameraButton mCamMoveUp;
 };
 
 #endif
