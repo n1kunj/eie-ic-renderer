@@ -19,7 +19,7 @@ void Camera::update(DXGI_SURFACE_DESC pSurfaceDesc)
 	mViewProjectionMatrix = XMMatrixMultiply(mViewMatrix,mProjectionMatrix);
 }
 
-Camera::Camera() : mouseLook(FALSE), mMouseStart(0,0), mMouseEnd(0,0), mMouseDistanceX(0), mMouseDistanceY(0)
+Camera::Camera() : mouseLook(FALSE), mMouseStart(0,0), mMouseEnd(0,0), mMoveDistanceX(0), mMoveDistanceY(0)
 {
 	// Initialize the view matrix
 	mEye = XMVectorSet( 0.0f, 2.0f, 5.0f, 0.0f );
@@ -70,57 +70,57 @@ LRESULT Camera::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, boo
 	return 0;
 }
 
-void Camera::updateCamera(XMINT2 pMouseDelta) {
+void Camera::updateCamera(XMINT2 pMoveDelta) {
 
-		mMouseDistanceX += pMouseDelta.x;
-		mMouseDistanceY += pMouseDelta.y;
+		mMoveDistanceX += pMoveDelta.x;
+		mMoveDistanceY += pMoveDelta.y;
 
-		if (mMouseDistanceX > 2 * M_PI / CAMERALOOKSCALE) {
-			mMouseDistanceX-= 2 * M_PI / CAMERALOOKSCALE;
+		if (mMoveDistanceX > 2 * M_PI / CAMERALOOKSCALE) {
+			mMoveDistanceX-= 2 * M_PI / CAMERALOOKSCALE;
 		}
-		else if (mMouseDistanceX < -2 * M_PI / CAMERALOOKSCALE) {
-			mMouseDistanceX+= 2 * M_PI / CAMERALOOKSCALE;
+		else if (mMoveDistanceX < -2 * M_PI / CAMERALOOKSCALE) {
+			mMoveDistanceX+= 2 * M_PI / CAMERALOOKSCALE;
 		}
 
 		//Set X axis vars
-		DOUBLE curx = mMouseDistanceX;
-		DOUBLE sinx = sin(CAMERALOOKSCALE*curx);
-		DOUBLE cosx = cos(CAMERALOOKSCALE*curx);
+		DOUBLE curX = CAMERALOOKSCALE * mMoveDistanceX;
+		DOUBLE sinX = sin(curX);
+		DOUBLE cosX = cos(curX);
 
 		//Set Y axis vars
-		DOUBLE cury = mMouseDistanceY;
-		DOUBLE siny;
-		DOUBLE cosy;
+		DOUBLE curY = CAMERALOOKSCALE * mMoveDistanceY;
+		DOUBLE sinY;
+		DOUBLE cosY;
 
 		//Nik's super awesome FPS style camera. Won't let you look upside down.
-		if (cury >= M_PI_2 / CAMERALOOKSCALE)
+		if (curY >= M_PI_2)
 		{
-			mMouseDistanceY = M_PI_2 / CAMERALOOKSCALE;
+			mMoveDistanceY = M_PI_2 / CAMERALOOKSCALE;
 
-			siny = 1;
-			cosy = 0.0001f;
+			sinY = 1;
+			cosY = 0.0001f;
 		}
-		else if (cury <= -M_PI_2 / CAMERALOOKSCALE)
+		else if (curY <= -M_PI_2)
 		{
-			mMouseDistanceY = -M_PI_2 / CAMERALOOKSCALE;
-			siny = -1;
-			cosy = 0.0001f;
+			mMoveDistanceY = -M_PI_2 / CAMERALOOKSCALE;
+			sinY = -1;
+			cosY = 0.0001f;
 		}
 		else {
-			siny = sin(CAMERALOOKSCALE*cury);
-			cosy = cos(CAMERALOOKSCALE*cury);
+			sinY = sin(curY);
+			cosY = cos(curY);
 		}
 
 		//Look angle (really a unit vector)
-		DOUBLE anglex = sinx * cosy;
-		DOUBLE angley = -siny;
-		DOUBLE anglez = -cosx * cosy;
-		DOUBLE anormal = sqrt(anglex * anglex + angley * angley + anglez * anglez);
-		anglex /= anormal;
-		angley /= anormal;
-		anglez /= anormal;
+		DOUBLE angleX = sinX * cosY;
+		DOUBLE angleY = -sinY;
+		DOUBLE angleZ = -cosX * cosY;
+		DOUBLE angleMag = sqrt(angleX * angleX + angleY * angleY + angleZ * angleZ);
+		angleX /= angleMag;
+		angleY /= angleMag;
+		angleZ /= angleMag;
 
-		mLookVector = XMVectorSet((FLOAT)anglex,(FLOAT)angley,(FLOAT)anglez,0.0f);
+		mLookVector = XMVectorSet((FLOAT)angleX,(FLOAT)angleY,(FLOAT)angleZ,0.0f);
 }
 
 Camera::~Camera()

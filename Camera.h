@@ -23,8 +23,8 @@ public:
 private:
 	DirectX::XMINT2 mMouseStart;
 	DirectX::XMINT2 mMouseEnd;
-	DOUBLE mMouseDistanceX;
-	DOUBLE mMouseDistanceY;
+	DOUBLE mMoveDistanceX;
+	DOUBLE mMoveDistanceY;
 
 	boolean mouseLook;
 
