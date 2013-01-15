@@ -11,7 +11,7 @@
 
 using namespace DirectX;
 
-Camera::Camera() : mouseLook(FALSE),mMouseCentred(FALSE), mMouseStart(), mMoveDistanceX(0), mMoveDistanceY(0),
+Camera::Camera() : mHeldMouseLooking(FALSE),mMouseCentred(FALSE),mForceMouseLooking(FALSE), mMouseStart(), mMoveDistanceX(0), mMoveDistanceY(0),
 	mCamMoveBackward(),mCamMoveForward(),mCamStrafeLeft(),mCamStrafeRight(),mCamMoveUp(),mCamMoveDown()
 {
 	// Initialize the view matrix
@@ -43,24 +43,18 @@ LRESULT Camera::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, boo
 	{
 	case WM_LBUTTONDOWN:
 		{
-			GetCursorPos( &mMouseStart );
-			mouseLook = TRUE;
-			mMouseCentred = TRUE;
-
-			SetCursorPos(mScreenCentreX,mScreenCentreY);
-			SetCapture( hWnd );
-			ShowCursor(FALSE);
-
-			*pbNoFurtherProcessing = TRUE;
+			if (mForceMouseLooking == FALSE) {
+				mHeldMouseLooking = TRUE;
+				MouseLookEnabled(hWnd);
+				*pbNoFurtherProcessing = TRUE;
+			}
 			break;
 		}
 	case WM_LBUTTONUP:
 		{
-			if (mouseLook == TRUE) {
-				ReleaseCapture();
-				SetCursorPos(mMouseStart.x,mMouseStart.y);
-				ShowCursor(TRUE);
-				mouseLook = FALSE;
+			if (mHeldMouseLooking == TRUE) {
+				mHeldMouseLooking = FALSE;
+				MouseLookDisabled();
 				*pbNoFurtherProcessing = TRUE;
 			}
 			break;
@@ -71,11 +65,11 @@ LRESULT Camera::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, boo
 				mMouseCentred = FALSE;
 				*pbNoFurtherProcessing = TRUE;
 			}
-			else if (mouseLook == TRUE) {
+			else if (mHeldMouseLooking == TRUE || mForceMouseLooking == TRUE) {
 				POINT mousePos;
 				GetCursorPos( &mousePos );
 
-				XMINT2 mouseDelta = XMINT2(mScreenCentreX - mousePos.x, mScreenCentreY - mousePos.y);
+				XMINT2 mouseDelta = XMINT2(mScreenCentreX - mousePos.x, mousePos.y - mScreenCentreY);
 
 				updateCameraLook(mouseDelta);
 				SetCursorPos(mScreenCentreX,mScreenCentreY);
@@ -86,13 +80,13 @@ LRESULT Camera::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, boo
 		}
 	case WM_CAPTURECHANGED:
 		{
-			mouseLook = FALSE;
+			mHeldMouseLooking = FALSE;
 			break;
 		}
 	case WM_KEYDOWN:
 	case WM_KEYUP:
 		{
-			keyInteracted(uMsg, wParam, pbNoFurtherProcessing);
+			keyInteracted(hWnd, uMsg, wParam, pbNoFurtherProcessing);
 			break;
 		}
 	}
@@ -179,9 +173,9 @@ void Camera::updateCameraLook(XMINT2 pMoveDelta) {
 		mLookVector = XMVectorSet((FLOAT)angleX,(FLOAT)angleY,(FLOAT)angleZ,0.0f);
 }
 
-void Camera::keyInteracted(UINT uMsg, WPARAM wParam, bool* pbNoFurtherProcessing)
+void Camera::keyInteracted(HWND hWnd, UINT uMsg, WPARAM wParam, bool* pbNoFurtherProcessing)
 {
-	CameraButton* button;
+	CameraButton* button = NULL;
 	switch( wParam ) {
 	case 'W': 
 		{
@@ -213,18 +207,41 @@ void Camera::keyInteracted(UINT uMsg, WPARAM wParam, bool* pbNoFurtherProcessing
 			button = &mCamMoveDown;
 			break;
 		}
+	case 'F':
+		{
+			if (uMsg == WM_KEYDOWN) {
+
+				if (mForceMouseLooking == FALSE) {
+					if (mHeldMouseLooking) {
+						mHeldMouseLooking = FALSE;
+						MouseLookDisabled();
+					}
+					MouseLookEnabled(hWnd);
+				}
+				else {
+					MouseLookDisabled();
+				}
+				mForceMouseLooking = !mForceMouseLooking;
+			}
+			return;
+		}
 	default:
 		{
 			return;
 		}
 	}
 
-	if (uMsg == WM_KEYDOWN) {
-		button->Push();
+	if (button != NULL) {
+		if (uMsg == WM_KEYDOWN) {
+			button->Push();
+		}
+		else {
+			button->Release();
+		}
 	}
-	else {
-		button->Release();
-	}
+
+	*pbNoFurtherProcessing = TRUE;
+
 }
 
 void Camera::updateWindowDimensions()
@@ -235,6 +252,22 @@ void Camera::updateWindowDimensions()
 	mScreenCentreX = ( mi.rcMonitor.left + mi.rcMonitor.right ) / 2;
 	mScreenCentreY = ( mi.rcMonitor.top + mi.rcMonitor.bottom ) / 2;
 }
+
+void Camera::MouseLookEnabled(HWND hWnd)
+{
+	GetCursorPos( &mMouseStart );
+	mMouseCentred = TRUE;
+
+	SetCursorPos(mScreenCentreX,mScreenCentreY);
+	SetCapture( hWnd );
+	ShowCursor(FALSE);}
+
+void Camera::MouseLookDisabled()
+{
+	mMouseCentred = FALSE;
+	ReleaseCapture();
+	SetCursorPos(mMouseStart.x,mMouseStart.y);
+	ShowCursor(TRUE);}
 
 CameraButton::CameraButton() : mPushed(FALSE),mDownTime(0),mUpTime(0),mLastProcessed(0) {
 }

@@ -40,7 +40,8 @@ private:
 	DOUBLE mMoveDistanceX;
 	DOUBLE mMoveDistanceY;
 
-	boolean mMouseLooking;
+	boolean mForceMouseLooking;
+	boolean mHeldMouseLooking;
 	boolean mMouseCentred;
 
 	INT mScreenCentreX;
@@ -49,7 +50,9 @@ private:
 	Camera(const Camera& camera);
 	void updateCameraLook(DirectX::XMINT2 pMoveDelta);
 	void updateCameraMove();
-	void keyInteracted(UINT uMsg, WPARAM wParam, bool* pbNoFurtherProcessing);
+	void keyInteracted(HWND hWnd, UINT uMsg, WPARAM wParam, bool* pbNoFurtherProcessing);
+	void MouseLookEnabled(HWND hWnd);
+	void MouseLookDisabled();
 	CameraButton mCamMoveForward;
 	CameraButton mCamMoveBackward;
 	CameraButton mCamStrafeLeft;
