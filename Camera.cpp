@@ -1,6 +1,7 @@
 #include "DXUT.h"
 #include "Camera.h"
 #include <windowsx.h>
+#include <WinUser.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
 
@@ -10,7 +11,7 @@
 
 using namespace DirectX;
 
-Camera::Camera() : mouseLook(FALSE), mMouseStart(0,0), mMouseEnd(0,0), mMoveDistanceX(0), mMoveDistanceY(0),
+Camera::Camera() : mouseLook(FALSE),mMouseCentred(FALSE), mMouseStart(), mMoveDistanceX(0), mMoveDistanceY(0),
 	mCamMoveBackward(),mCamMoveForward(),mCamStrafeLeft(),mCamStrafeRight(),mCamMoveUp(),mCamMoveDown()
 {
 	// Initialize the view matrix
@@ -42,9 +43,14 @@ LRESULT Camera::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, boo
 	{
 	case WM_LBUTTONDOWN:
 		{
+			GetCursorPos( &mMouseStart );
 			mouseLook = TRUE;
+			mMouseCentred = TRUE;
+
+			SetCursorPos(mScreenCentreX,mScreenCentreY);
 			SetCapture( hWnd );
-			mMouseStart = XMINT2(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
+			ShowCursor(FALSE);
+
 			*pbNoFurtherProcessing = TRUE;
 			break;
 		}
@@ -52,6 +58,8 @@ LRESULT Camera::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, boo
 		{
 			if (mouseLook == TRUE) {
 				ReleaseCapture();
+				SetCursorPos(mMouseStart.x,mMouseStart.y);
+				ShowCursor(TRUE);
 				mouseLook = FALSE;
 				*pbNoFurtherProcessing = TRUE;
 			}
@@ -59,13 +67,19 @@ LRESULT Camera::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, boo
 		}
 	case WM_MOUSEMOVE:
 		{
-			if (mouseLook == TRUE) {
-				mMouseEnd = XMINT2(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
-				XMINT2 mouseDelta = XMINT2(mMouseStart.x - mMouseEnd.x, mMouseEnd.y - mMouseStart.y);
-				mMouseStart = mMouseEnd;
-				mMouseEnd = XMINT2(0,0);
+			if (mMouseCentred == TRUE) {
+				mMouseCentred = FALSE;
+				*pbNoFurtherProcessing = TRUE;
+			}
+			else if (mouseLook == TRUE) {
+				POINT mousePos;
+				GetCursorPos( &mousePos );
+
+				XMINT2 mouseDelta = XMINT2(mScreenCentreX - mousePos.x, mScreenCentreY - mousePos.y);
 
 				updateCameraLook(mouseDelta);
+				SetCursorPos(mScreenCentreX,mScreenCentreY);
+				mMouseCentred = TRUE;
 				*pbNoFurtherProcessing = TRUE;
 			}
 			break;
@@ -110,7 +124,6 @@ void Camera::updateCameraMove()
 	XMVECTOR upDelta = XMVectorSet((FLOAT) dX,(FLOAT) dY,(FLOAT) dZ, 0.0f);
 
 	mEye += upDelta;
-
 }
 
 void Camera::updateCameraLook(XMINT2 pMoveDelta) {
@@ -190,12 +203,12 @@ void Camera::keyInteracted(UINT uMsg, WPARAM wParam, bool* pbNoFurtherProcessing
 			button = &mCamStrafeRight;
 			break;
 		}
-	case 'Q':
+	case ' ':
 		{
 			button = &mCamMoveUp;
 			break;
 		}
-	case 'E':
+	case VK_CONTROL:
 		{
 			button = &mCamMoveDown;
 			break;
@@ -212,6 +225,15 @@ void Camera::keyInteracted(UINT uMsg, WPARAM wParam, bool* pbNoFurtherProcessing
 	else {
 		button->Release();
 	}
+}
+
+void Camera::updateWindowDimensions()
+{
+	MONITORINFO mi;
+	mi.cbSize = sizeof( MONITORINFO );
+	DXUTGetMonitorInfo( DXUTMonitorFromWindow( DXUTGetHWND(), MONITOR_DEFAULTTONEAREST ), &mi );
+	mScreenCentreX = ( mi.rcMonitor.left + mi.rcMonitor.right ) / 2;
+	mScreenCentreY = ( mi.rcMonitor.top + mi.rcMonitor.bottom ) / 2;
 }
 
 CameraButton::CameraButton() : mPushed(FALSE),mDownTime(0),mUpTime(0),mLastProcessed(0) {

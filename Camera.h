@@ -27,6 +27,7 @@ public:
 	DirectX::XMMATRIX mViewProjectionMatrix;
 
 	void update(DXGI_SURFACE_DESC pSurfaceDesc);
+	void updateWindowDimensions();
 
 	LRESULT MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool* pbNoFurtherProcessing,
 		void* pUserContext );
@@ -35,18 +36,20 @@ public:
 	~Camera();
 
 private:
-	DirectX::XMINT2 mMouseStart;
-	DirectX::XMINT2 mMouseEnd;
+	POINT mMouseStart;
 	DOUBLE mMoveDistanceX;
 	DOUBLE mMoveDistanceY;
 
-	boolean mouseLook;
+	boolean mMouseLooking;
+	boolean mMouseCentred;
+
+	INT mScreenCentreX;
+	INT mScreenCentreY;
 
 	Camera(const Camera& camera);
 	void updateCameraLook(DirectX::XMINT2 pMoveDelta);
 	void updateCameraMove();
 	void keyInteracted(UINT uMsg, WPARAM wParam, bool* pbNoFurtherProcessing);
-
 	CameraButton mCamMoveForward;
 	CameraButton mCamMoveBackward;
 	CameraButton mCamStrafeLeft;

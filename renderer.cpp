@@ -66,6 +66,7 @@ HRESULT RendererImplementation::OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevic
 {
 	devConsole->log(L"Renderer OnD3D11ResizedSwapChain");
 	this->surfaceDescription = *pBackBufferSurfaceDesc;
+	camera->updateWindowDimensions();
 	return S_OK;
 }
 
@@ -75,9 +76,9 @@ LRESULT RendererImplementation::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LP
 	if (*pbNoFurtherProcessing) {
 		return 0;
 	}
-	std::wstringstream wss;
-	wss << L"uMsg:" << uMsg << L" wParam:" << wParam << L" lParam:" << lParam;
-	devConsole->log(&wss);
+	//std::wstringstream wss;
+	//wss << L"uMsg:" << uMsg << L" wParam:" << wParam << L" lParam:" << lParam;
+	//devConsole->log(&wss);
 	return 0;
 }
 
