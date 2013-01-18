@@ -11,13 +11,21 @@
 
 class RendererImplementation {
 public:
-	RendererImplementation(DevConsole* devConsole) : devConsole(devConsole){
+	RendererImplementation(DevConsole* devConsole)
+		: devConsole(devConsole), mRecompile(FALSE){
 		camera = new Camera();
 		cubeLoader = new CubeMeshLoader();
 		cubeMesh = new DrawableMesh(L"CubeMesh",cubeLoader);
 		defaultShader = new DefaultShader();
 
 		cubeDrawable = new Drawable(cubeMesh,defaultShader,camera);
+		cubeDrawable->mState.mScale.x = 10.0f;
+		cubeDrawable->mState.mScale.z = 10.0f;
+
+		lightDrawable = new Drawable(cubeMesh,defaultShader,camera);
+		lightDrawable->mState.mPosition = DirectX::XMFLOAT3(5.0f,3.0f,2.0f);
+		lightDrawable->mState.mAmbientColour = DirectX::XMFLOAT3(9999999.0f,9999999.0f,9999999.0f);
+		lightDrawable->mState.mScale = DirectX::XMFLOAT3(0.2f,0.2f,0.2f);
 	};
 	~RendererImplementation() {
 		SAFE_DELETE(camera);
@@ -25,6 +33,7 @@ public:
 		SAFE_DELETE(cubeMesh);
 		SAFE_DELETE(defaultShader);
 		SAFE_DELETE(cubeDrawable);
+		SAFE_DELETE(lightDrawable);
 	};
 
 	void init();
@@ -45,7 +54,9 @@ public:
 	DrawableShader* defaultShader;
 	CubeMeshLoader* cubeLoader;
 	Drawable* cubeDrawable;
+	Drawable* lightDrawable;
 	Camera* camera;
+	boolean mRecompile;
 };
 
 void RendererImplementation::init()
@@ -72,6 +83,13 @@ HRESULT RendererImplementation::OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevic
 
 LRESULT RendererImplementation::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool* pbNoFurtherProcessing,void* pUserContext )
 {
+#ifdef DEBUG
+	if (uMsg == WM_KEYDOWN) {
+		if (wParam == 'R') {
+			mRecompile = TRUE;
+		}
+	}
+#endif //DEBUG
 	camera->MsgProc(hWnd,uMsg,wParam,lParam,pbNoFurtherProcessing,pUserContext);
 	if (*pbNoFurtherProcessing) {
 		return 0;
@@ -89,8 +107,18 @@ void RendererImplementation::OnFrameMove( double fTime, float fElapsedTime, void
 
 void RendererImplementation::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dImmediateContext, double fTime, float fElapsedTime, void* pUserContext )
 {
+
+#ifdef DEBUG
+	if (mRecompile) {
+		defaultShader->OnD3D11CreateDevice(pd3dDevice);
+		mRecompile = FALSE;
+	}
+#endif // DEBUG
+
+
+
 	// Clear render target and the depth stencil 
-	float ClearColor[4] = { 1.0f, 0.196f, 0.667f, 0.0f };
+	float ClearColor[4] = { 0.329f, 0.608f, 0.722f, 1.0f };
 
 	ID3D11RenderTargetView* rtv = DXUTGetD3D11RenderTargetView();
 	ID3D11DepthStencilView* dsv = DXUTGetD3D11DepthStencilView();
@@ -100,6 +128,8 @@ void RendererImplementation::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D1
 	//cubeDrawable->mState.mRotation.x = (FLOAT) fTime;
 	//cubeDrawable->mState.mRotation.y = (FLOAT) fTime;
 	//cubeDrawable->mState.mDirty = TRUE;
+
+	lightDrawable->Draw(pd3dImmediateContext);
 	
 	cubeDrawable->Draw(pd3dImmediateContext);
 

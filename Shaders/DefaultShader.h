@@ -18,7 +18,8 @@ private:
 	static ID3D11InputLayout* sVertexLayout;
 	static ID3D11VertexShader* sVertexShader;
 	static ID3D11PixelShader* sPixelShader;
-	static ID3D11Buffer* sConstantBuffer;
+	static ID3D11Buffer* sVSConstantBuffer;
+	static ID3D11Buffer* sPSConstantBuffer;
 
 };
 

@@ -111,9 +111,14 @@ void Camera::updateCameraMove()
 	DOUBLE lookY = XMVectorGetY(mLookVector);
 	DOUBLE lookZ = XMVectorGetZ(mLookVector);
 
-	DOUBLE dX = deltaForward * lookX + deltaLeft * -lookZ;
+	DOUBLE lookZXMag = sqrt(lookZ * lookZ + lookX * lookX);
+
+	DOUBLE lrlookX = lookX/lookZXMag;
+	DOUBLE lrlookZ = lookZ/lookZXMag;
+
+	DOUBLE dX = deltaForward * lookX + deltaLeft * -lrlookZ;
 	DOUBLE dY = deltaForward * lookY + deltaUp;
-	DOUBLE dZ = deltaForward * lookZ + deltaLeft * lookX;
+	DOUBLE dZ = deltaForward * lookZ + deltaLeft * lrlookX;
 
 	XMVECTOR upDelta = XMVectorSet((FLOAT) dX,(FLOAT) dY,(FLOAT) dZ, 0.0f);
 
