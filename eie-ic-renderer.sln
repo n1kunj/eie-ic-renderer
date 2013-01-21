@@ -11,8 +11,6 @@ Global
 		Profile|x64 = Profile|x64
 		Release|Win32 (Don't use) = Release|Win32 (Don't use)
 		Release|x64 = Release|x64
-		ReleaseNoOpt|Win32 (Don't use) = ReleaseNoOpt|Win32 (Don't use)
-		ReleaseNoOpt|x64 = ReleaseNoOpt|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{D3D11108-96D0-4629-88B8-122C0256058C}.Debug|Win32 (Don't use).ActiveCfg = Debug|Win32
@@ -27,10 +25,6 @@ Global
 		{D3D11108-96D0-4629-88B8-122C0256058C}.Release|Win32 (Don't use).Build.0 = Release|Win32
 		{D3D11108-96D0-4629-88B8-122C0256058C}.Release|x64.ActiveCfg = Release|x64
 		{D3D11108-96D0-4629-88B8-122C0256058C}.Release|x64.Build.0 = Release|x64
-		{D3D11108-96D0-4629-88B8-122C0256058C}.ReleaseNoOpt|Win32 (Don't use).ActiveCfg = ReleaseNoOpt|Win32
-		{D3D11108-96D0-4629-88B8-122C0256058C}.ReleaseNoOpt|Win32 (Don't use).Build.0 = ReleaseNoOpt|Win32
-		{D3D11108-96D0-4629-88B8-122C0256058C}.ReleaseNoOpt|x64.ActiveCfg = ReleaseNoOpt|x64
-		{D3D11108-96D0-4629-88B8-122C0256058C}.ReleaseNoOpt|x64.Build.0 = ReleaseNoOpt|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
