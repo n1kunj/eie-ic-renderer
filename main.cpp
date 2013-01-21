@@ -7,6 +7,14 @@
 #include "SDKmisc.h"
 #include "DXUTgui.h"
 
+extern "C" {
+#include "lua.h"
+#include "lualib.h"
+#include "lauxlib.h"
+}
+
+#include "luabind/luabind.hpp"
+
 #include <stdlib.h>
 #include <sstream>
 
@@ -233,6 +241,28 @@ int WINAPI wWinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdL
 #if defined(DEBUG) | defined(_DEBUG)
 	_CrtSetDbgFlag( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
 #endif
+
+	// Create a new lua state
+	lua_State *myLuaState = luaL_newstate();
+
+	// Connect LuaBind to this lua state
+	luabind::open(myLuaState);
+
+	// Define a lua function that we can call
+	luaL_dostring(
+		myLuaState,
+		"function add(first, second)\n"
+		"  return first + second\n"
+		"end\n"
+		);
+
+
+	std::stringstream ss = std::stringstream();
+	ss << luabind::call_function<int>(myLuaState, "add", 2, 3) << std::endl;
+
+	OutputDebugStringA((char*)ss.str().c_str());
+
+	lua_close(myLuaState);
 
 	// Set general DXUT callbacks
 	DXUTSetCallbackFrameMove( OnFrameMove );
