@@ -5,6 +5,7 @@
 #include <string>
 
 class Renderer;
+class lua_State;
 
 class MessageLogger {
 public:
@@ -18,17 +19,21 @@ public:
 class MessageProcessor {
 public:
 	virtual void processMessage(WCHAR* pInput) = 0;
+	virtual ~MessageProcessor() {};
 };
 
 class RendererMessageProcessor : public MessageProcessor {
 
 public:
 	RendererMessageProcessor(MessageLogger* logger, Renderer* renderer);
+	~RendererMessageProcessor();
+
 	void processMessage(WCHAR* pInput);
 
 private:
 	MessageLogger* mLogger;
 	Renderer* mRenderer;
+	lua_State* mLuaState;
 };
 
 
