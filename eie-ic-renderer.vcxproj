@@ -463,6 +463,7 @@
     <ClCompile Include="DrawableShader.cpp" />
     <ClCompile Include="DrawableState.cpp" />
     <ClCompile Include="Gui.cpp" />
+    <ClCompile Include="MessageProcessor.cpp" />
     <ClCompile Include="Meshes\CubeMeshLoader.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Shaders\DefaultShader.cpp" />
@@ -476,6 +477,7 @@
     <ClInclude Include="DrawableMesh.h" />
     <ClInclude Include="DrawableShader.h" />
     <ClInclude Include="DrawableState.h" />
+    <ClInclude Include="MessageProcessor.h" />
     <ClInclude Include="Meshes\CubeMeshLoader.h" />
     <ClInclude Include="Shaders\DefaultShader.h" />
     <ClInclude Include="Textures\Textures.h" />

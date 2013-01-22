@@ -3,7 +3,7 @@
 #define DEV_CONSOLE_H
 
 #include "SDKmisc.h"
-#include <string>
+#include "MessageProcessor.h"
 
 #define DEBUG_TEXT_LINE_HEIGHT 15
 #define LINES_TO_DISPLAY 15
@@ -12,20 +12,24 @@
 class DebugText;
 class DebugTextArray;
 
-class DevConsole {
+class DevConsole : public MessageLogger {
 public:
 	DevConsole(DebugText* dt);
 	~DevConsole();
 	void OnD3D11FrameRender();
+	using MessageLogger::log;
 	void log(const WCHAR* line);
-	void log(std::wstringstream* wss);
 	void OnCharacter(WPARAM wParam);
 	LRESULT MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 		bool* pbNoFurtherProcessing, void* pUserContext );
+	void setMessageProcessor(MessageProcessor* pMProc) {
+		mMessageProcessor = pMProc;
+	}
 private:
-	DebugText* debugText;
-	DebugTextArray* debugTextArray;
-	int currentInputCursor;
+	DebugText* mDebugText;
+	DebugTextArray* mDebugTextArray;
+	MessageProcessor* mMessageProcessor;
+	int mCurrentInputCursor;
 	void processConsoleInput(WCHAR* input);
 	WCHAR currentInput[CONSOLE_MAX_CHARACTERS];
 };

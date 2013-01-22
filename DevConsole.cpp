@@ -4,21 +4,21 @@
 #include <sstream>
 #include <time.h>
 
-DevConsole::DevConsole(DebugText* dt): debugText(dt), currentInputCursor(0){
-	debugTextArray = new DebugTextArray(2000,1.0f,1.0f,0.0f,1.0f);
+DevConsole::DevConsole(DebugText* dt): mDebugText(dt), mCurrentInputCursor(0), mMessageProcessor(NULL){
+	mDebugTextArray = new DebugTextArray(2000,1.0f,1.0f,0.0f,1.0f);
 }
 
 DevConsole::~DevConsole() {
-	delete debugTextArray;
+	delete mDebugTextArray;
 }
 
 void DevConsole::OnD3D11FrameRender()
 {
-	debugText->RenderDebugTextArray(debugTextArray,0,0,DEBUG_TEXT_LINE_HEIGHT,0,LINES_TO_DISPLAY);
+	mDebugText->RenderDebugTextArray(mDebugTextArray,0,0,DEBUG_TEXT_LINE_HEIGHT,0,LINES_TO_DISPLAY);
 	time_t seconds = time(NULL);
 
 	if (seconds % 2 == 0) {
-		debugText->RenderSingleLine(currentInput, 0, DEBUG_TEXT_LINE_HEIGHT * LINES_TO_DISPLAY);
+		mDebugText->RenderSingleLine(currentInput, 0, DEBUG_TEXT_LINE_HEIGHT * LINES_TO_DISPLAY);
 	}
 	else {
 		//Draw a blinking cursor
@@ -26,18 +26,14 @@ void DevConsole::OnD3D11FrameRender()
 		WCHAR* inputCopy = new WCHAR[linelen+2];
 		wcscpy_s(inputCopy,linelen+1,currentInput);
 
-		inputCopy[currentInputCursor] = L'|';
-		debugText->RenderSingleLine(inputCopy, 0, DEBUG_TEXT_LINE_HEIGHT * LINES_TO_DISPLAY);
+		inputCopy[mCurrentInputCursor] = L'|';
+		mDebugText->RenderSingleLine(inputCopy, 0, DEBUG_TEXT_LINE_HEIGHT * LINES_TO_DISPLAY);
 		delete[] inputCopy;
 	}
 }
 
 void DevConsole::log(const WCHAR* line) {
-	debugTextArray->addDebugLine(line);
-}
-
-void DevConsole::log(std::wstringstream* wss) {
-	DevConsole::log(wss->str().c_str());
+	mDebugTextArray->addDebugLine(line);
 }
 
 LRESULT DevConsole::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
@@ -60,31 +56,37 @@ void DevConsole::OnCharacter(WPARAM wParam) {
 	if (wParam == 13) {
 		processConsoleInput(currentInput);
 		SecureZeroMemory(currentInput, CONSOLE_MAX_CHARACTERS*sizeof(WCHAR));
-		currentInputCursor = 0;
+		mCurrentInputCursor = 0;
 	}
 	//Backspace key
 	else if (wParam == 8) {
-		if (currentInputCursor != 0) {
-			currentInputCursor--;
-			currentInput[currentInputCursor] = NULL;
+		if (mCurrentInputCursor != 0) {
+			mCurrentInputCursor--;
+			currentInput[mCurrentInputCursor] = NULL;
 		}
 	}
 	//Actual characters
 	else if (wParam >= 31) {
-		if (currentInputCursor < CONSOLE_MAX_CHARACTERS) {
-			currentInput[currentInputCursor] = WCHAR(wParam);
-			currentInputCursor++;
+		if (mCurrentInputCursor < CONSOLE_MAX_CHARACTERS) {
+			currentInput[mCurrentInputCursor] = WCHAR(wParam);
+			mCurrentInputCursor++;
 		}
 	}
 }
 
 void DevConsole::processConsoleInput(WCHAR* input) {
-	DevConsole::log(input);
+	log(input);
 	size_t linelen = wcslen(input);
 	if (linelen == 0) {
 		return;
 	}
-	std::wstringstream wss;
-	wss << L"Input Error:" << input;
-	DevConsole::log(&wss);
+	if (mMessageProcessor == NULL) {
+		std::wstringstream wss;
+		wss << L"Input Error:" << input;
+		log(&wss);
+	}
+	else {
+		mMessageProcessor->processMessage(input);
+	}
+
 }

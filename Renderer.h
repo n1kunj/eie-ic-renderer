@@ -3,11 +3,11 @@
 #define RENDERER_H
 
 class RendererImplementation;
-class DevConsole;
+class MessageLogger;
 
 class Renderer {
 public:
-	Renderer(DevConsole* devConsole);
+	Renderer(MessageLogger* logger);
 	~Renderer();
 
 	void init();

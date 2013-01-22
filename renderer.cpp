@@ -1,6 +1,6 @@
 #include "DXUT.h"
 #include "Renderer.h"
-#include "DevConsole.h"
+#include "MessageProcessor.h"
 #include "Meshes/CubeMeshLoader.h"
 #include "Shaders/DefaultShader.h"
 #include "DrawableState.h"
@@ -11,24 +11,29 @@
 
 class RendererImplementation {
 public:
-	RendererImplementation(DevConsole* devConsole)
-		: devConsole(devConsole), mRecompile(FALSE){
-		camera = new Camera();
+	RendererImplementation(MessageLogger* mLogger)
+		: mLogger(mLogger){
+		mCamera = new Camera();
 		cubeLoader = new CubeMeshLoader();
 		cubeMesh = new DrawableMesh(L"CubeMesh",cubeLoader);
 		defaultShader = new DefaultShader();
 
-		cubeDrawable = new Drawable(cubeMesh,defaultShader,camera);
+		cubeDrawable = new Drawable(cubeMesh,defaultShader,mCamera);
 		cubeDrawable->mState.mScale.x = 10.0f;
 		cubeDrawable->mState.mScale.z = 10.0f;
 
-		lightDrawable = new Drawable(cubeMesh,defaultShader,camera);
+		lightDrawable = new Drawable(cubeMesh,defaultShader,mCamera);
 		lightDrawable->mState.mPosition = DirectX::XMFLOAT3(5.0f,3.0f,2.0f);
 		lightDrawable->mState.mAmbientColour = DirectX::XMFLOAT3(9999999.0f,9999999.0f,9999999.0f);
 		lightDrawable->mState.mScale = DirectX::XMFLOAT3(0.2f,0.2f,0.2f);
+
+#ifdef DEBUG
+		mRecompile = FALSE;
+#endif // DEBUG
+
 	};
 	~RendererImplementation() {
-		SAFE_DELETE(camera);
+		SAFE_DELETE(mCamera);
 		SAFE_DELETE(cubeLoader);
 		SAFE_DELETE(cubeMesh);
 		SAFE_DELETE(defaultShader);
@@ -49,25 +54,28 @@ public:
 	void OnExit();
 
 	DXGI_SURFACE_DESC surfaceDescription;
-	DevConsole* devConsole;
+	MessageLogger* mLogger;
 	DrawableMesh* cubeMesh;
 	DrawableShader* defaultShader;
 	CubeMeshLoader* cubeLoader;
 	Drawable* cubeDrawable;
 	Drawable* lightDrawable;
-	Camera* camera;
+	Camera* mCamera;
+#ifdef DEBUG
 	boolean mRecompile;
+#endif // DEBUG
+
 };
 
 void RendererImplementation::init()
 {
-	devConsole->log(L"Renderer Initialisation");
+	mLogger->log(L"Renderer Initialisation");
 }
 
 
 HRESULT RendererImplementation::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 {
-	devConsole->log(L"Renderer OnD3D11CreateDevice");
+	mLogger->log(L"Renderer OnD3D11CreateDevice");
 	defaultShader->OnD3D11CreateDevice(pd3dDevice);
 	cubeMesh->OnD3D11CreateDevice(pd3dDevice);
 	return S_OK;
@@ -75,9 +83,9 @@ HRESULT RendererImplementation::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 
 HRESULT RendererImplementation::OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, const DXGI_SURFACE_DESC* pBackBufferSurfaceDesc )
 {
-	devConsole->log(L"Renderer OnD3D11ResizedSwapChain");
+	mLogger->log(L"Renderer OnD3D11ResizedSwapChain");
 	this->surfaceDescription = *pBackBufferSurfaceDesc;
-	camera->updateWindowDimensions();
+	mCamera->updateWindowDimensions();
 	return S_OK;
 }
 
@@ -90,7 +98,7 @@ LRESULT RendererImplementation::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LP
 		}
 	}
 #endif //DEBUG
-	camera->MsgProc(hWnd,uMsg,wParam,lParam,pbNoFurtherProcessing,pUserContext);
+	mCamera->MsgProc(hWnd,uMsg,wParam,lParam,pbNoFurtherProcessing,pUserContext);
 	if (*pbNoFurtherProcessing) {
 		return 0;
 	}
@@ -102,7 +110,7 @@ LRESULT RendererImplementation::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LP
 
 void RendererImplementation::OnFrameMove( double fTime, float fElapsedTime, void* pUserContext )
 {
-	camera->update(surfaceDescription);
+	mCamera->update(surfaceDescription);
 }
 
 void RendererImplementation::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dImmediateContext, double fTime, float fElapsedTime, void* pUserContext )
@@ -137,7 +145,7 @@ void RendererImplementation::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D1
 
 void RendererImplementation::OnExit()
 {
-	devConsole->log(L"Renderer OnExit");
+	mLogger->log(L"Renderer OnExit");
 	//TODO: cleanup
 }
 
@@ -149,8 +157,8 @@ void RendererImplementation::OnD3D11DestroyDevice()
 
 //Public interface
 
-Renderer::Renderer(DevConsole* devConsole) {
-	_impl = new RendererImplementation(devConsole);
+Renderer::Renderer(MessageLogger* logger) {
+	_impl = new RendererImplementation(logger);
 }
 
 Renderer::~Renderer() {

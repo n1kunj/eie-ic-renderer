@@ -2,7 +2,6 @@
 #ifndef DEBUG_TEXT_H
 #define DEBUG_TEXT_H
 
-#include "DXUT.h"
 #include "SDKmisc.h"
 #include <string>
 

@@ -28,6 +28,7 @@ DebugText debugText = DebugText();
 DevConsole devConsole = DevConsole(&debugText);
 Gui gui = Gui(&debugText);
 Renderer renderer = Renderer(&devConsole);
+RendererMessageProcessor rMProc = RendererMessageProcessor(&devConsole,&renderer);
 
 UINT focusedUI = FOCUSED_GUI;
 
@@ -197,7 +198,9 @@ LRESULT CALLBACK MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 		return 0;
 	}
 
-	renderer.MsgProc(hWnd,uMsg,wParam,lParam,pbNoFurtherProcessing,pUserContext);
+	if (focusedUI!= FOCUSED_CONSOLE) {
+		renderer.MsgProc(hWnd,uMsg,wParam,lParam,pbNoFurtherProcessing,pUserContext);
+	}
 
 	return 0;
 }
@@ -242,6 +245,8 @@ int WINAPI wWinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdL
 	_CrtSetDbgFlag( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
 #endif
 
+	devConsole.setMessageProcessor(&rMProc);
+
 	// Create a new lua state
 	lua_State *myLuaState = luaL_newstate();
 
@@ -257,10 +262,9 @@ int WINAPI wWinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdL
 		);
 
 
-	std::stringstream ss = std::stringstream();
+	std::wstringstream ss = std::wstringstream();
 	ss << luabind::call_function<int>(myLuaState, "add", 2, 3) << std::endl;
-
-	OutputDebugStringA((char*)ss.str().c_str());
+	devConsole.log(&ss);
 
 	lua_close(myLuaState);
 
