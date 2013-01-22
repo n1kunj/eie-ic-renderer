@@ -20,7 +20,7 @@ DebugText debugText = DebugText();
 DevConsole devConsole = DevConsole(&debugText);
 Gui gui = Gui(&debugText);
 Renderer renderer = Renderer(&devConsole);
-RendererMessageProcessor rMProc = RendererMessageProcessor(&devConsole,&renderer);
+RendererMessageProcessor* rMProc;
 
 UINT focusedUI = FOCUSED_GUI;
 
@@ -237,7 +237,11 @@ int WINAPI wWinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdL
 	_CrtSetDbgFlag( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
 #endif
 
-	devConsole.setMessageProcessor(&rMProc);
+	//Must be initialised here as static initialisation causes an assertion failure
+	RendererMessageProcessor rMP = RendererMessageProcessor(&devConsole,&renderer);
+	rMProc = &rMP;
+
+	devConsole.setMessageProcessor(rMProc);
 
 	// Set general DXUT callbacks
 	DXUTSetCallbackFrameMove( OnFrameMove );

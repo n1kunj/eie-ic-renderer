@@ -1,6 +1,7 @@
 #include "DXUT.h"
 #include "MessageProcessor.h"
 #include "Renderer.h"
+#include <string>
 
 extern "C" {
 #include "lua.h"
@@ -10,21 +11,41 @@ extern "C" {
 
 #include "luabind/luabind.hpp"
 
+using namespace luabind;
+using namespace std;
+
 RendererMessageProcessor::RendererMessageProcessor( MessageLogger* logger, Renderer* renderer ) :
 	mLogger(logger), mRenderer(renderer)
 {
-	//Allocates memory within the function!
+	//Dynamically allocates within this function
 	mLuaState = luaL_newstate();
 
-	luabind::open(mLuaState);
+	open(mLuaState);
 
-	// Define a lua function that we can call
 	luaL_dostring(
 		mLuaState,
-		"function add(first, second)\n"
-		"  return first + second\n"
+		"RMP = 0 \n"
+		"function setRMP(pRMP)\n"
+		"RMP = pRMP\n"
 		"end\n"
 		);
+
+	luaL_dostring(
+		mLuaState,
+		"function print(X)\n"
+		"RMP:luaLog(X)\n"
+		"end\n"
+		);
+
+	// Add our function to the state's global scope
+	module(mLuaState) [
+		class_<RendererMessageProcessor>("RendererMessageProcessor")
+		.def("luaLog", (void(RendererMessageProcessor::*)(string))&RendererMessageProcessor::luaLog)
+		.def("luaLog", (void(RendererMessageProcessor::*)(float))&RendererMessageProcessor::luaLog)
+	];
+
+	call_function<void>(mLuaState,"setRMP",this);
+
 }
 
 RendererMessageProcessor::~RendererMessageProcessor()
@@ -35,12 +56,24 @@ RendererMessageProcessor::~RendererMessageProcessor()
 
 void RendererMessageProcessor::processMessage(WCHAR* pInput)
 {
-	std::wstringstream wss;
-	wss << L"Processing " << pInput;
-	mLogger->log(&wss);
 	//TODO: this!
 
-	std::wstringstream ss = std::wstringstream();
-	ss << luabind::call_function<int>(mLuaState, "add", 2, 3) << std::endl;
+	//TODO: make this not so horribly inefficient!
+	wstring ws = wstring(pInput);
+	string s(ws.begin(),ws.end());
+	s.append("\n");
+
+	luaL_dostring(mLuaState,s.c_str());
+}
+
+void RendererMessageProcessor::luaLog(std::string s) {
+	wstring ws(s.begin(), s.end());
+	wstringstream ss = wstringstream(ws);
+	mLogger->log(&ss);
+}
+
+void RendererMessageProcessor::luaLog(float num) {
+	wstringstream ss = wstringstream();
+	ss << num;
 	mLogger->log(&ss);
 }

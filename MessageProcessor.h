@@ -5,7 +5,7 @@
 #include <string>
 
 class Renderer;
-class lua_State;
+struct lua_State;
 
 class MessageLogger {
 public:
@@ -25,12 +25,15 @@ public:
 class RendererMessageProcessor : public MessageProcessor {
 
 public:
+	//RendererMessageProcessor();
 	RendererMessageProcessor(MessageLogger* logger, Renderer* renderer);
 	~RendererMessageProcessor();
 
 	void processMessage(WCHAR* pInput);
 
 private:
+	void luaLog(std::string s);
+	void luaLog(float num);
 	MessageLogger* mLogger;
 	Renderer* mRenderer;
 	lua_State* mLuaState;
