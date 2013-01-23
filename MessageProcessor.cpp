@@ -15,9 +15,11 @@ using namespace luabind;
 using namespace std;
 
 RendererMessageProcessor::RendererMessageProcessor( MessageLogger* logger, Renderer* renderer ) :
-	mLogger(logger), mRenderer(renderer)
+	mLogger(logger), mRenderer(renderer),
+	mLogColourR(1.0f),mLogColourG(0.0f),mLogColourB(1.0f),
+	mErrorColourR(1.0f),mErrorColourG(0.0f),mErrorColourB(0.0f)
 {
-	//Dynamically allocates within this function
+	//Dynamically allocates memory within this function
 	mLuaState = luaL_newstate();
 
 	open(mLuaState);
@@ -63,17 +65,28 @@ void RendererMessageProcessor::processMessage(WCHAR* pInput)
 	string s(ws.begin(),ws.end());
 	s.append("\n");
 
-	luaL_dostring(mLuaState,s.c_str());
+	if (luaL_dostring(mLuaState,s.c_str()) == 1) {
+		luaError();	
+	}
 }
 
 void RendererMessageProcessor::luaLog(std::string s) {
 	wstring ws(s.begin(), s.end());
 	wstringstream ss = wstringstream(ws);
-	mLogger->log(&ss);
+	mLogger->log(&ss,mLogColourR,mLogColourG,mLogColourB);
 }
 
 void RendererMessageProcessor::luaLog(float num) {
 	wstringstream ss = wstringstream();
 	ss << num;
-	mLogger->log(&ss);
+	mLogger->log(&ss,mLogColourR,mLogColourG,mLogColourB);
+}
+
+void RendererMessageProcessor::luaError()
+{
+	string s = lua_tostring(mLuaState,-1);
+	wstring ws(s.begin(), s.end());
+	wstringstream ss(ws);
+	mLogger->log(&ss,mErrorColourR,mErrorColourG,mErrorColourB);
+	lua_pop(mLuaState, 1);
 }

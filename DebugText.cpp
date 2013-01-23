@@ -19,10 +19,10 @@ void DebugText::OnD3D11DestroyDevice()
 
 void DebugText::RenderSingleLine(const WCHAR* line, int x, int y,
 								 FLOAT colourR, FLOAT colourG,
-								 FLOAT colourB, FLOAT colourA )
+								 FLOAT colourB )
 {
 	dxutTextHelper->Begin();
-	dxutTextHelper->SetForegroundColor( D3DXCOLOR( colourR, colourG, colourB, colourA ) );
+	dxutTextHelper->SetForegroundColor( D3DXCOLOR( colourR, colourG, colourB, 1.0f ) );
 	dxutTextHelper->SetInsertionPos( x, y );
 	dxutTextHelper->DrawFormattedTextLine( line );
 	dxutTextHelper->End();
@@ -31,7 +31,6 @@ void DebugText::RenderSingleLine(const WCHAR* line, int x, int y,
 void DebugText::RenderDebugTextArray(const DebugTextArray* dta, int x, int y, int spacing, int startIndex, int numToDisplay )
 {
 	dxutTextHelper->Begin();
-	dxutTextHelper->SetForegroundColor( D3DXCOLOR( dta->colourR, dta->colourG, dta->colourB, dta->colourA ) );
 
 	int numStrings;
 
@@ -45,8 +44,9 @@ void DebugText::RenderDebugTextArray(const DebugTextArray* dta, int x, int y, in
 	y += spacing * (numToDisplay-1);
 
 	for (int i = dta->curString - startIndex - 1; i>=0; i--) {
+		dxutTextHelper->SetForegroundColor( D3DXCOLOR( dta->mDebugLineArray[i].colourR, dta->mDebugLineArray[i].colourG, dta->mDebugLineArray[i].colourB, 1.0f ) );
 		dxutTextHelper->SetInsertionPos( x, y );
-		dxutTextHelper->DrawFormattedTextLine( dta->textArray[i] );
+		dxutTextHelper->DrawFormattedTextLine( dta->mDebugLineArray[i].mLine );
 		y-=spacing;
 		numToDisplay--;
 		if (numToDisplay == 0) {
@@ -55,8 +55,9 @@ void DebugText::RenderDebugTextArray(const DebugTextArray* dta, int x, int y, in
 	}
 	if (dta->saturated && numToDisplay > 0) {
 		for (int i = dta->size-1; i>=dta->curString - startIndex; i--) {
+			dxutTextHelper->SetForegroundColor( D3DXCOLOR( dta->mDebugLineArray[i].colourR, dta->mDebugLineArray[i].colourG, dta->mDebugLineArray[i].colourB, 1.0f ) );
 			dxutTextHelper->SetInsertionPos( x, y );
-			dxutTextHelper->DrawFormattedTextLine( dta->textArray[i] );
+			dxutTextHelper->DrawFormattedTextLine( dta->mDebugLineArray[i].mLine );
 			y-=spacing;
 			numToDisplay--;
 			if (numToDisplay == 0) {
@@ -67,31 +68,13 @@ void DebugText::RenderDebugTextArray(const DebugTextArray* dta, int x, int y, in
 	dxutTextHelper->End();
 }
 
-void DebugTextArray::addDebugLine(const WCHAR* line) {
+void DebugTextArray::addDebugLine(const WCHAR* line, FLOAT r, FLOAT g, FLOAT b) {
 
-	size_t linelen = wcslen(line);
-	WCHAR* chars = new WCHAR[linelen+1];
-	wcscpy_s(chars,linelen+1,line);
-
-	SAFE_DELETE_ARRAY( textArray[curString] );
-
-	textArray[curString] = chars;
+	mDebugLineArray[curString].setLine(line,r,g,b);
 
 	curString++;
 	if (curString == size) {
 		saturated = true;
 		curString = 0;
 	}
-}
-
-void DebugTextArray::addDebugLine( int i )
-{
-	this->addDebugLine(std::to_wstring(i).c_str());
-}
-
-void DebugTextArray::setTextColour(FLOAT r, FLOAT g, FLOAT b, FLOAT a) {
-	colourR = r;
-	colourG = g;
-	colourB = b;
-	colourA = a;
 }

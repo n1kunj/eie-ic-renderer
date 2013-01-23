@@ -153,6 +153,11 @@ void CALLBACK OnD3D11DestroyDevice( void* pUserContext )
 LRESULT CALLBACK MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 						 bool* pbNoFurtherProcessing, void* pUserContext )
 {
+
+	//std::wstringstream wss;
+	//wss << L"uMsg:" << uMsg << L" wParam:" << wParam << L" lParam:" << lParam;
+	//devConsole.log(&wss);
+
 	//Settings dialog takes message priority
 	if (gui.IsSettingsDialogueActive()) {
 		gui.SettingsDialogueMsgProc(hWnd,uMsg,wParam,lParam,pbNoFurtherProcessing,pUserContext);

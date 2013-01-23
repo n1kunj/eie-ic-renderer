@@ -10,9 +10,14 @@ struct lua_State;
 class MessageLogger {
 public:
 	virtual void log(const WCHAR* line) = 0;
+	virtual void log(const WCHAR* line, FLOAT r, FLOAT g, FLOAT b) = 0;
 
 	void log(std::wstringstream* wss) {
 		log(wss->str().c_str());
+	}
+
+	void log(std::wstringstream* wss, FLOAT r, FLOAT g, FLOAT b) {
+		log(wss->str().c_str(),r,g,b);
 	}
 };
 
@@ -25,7 +30,6 @@ public:
 class RendererMessageProcessor : public MessageProcessor {
 
 public:
-	//RendererMessageProcessor();
 	RendererMessageProcessor(MessageLogger* logger, Renderer* renderer);
 	~RendererMessageProcessor();
 
@@ -34,9 +38,16 @@ public:
 private:
 	void luaLog(std::string s);
 	void luaLog(float num);
+	void luaError();
 	MessageLogger* mLogger;
 	Renderer* mRenderer;
 	lua_State* mLuaState;
+	FLOAT mLogColourR;
+	FLOAT mLogColourG;
+	FLOAT mLogColourB;
+	FLOAT mErrorColourR;
+	FLOAT mErrorColourG;
+	FLOAT mErrorColourB;
 };
 
 

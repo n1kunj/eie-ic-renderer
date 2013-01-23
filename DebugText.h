@@ -5,30 +5,49 @@
 #include "SDKmisc.h"
 #include <string>
 
-class DebugTextArray {
-public:
-	DebugTextArray(int historyLength, FLOAT colourR, FLOAT colourG, FLOAT colourB, FLOAT colourA) :
-		size(historyLength), curString(0), saturated(false), colourR(colourR), colourG(colourG), colourB(colourB), colourA(colourA)
-	{
-		textArray = new WCHAR*[historyLength]();
-	}
-	~DebugTextArray() {
-		for (int i = 0; i < size; i++) {
-			delete[] textArray[i];
-		} 
-		delete[] textArray;
-	}
-	void addDebugLine(const WCHAR* line);
-	void addDebugLine(int i);
-	void setTextColour(FLOAT r, FLOAT g, FLOAT b, FLOAT a);
+struct debugLine {
+	const WCHAR* mLine;
 	FLOAT colourR;
 	FLOAT colourG;
 	FLOAT colourB;
-	FLOAT colourA;
+
+	debugLine() : mLine(NULL), colourR(1), colourG(1), colourB(1){
+
+	}
+
+	void setLine(const WCHAR* pLine, FLOAT r, FLOAT g, FLOAT b) {
+		colourR = r;
+		colourG = g;
+		colourB = b;
+		SAFE_DELETE_ARRAY(mLine);
+
+		size_t linelen = wcslen(pLine);
+		WCHAR* chars = new WCHAR[linelen+1];
+		wcscpy_s(chars,linelen+1,pLine);
+
+		mLine = chars;
+	}
+
+	~debugLine() {
+		SAFE_DELETE_ARRAY(mLine);
+	}
+};
+
+class DebugTextArray {
+public:
+	DebugTextArray(int historyLength) :
+		size(historyLength), curString(0), saturated(false)
+	{
+		mDebugLineArray = new debugLine[historyLength]();
+	}
+	~DebugTextArray() {
+		SAFE_DELETE_ARRAY(mDebugLineArray);
+	}
+	void addDebugLine(const WCHAR* line, FLOAT r, FLOAT g, FLOAT b);
 	int curString;
 	int size;
 	bool saturated;
-	WCHAR** textArray;
+	debugLine* mDebugLineArray;
 };
 
 class DebugText{
@@ -43,7 +62,7 @@ public:
 	void RenderDebugTextArray(const DebugTextArray* dta, int x, int y, int spacing, int startIndex, int numToDisplay);
 	void RenderSingleLine(const WCHAR* line, int x, int y,
 		FLOAT colourR = 1.0f, FLOAT colourG = 1.0f,
-		FLOAT colourB = 1.0f, FLOAT colourA = 1.0f );
+		FLOAT colourB = 1.0f);
 private:
 	CDXUTTextHelper* dxutTextHelper;
 };

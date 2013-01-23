@@ -19,6 +19,7 @@ public:
 	void OnD3D11FrameRender();
 	using MessageLogger::log;
 	void log(const WCHAR* line);
+	void log(const WCHAR* line, FLOAT r, FLOAT g, FLOAT b);
 	void OnCharacter(WPARAM wParam);
 	LRESULT MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 		bool* pbNoFurtherProcessing, void* pUserContext );
@@ -29,9 +30,15 @@ private:
 	DebugText* mDebugText;
 	DebugTextArray* mDebugTextArray;
 	MessageProcessor* mMessageProcessor;
-	int mCurrentInputCursor;
+	INT mCurrentInputCursor;
+	INT mShowStartLine;
 	void processConsoleInput(WCHAR* input);
 	WCHAR currentInput[CONSOLE_MAX_CHARACTERS];
+	FLOAT mInputColourR;
+	FLOAT mInputColourG;
+	FLOAT mInputColourB;
+	void onPageUp(INT numLines);
+	void onPageDown(INT numLines);
 };
 
 #endif

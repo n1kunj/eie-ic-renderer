@@ -102,9 +102,6 @@ LRESULT RendererImplementation::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LP
 	if (*pbNoFurtherProcessing) {
 		return 0;
 	}
-	//std::wstringstream wss;
-	//wss << L"uMsg:" << uMsg << L" wParam:" << wParam << L" lParam:" << lParam;
-	//devConsole->log(&wss);
 	return 0;
 }
 
