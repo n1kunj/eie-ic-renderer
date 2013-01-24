@@ -6,14 +6,11 @@
 #include "DrawableState.h"
 #include "Drawable.h"
 #include "Camera.h"
-#include "DrawableManager.h"
 
 #include <sstream>
 
-class RendererImplementation {
-public:
-	RendererImplementation(MessageLogger* mLogger)
-		: mLogger(mLogger), mDrawableManager(){
+Renderer::Renderer(MessageLogger* mLogger) : mLogger(mLogger), mDrawableManager()
+{
 		mCamera = new Camera();
 		cubeLoader = new CubeMeshLoader();
 		cubeMesh = new DrawableMesh(L"CubeMesh",cubeLoader);
@@ -31,55 +28,28 @@ public:
 		mDrawableManager.addDrawable(cubeDrawable);
 		mDrawableManager.addDrawable(lightDrawable);
 
-
 #ifdef DEBUG
 		mRecompile = FALSE;
 #endif // DEBUG
 
-	};
-	~RendererImplementation() {
-		SAFE_DELETE(mCamera);
-		SAFE_DELETE(cubeLoader);
-		SAFE_DELETE(cubeMesh);
-		SAFE_DELETE(defaultShader);
-		SAFE_DELETE(cubeDrawable);
-		SAFE_DELETE(lightDrawable);
-	};
-
-	void init();
-
-	HRESULT OnD3D11CreateDevice(ID3D11Device* pd3dDevice);
-	HRESULT OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, const DXGI_SURFACE_DESC* pBackBufferSurfaceDesc );
-	LRESULT MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool* pbNoFurtherProcessing,
-		void* pUserContext );
-	void OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dImmediateContext, double fTime, float fElapsedTime, void* pUserContext );
-	void OnFrameMove( double fTime, float fElapsedTime, void* pUserContext );
-
-	void OnD3D11DestroyDevice();
-	void OnExit();
-
-	DXGI_SURFACE_DESC surfaceDescription;
-	DrawableManager mDrawableManager;
-	MessageLogger* mLogger;
-	DrawableMesh* cubeMesh;
-	DrawableShader* defaultShader;
-	CubeMeshLoader* cubeLoader;
-	BasicDrawable* cubeDrawable;
-	BasicDrawable* lightDrawable;
-	Camera* mCamera;
-#ifdef DEBUG
-	boolean mRecompile;
-#endif // DEBUG
-
 };
 
-void RendererImplementation::init()
+Renderer::~Renderer() {
+	SAFE_DELETE(mCamera);
+	SAFE_DELETE(cubeLoader);
+	SAFE_DELETE(cubeMesh);
+	SAFE_DELETE(defaultShader);
+	SAFE_DELETE(cubeDrawable);
+	SAFE_DELETE(lightDrawable);
+};
+
+void Renderer::init()
 {
 	mLogger->log(L"Renderer Initialisation");
 }
 
 
-HRESULT RendererImplementation::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
+HRESULT Renderer::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 {
 	mLogger->log(L"Renderer OnD3D11CreateDevice");
 	defaultShader->OnD3D11CreateDevice(pd3dDevice);
@@ -87,7 +57,7 @@ HRESULT RendererImplementation::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 	return S_OK;
 }
 
-HRESULT RendererImplementation::OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, const DXGI_SURFACE_DESC* pBackBufferSurfaceDesc )
+HRESULT Renderer::OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, const DXGI_SURFACE_DESC* pBackBufferSurfaceDesc )
 {
 	mLogger->log(L"Renderer OnD3D11ResizedSwapChain");
 	this->surfaceDescription = *pBackBufferSurfaceDesc;
@@ -95,7 +65,7 @@ HRESULT RendererImplementation::OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevic
 	return S_OK;
 }
 
-LRESULT RendererImplementation::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool* pbNoFurtherProcessing,void* pUserContext )
+LRESULT Renderer::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool* pbNoFurtherProcessing,void* pUserContext )
 {
 #ifdef DEBUG
 	if (uMsg == WM_KEYDOWN) {
@@ -111,12 +81,12 @@ LRESULT RendererImplementation::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LP
 	return 0;
 }
 
-void RendererImplementation::OnFrameMove( double fTime, float fElapsedTime, void* pUserContext )
+void Renderer::OnFrameMove( double fTime, float fElapsedTime, void* pUserContext )
 {
 	mCamera->update(surfaceDescription);
 }
 
-void RendererImplementation::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dImmediateContext, double fTime, float fElapsedTime, void* pUserContext )
+void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dImmediateContext, double fTime, float fElapsedTime, void* pUserContext )
 {
 
 #ifdef DEBUG
@@ -144,60 +114,14 @@ void RendererImplementation::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D1
 
 }
 
-void RendererImplementation::OnExit()
+void Renderer::OnExit()
 {
 	mLogger->log(L"Renderer OnExit");
 	//TODO: cleanup
 }
 
-void RendererImplementation::OnD3D11DestroyDevice()
+void Renderer::OnD3D11DestroyDevice()
 {
 	cubeMesh->OnD3D11DestroyDevice();
 	defaultShader->OnD3D11DestroyDevice();
-}
-
-//Public interface
-
-Renderer::Renderer(MessageLogger* logger) {
-	_impl = new RendererImplementation(logger);
-}
-
-Renderer::~Renderer() {
-	SAFE_DELETE(_impl);
-}
-
-HRESULT Renderer::OnD3D11CreateDevice(ID3D11Device* pd3dDevice) {
-	return _impl->OnD3D11CreateDevice(pd3dDevice);
-}
-
-HRESULT Renderer::OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, const DXGI_SURFACE_DESC* pBackBufferSurfaceDesc ) {
-	return _impl->OnD3D11ResizedSwapChain(pd3dDevice,pBackBufferSurfaceDesc);
-}
-
-void Renderer::OnExit() {
-	_impl->OnExit();
-}
-
-void Renderer::init()
-{
-	_impl->init();
-}
-
-void Renderer::OnFrameMove( double fTime, float fElapsedTime, void* pUserContext )
-{
-	_impl->OnFrameMove(fTime,fElapsedTime,pUserContext);
-}
-
-LRESULT Renderer::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool* pbNoFurtherProcessing,
-						 void* pUserContext ) {
-	return _impl->MsgProc(hWnd,uMsg,wParam,lParam,pbNoFurtherProcessing,pUserContext);
-}
-
-void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dImmediateContext, double fTime, float fElapsedTime, void* pUserContext )
-{
-	_impl->OnD3D11FrameRender(pd3dDevice,pd3dImmediateContext,fTime,fElapsedTime,pUserContext);	
-}
-
-void Renderer::OnD3D11DestroyDevice() {
-	_impl->OnD3D11DestroyDevice();
 }
