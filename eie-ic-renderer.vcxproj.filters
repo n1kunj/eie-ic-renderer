@@ -148,6 +148,7 @@
       <Filter>DirectXMath</Filter>
     </ClInclude>
     <ClInclude Include="MessageProcessor.h" />
+    <ClInclude Include="DrawableManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugText.cpp" />
@@ -173,6 +174,7 @@
     <ClCompile Include="DrawableShader.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="MessageProcessor.cpp" />
+    <ClCompile Include="DrawableManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="eie-ic-renderer.rc">

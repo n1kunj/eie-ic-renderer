@@ -4,19 +4,27 @@
 #include "DrawableShader.h"
 #include "Camera.h"
 
-void Drawable::Draw(ID3D11DeviceContext* pd3dContext)
+void BasicDrawable::Draw(ID3D11DeviceContext* pd3dContext)
 {
 	mState.updateMatrices();
 	mShader->DrawMesh(pd3dContext,mMesh,&mState,mCamera);
 }
 
-Drawable::Drawable(DrawableMesh* pMesh, DrawableShader* pShader, Camera* pCamera)
+BasicDrawable::BasicDrawable(DrawableMesh* pMesh, DrawableShader* pShader, Camera* pCamera)
 	: mState(), mMesh(pMesh), mShader(pShader), mCamera(pCamera)
 {
 
 }
 
-Drawable::~Drawable()
+BasicDrawable::BasicDrawable( const BasicDrawable& copy )
+{
+	mState = copy.mState;
+	mMesh = copy.mMesh;
+	mShader = copy.mShader;
+	mCamera = copy.mCamera;
+}
+
+BasicDrawable::~BasicDrawable()
 {
 
 }

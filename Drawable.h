@@ -9,6 +9,12 @@ class Camera;
 
 class Drawable {
 public:
+	virtual void Draw(ID3D11DeviceContext* pd3dContext) = 0;
+	virtual ~Drawable() {};
+};
+
+class BasicDrawable : public Drawable {
+public:
 	DrawableState mState;
 	DrawableMesh* mMesh;
 	DrawableShader* mShader;
@@ -16,11 +22,9 @@ public:
 
 	void Draw(ID3D11DeviceContext* pd3dContext);
 	
-	Drawable(DrawableMesh* pMesh, DrawableShader* pShader, Camera* pCamera);
-	~Drawable();
-
-private:
-	Drawable(const Drawable& copy);
+	BasicDrawable(DrawableMesh* pMesh, DrawableShader* pShader, Camera* pCamera);
+	BasicDrawable(const BasicDrawable& copy);
+	~BasicDrawable();
 };
 
 #endif

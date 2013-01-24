@@ -6,26 +6,31 @@
 #include "DrawableState.h"
 #include "Drawable.h"
 #include "Camera.h"
+#include "DrawableManager.h"
 
 #include <sstream>
 
 class RendererImplementation {
 public:
 	RendererImplementation(MessageLogger* mLogger)
-		: mLogger(mLogger){
+		: mLogger(mLogger), mDrawableManager(){
 		mCamera = new Camera();
 		cubeLoader = new CubeMeshLoader();
 		cubeMesh = new DrawableMesh(L"CubeMesh",cubeLoader);
 		defaultShader = new DefaultShader();
 
-		cubeDrawable = new Drawable(cubeMesh,defaultShader,mCamera);
+		cubeDrawable = new BasicDrawable(cubeMesh,defaultShader,mCamera);
 		cubeDrawable->mState.mScale.x = 10.0f;
 		cubeDrawable->mState.mScale.z = 10.0f;
 
-		lightDrawable = new Drawable(cubeMesh,defaultShader,mCamera);
+		lightDrawable = new BasicDrawable(cubeMesh,defaultShader,mCamera);
 		lightDrawable->mState.mPosition = DirectX::XMFLOAT3(5.0f,3.0f,2.0f);
 		lightDrawable->mState.mAmbientColour = DirectX::XMFLOAT3(9999999.0f,9999999.0f,9999999.0f);
 		lightDrawable->mState.mScale = DirectX::XMFLOAT3(0.2f,0.2f,0.2f);
+
+		mDrawableManager.addDrawable(cubeDrawable);
+		mDrawableManager.addDrawable(lightDrawable);
+
 
 #ifdef DEBUG
 		mRecompile = FALSE;
@@ -54,12 +59,13 @@ public:
 	void OnExit();
 
 	DXGI_SURFACE_DESC surfaceDescription;
+	DrawableManager mDrawableManager;
 	MessageLogger* mLogger;
 	DrawableMesh* cubeMesh;
 	DrawableShader* defaultShader;
 	CubeMeshLoader* cubeLoader;
-	Drawable* cubeDrawable;
-	Drawable* lightDrawable;
+	BasicDrawable* cubeDrawable;
+	BasicDrawable* lightDrawable;
 	Camera* mCamera;
 #ifdef DEBUG
 	boolean mRecompile;
@@ -131,12 +137,10 @@ void RendererImplementation::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D1
 	pd3dImmediateContext->ClearDepthStencilView( dsv, D3D11_CLEAR_DEPTH, 1.0, 0 );
 
 	//cubeDrawable->mState.mRotation.x = (FLOAT) fTime;
-	//cubeDrawable->mState.mRotation.y = (FLOAT) fTime;
-	//cubeDrawable->mState.mDirty = TRUE;
+	cubeDrawable->mState.mRotation.y = (FLOAT) fTime;
+	cubeDrawable->mState.mDirty = TRUE;
 
-	lightDrawable->Draw(pd3dImmediateContext);
-	
-	cubeDrawable->Draw(pd3dImmediateContext);
+	mDrawableManager.Draw(pd3dImmediateContext);
 
 }
 

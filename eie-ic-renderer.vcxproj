@@ -459,6 +459,7 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="DebugText.cpp" />
     <ClCompile Include="Drawable.cpp" />
+    <ClCompile Include="DrawableManager.cpp" />
     <ClCompile Include="DrawableMesh.cpp" />
     <ClCompile Include="DrawableShader.cpp" />
     <ClCompile Include="DrawableState.cpp" />
@@ -474,6 +475,7 @@
     <ClInclude Include="DirectXMath\DirectXMath.h" />
     <ClInclude Include="DirectXMath\DirectXPackedVector.h" />
     <ClInclude Include="Drawable.h" />
+    <ClInclude Include="DrawableManager.h" />
     <ClInclude Include="DrawableMesh.h" />
     <ClInclude Include="DrawableShader.h" />
     <ClInclude Include="DrawableState.h" />
