@@ -38,6 +38,7 @@ public:
 private:
 	void luaLog(std::string s);
 	void luaLog(float num);
+	void runScript(std::string s);
 	void luaError();
 	MessageLogger* mLogger;
 	Renderer* mRenderer;

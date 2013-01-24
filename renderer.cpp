@@ -11,36 +11,36 @@
 
 Renderer::Renderer(MessageLogger* mLogger) : mLogger(mLogger), mDrawableManager()
 {
-		mCamera = new Camera();
-		cubeLoader = new CubeMeshLoader();
-		cubeMesh = new DrawableMesh(L"CubeMesh",cubeLoader);
-		defaultShader = new DefaultShader();
+	mCamera = new Camera();
+	mCubeLoader = new CubeMeshLoader();
+	mCubeMesh = new DrawableMesh(L"CubeMesh",mCubeLoader);
+	mDefaultShader = new DefaultShader();
 
-		cubeDrawable = new BasicDrawable(cubeMesh,defaultShader,mCamera);
-		cubeDrawable->mState.mScale.x = 10.0f;
-		cubeDrawable->mState.mScale.z = 10.0f;
+	mCubeDrawable = new BasicDrawable(mCubeMesh,mDefaultShader,mCamera);
+	mCubeDrawable->mState.mScale.x = 10.0f;
+	mCubeDrawable->mState.mScale.z = 10.0f;
 
-		lightDrawable = new BasicDrawable(cubeMesh,defaultShader,mCamera);
-		lightDrawable->mState.mPosition = DirectX::XMFLOAT3(5.0f,3.0f,2.0f);
-		lightDrawable->mState.mAmbientColour = DirectX::XMFLOAT3(9999999.0f,9999999.0f,9999999.0f);
-		lightDrawable->mState.mScale = DirectX::XMFLOAT3(0.2f,0.2f,0.2f);
+	mLightDrawable = new BasicDrawable(mCubeMesh,mDefaultShader,mCamera);
+	mLightDrawable->mState.mPosition = DirectX::XMFLOAT3(5.0f,3.0f,2.0f);
+	mLightDrawable->mState.mAmbientColour = DirectX::XMFLOAT3(9999999.0f,9999999.0f,9999999.0f);
+	mLightDrawable->mState.mScale = DirectX::XMFLOAT3(0.2f,0.2f,0.2f);
 
-		mDrawableManager.addDrawable(cubeDrawable);
-		mDrawableManager.addDrawable(lightDrawable);
+	//mDrawableManager.addDrawable(mCubeDrawable);
+	mDrawableManager.addDrawable(mLightDrawable);
 
 #ifdef DEBUG
-		mRecompile = FALSE;
+	mRecompile = FALSE;
 #endif // DEBUG
 
 };
 
 Renderer::~Renderer() {
 	SAFE_DELETE(mCamera);
-	SAFE_DELETE(cubeLoader);
-	SAFE_DELETE(cubeMesh);
-	SAFE_DELETE(defaultShader);
-	SAFE_DELETE(cubeDrawable);
-	SAFE_DELETE(lightDrawable);
+	SAFE_DELETE(mCubeLoader);
+	SAFE_DELETE(mCubeMesh);
+	SAFE_DELETE(mDefaultShader);
+	SAFE_DELETE(mCubeDrawable);
+	SAFE_DELETE(mLightDrawable);
 };
 
 void Renderer::init()
@@ -52,15 +52,15 @@ void Renderer::init()
 HRESULT Renderer::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 {
 	mLogger->log(L"Renderer OnD3D11CreateDevice");
-	defaultShader->OnD3D11CreateDevice(pd3dDevice);
-	cubeMesh->OnD3D11CreateDevice(pd3dDevice);
+	mDefaultShader->OnD3D11CreateDevice(pd3dDevice);
+	mCubeMesh->OnD3D11CreateDevice(pd3dDevice);
 	return S_OK;
 }
 
 HRESULT Renderer::OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, const DXGI_SURFACE_DESC* pBackBufferSurfaceDesc )
 {
 	mLogger->log(L"Renderer OnD3D11ResizedSwapChain");
-	this->surfaceDescription = *pBackBufferSurfaceDesc;
+	this->mSurfaceDescription = *pBackBufferSurfaceDesc;
 	mCamera->updateWindowDimensions();
 	return S_OK;
 }
@@ -83,7 +83,7 @@ LRESULT Renderer::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, b
 
 void Renderer::OnFrameMove( double fTime, float fElapsedTime, void* pUserContext )
 {
-	mCamera->update(surfaceDescription);
+	mCamera->update(mSurfaceDescription);
 }
 
 void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dImmediateContext, double fTime, float fElapsedTime, void* pUserContext )
@@ -91,12 +91,10 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 
 #ifdef DEBUG
 	if (mRecompile) {
-		defaultShader->OnD3D11CreateDevice(pd3dDevice);
+		mDefaultShader->OnD3D11CreateDevice(pd3dDevice);
 		mRecompile = FALSE;
 	}
 #endif // DEBUG
-
-
 
 	// Clear render target and the depth stencil 
 	float ClearColor[4] = { 0.329f, 0.608f, 0.722f, 1.0f };
@@ -107,8 +105,8 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 	pd3dImmediateContext->ClearDepthStencilView( dsv, D3D11_CLEAR_DEPTH, 1.0, 0 );
 
 	//cubeDrawable->mState.mRotation.x = (FLOAT) fTime;
-	cubeDrawable->mState.mRotation.y = (FLOAT) fTime;
-	cubeDrawable->mState.mDirty = TRUE;
+	//mCubeDrawable->mState.mRotation.y = (FLOAT) fTime;
+	//mCubeDrawable->mState.mDirty = TRUE;
 
 	mDrawableManager.Draw(pd3dImmediateContext);
 
@@ -122,6 +120,6 @@ void Renderer::OnExit()
 
 void Renderer::OnD3D11DestroyDevice()
 {
-	cubeMesh->OnD3D11DestroyDevice();
-	defaultShader->OnD3D11DestroyDevice();
+	mCubeMesh->OnD3D11DestroyDevice();
+	mDefaultShader->OnD3D11DestroyDevice();
 }

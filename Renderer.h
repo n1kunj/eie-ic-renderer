@@ -26,14 +26,14 @@ public:
 	void OnD3D11DestroyDevice();
 	void OnExit();
 
-	DXGI_SURFACE_DESC surfaceDescription;
+	DXGI_SURFACE_DESC mSurfaceDescription;
 	DrawableManager mDrawableManager;
 	MessageLogger* mLogger;
-	DrawableMesh* cubeMesh;
-	DrawableShader* defaultShader;
-	CubeMeshLoader* cubeLoader;
-	BasicDrawable* cubeDrawable;
-	BasicDrawable* lightDrawable;
+	DrawableMesh* mCubeMesh;
+	DrawableShader* mDefaultShader;
+	CubeMeshLoader* mCubeLoader;
+	BasicDrawable* mCubeDrawable;
+	BasicDrawable* mLightDrawable;
 	Camera* mCamera;
 #ifdef DEBUG
 	boolean mRecompile;

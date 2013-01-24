@@ -1,6 +1,10 @@
 #include "DXUT.h"
 #include "MessageProcessor.h"
 #include "Renderer.h"
+#include "Drawable.h"
+#include "Camera.h"
+#include "DrawableShader.h"
+#include "DrawableMesh.h"
 #include <string>
 
 extern "C" {
@@ -24,29 +28,31 @@ RendererMessageProcessor::RendererMessageProcessor( MessageLogger* logger, Rende
 
 	open(mLuaState);
 
-	luaL_dostring(
-		mLuaState,
-		"RMP = 0 \n"
-		"function setRMP(pRMP)\n"
-		"RMP = pRMP\n"
-		"end\n"
-		);
-
-	luaL_dostring(
-		mLuaState,
-		"function print(X)\n"
-		"RMP:luaLog(X)\n"
-		"end\n"
-		);
-
 	// Add our function to the state's global scope
 	module(mLuaState) [
 		class_<RendererMessageProcessor>("RendererMessageProcessor")
 		.def("luaLog", (void(RendererMessageProcessor::*)(string))&RendererMessageProcessor::luaLog)
 		.def("luaLog", (void(RendererMessageProcessor::*)(float))&RendererMessageProcessor::luaLog)
+		.def("runScript", &RendererMessageProcessor::runScript),
+		class_<Camera>("Camera"),
+		class_<DrawableShader>("DrawableShader"),
+		class_<DrawableMesh>("DrawableMesh"),
+		class_<Drawable, Drawable*>("Drawable"),
+		class_<BasicDrawable,bases<Drawable>,BasicDrawable*>("BasicDrawable")
+		.def(constructor<DrawableMesh*,DrawableShader*,Camera*>()),
+		class_<DrawableManager>("DrawableManager")
+		.def("addDrawable",&DrawableManager::addDrawable)
 	];
+	runScript("setup.lua");
+	//luaL_dofile(mLuaState,"Media/Lua/setup.lua");
 
 	call_function<void>(mLuaState,"setRMP",this);
+	call_function<void>(mLuaState,"setCamera",boost::ref(mRenderer->mCamera));
+	call_function<void>(mLuaState,"setShader",boost::ref(mRenderer->mDefaultShader));
+	call_function<void>(mLuaState,"setMesh",boost::ref(mRenderer->mCubeMesh));
+	call_function<void>(mLuaState,"setDrawMan",boost::ref(mRenderer->mDrawableManager));
+
+	runScript("cube.lua");
 
 }
 
@@ -89,4 +95,11 @@ void RendererMessageProcessor::luaError()
 	wstringstream ss(ws);
 	mLogger->log(&ss,mErrorColourR,mErrorColourG,mErrorColourB);
 	lua_pop(mLuaState, 1);
+}
+
+void RendererMessageProcessor::runScript( string s )
+{
+	if (luaL_dofile(mLuaState,("Media/Lua/" + s).c_str()) == 1) {
+		luaError();	
+	}
 }
