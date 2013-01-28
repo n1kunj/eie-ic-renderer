@@ -13,7 +13,7 @@ function print(X)
 RMP:luaLog(X)
 end
 
-function runScript(X)
+function run(X)
 RMP:runScript(X)
 end
 
@@ -31,4 +31,8 @@ end
 
 function setDrawMan(pDrawMan)
 DRAWMAN = pDrawMan
+end
+
+function reset()
+DRAWMAN:reset()
 end

@@ -37,3 +37,11 @@ void DrawableManager::Draw(ID3D11DeviceContext* pd3dContext)
 		}
 	}
 }
+
+void DrawableManager::reset()
+{
+	for (UINT i = 0; i < mDrawableVector.size(); i++) {
+		SAFE_DELETE(mDrawableVector[i]);
+	}
+	mDrawableVector.clear();
+}

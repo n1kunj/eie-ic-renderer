@@ -16,18 +16,6 @@ Renderer::Renderer(MessageLogger* mLogger) : mLogger(mLogger), mDrawableManager(
 	mCubeMesh = new DrawableMesh(L"CubeMesh",mCubeLoader);
 	mDefaultShader = new DefaultShader();
 
-	mCubeDrawable = new BasicDrawable(mCubeMesh,mDefaultShader,mCamera);
-	mCubeDrawable->mState.mScale.x = 10.0f;
-	mCubeDrawable->mState.mScale.z = 10.0f;
-
-	mLightDrawable = new BasicDrawable(mCubeMesh,mDefaultShader,mCamera);
-	mLightDrawable->mState.mPosition = DirectX::XMFLOAT3(5.0f,3.0f,2.0f);
-	mLightDrawable->mState.mAmbientColour = DirectX::XMFLOAT3(9999999.0f,9999999.0f,9999999.0f);
-	mLightDrawable->mState.mScale = DirectX::XMFLOAT3(0.2f,0.2f,0.2f);
-
-	//mDrawableManager.addDrawable(mCubeDrawable);
-	mDrawableManager.addDrawable(mLightDrawable);
-
 #ifdef DEBUG
 	mRecompile = FALSE;
 #endif // DEBUG
@@ -39,8 +27,6 @@ Renderer::~Renderer() {
 	SAFE_DELETE(mCubeLoader);
 	SAFE_DELETE(mCubeMesh);
 	SAFE_DELETE(mDefaultShader);
-	SAFE_DELETE(mCubeDrawable);
-	SAFE_DELETE(mLightDrawable);
 };
 
 void Renderer::init()
@@ -104,10 +90,6 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 	pd3dImmediateContext->ClearRenderTargetView( rtv, ClearColor );
 	pd3dImmediateContext->ClearDepthStencilView( dsv, D3D11_CLEAR_DEPTH, 1.0, 0 );
 
-	//cubeDrawable->mState.mRotation.x = (FLOAT) fTime;
-	//mCubeDrawable->mState.mRotation.y = (FLOAT) fTime;
-	//mCubeDrawable->mState.mDirty = TRUE;
-
 	mDrawableManager.Draw(pd3dImmediateContext);
 
 }
@@ -116,6 +98,7 @@ void Renderer::OnExit()
 {
 	mLogger->log(L"Renderer OnExit");
 	//TODO: cleanup
+	mDrawableManager.reset();
 }
 
 void Renderer::OnD3D11DestroyDevice()

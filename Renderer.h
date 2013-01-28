@@ -32,8 +32,6 @@ public:
 	DrawableMesh* mCubeMesh;
 	DrawableShader* mDefaultShader;
 	CubeMeshLoader* mCubeLoader;
-	BasicDrawable* mCubeDrawable;
-	BasicDrawable* mLightDrawable;
 	Camera* mCamera;
 #ifdef DEBUG
 	boolean mRecompile;

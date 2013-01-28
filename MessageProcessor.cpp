@@ -6,6 +6,7 @@
 #include "DrawableShader.h"
 #include "DrawableMesh.h"
 #include <string>
+#include "DirectXMath\DirectXMath.h"
 
 extern "C" {
 #include "lua.h"
@@ -17,6 +18,7 @@ extern "C" {
 
 using namespace luabind;
 using namespace std;
+using namespace DirectX;
 
 RendererMessageProcessor::RendererMessageProcessor( MessageLogger* logger, Renderer* renderer ) :
 	mLogger(logger), mRenderer(renderer),
@@ -28,6 +30,8 @@ RendererMessageProcessor::RendererMessageProcessor( MessageLogger* logger, Rende
 
 	open(mLuaState);
 
+	luaL_openlibs(mLuaState);
+
 	// Add our function to the state's global scope
 	module(mLuaState) [
 		class_<RendererMessageProcessor>("RendererMessageProcessor")
@@ -37,14 +41,31 @@ RendererMessageProcessor::RendererMessageProcessor( MessageLogger* logger, Rende
 		class_<Camera>("Camera"),
 		class_<DrawableShader>("DrawableShader"),
 		class_<DrawableMesh>("DrawableMesh"),
+
+		class_<XMFLOAT3>("XMFLOAT3")
+		.def_readwrite("x", &XMFLOAT3::x)
+		.def_readwrite("y", &XMFLOAT3::y)
+		.def_readwrite("z", &XMFLOAT3::z),
+
+		class_<DrawableState>("DrawableState")
+		.def_readwrite("mPosition", &DrawableState::mPosition)
+		.def_readwrite("mScale", &DrawableState::mScale)
+		.def_readwrite("mRotation", &DrawableState::mRotation)
+		.def_readwrite("mDiffuseColour", &DrawableState::mDiffuseColour)
+		.def_readwrite("mAmbientColour", &DrawableState::mAmbientColour)
+		.def_readwrite("mSpecularColour", &DrawableState::mSpecularColour)
+		.def_readwrite("mSpecularExponent", &DrawableState::mSpecularExponent),
+
 		class_<Drawable, Drawable*>("Drawable"),
 		class_<BasicDrawable,bases<Drawable>,BasicDrawable*>("BasicDrawable")
-		.def(constructor<DrawableMesh*,DrawableShader*,Camera*>()),
+		.def(constructor<DrawableMesh*,DrawableShader*,Camera*>())
+		.def_readwrite("mState", &BasicDrawable::mState),
+
 		class_<DrawableManager>("DrawableManager")
 		.def("addDrawable",&DrawableManager::addDrawable)
+		.def("reset",&DrawableManager::reset)
 	];
 	runScript("setup.lua");
-	//luaL_dofile(mLuaState,"Media/Lua/setup.lua");
 
 	call_function<void>(mLuaState,"setRMP",this);
 	call_function<void>(mLuaState,"setCamera",boost::ref(mRenderer->mCamera));

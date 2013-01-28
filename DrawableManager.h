@@ -15,6 +15,7 @@ public:
 	void addDrawable(Drawable* pDrawable);
 	void Draw(ID3D11DeviceContext* pd3dContext);
 	BOOLEAN removeDrawable( Drawable* pDrawable);
+	void reset();
 private:
 	std::vector<Drawable*> mDrawableVector;
 };
