@@ -22,7 +22,7 @@ state.mScale.z = 0.2
 
 DRAWMAN:addDrawable(lightSrc)
 
-for i=1,1000 do
+for i=1,10000 do
 cubeptr = BasicDrawable(MESH,SHADER,CAMERA)
 
 pos = cubeptr.mState.mPosition

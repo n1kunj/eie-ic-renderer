@@ -28,6 +28,7 @@ public:
 
 	void update(DXGI_SURFACE_DESC pSurfaceDesc);
 	void updateWindowDimensions();
+	BOOL testFrustum( DirectX::XMFLOAT3 pPos, FLOAT pSphereRadius );
 
 	LRESULT MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool* pbNoFurtherProcessing,
 		void* pUserContext );
@@ -36,6 +37,22 @@ public:
 	~Camera();
 
 private:
+	DirectX::XMVECTOR mActualUp;
+
+	DirectX::XMVECTOR mNearNormal;
+	DirectX::XMVECTOR mFarNormal;
+	DirectX::XMVECTOR mLeftNormal;
+	DirectX::XMVECTOR mRightNormal;
+	DirectX::XMVECTOR mTopNormal;
+	DirectX::XMVECTOR mBottomNormal;
+
+	DirectX::XMVECTOR mLeftTopNearPoint;
+	DirectX::XMVECTOR mRightBottomFarPoint;
+
+	FLOAT mzFar;
+	FLOAT mzNear;
+	FLOAT mYFOV;
+
 	POINT mMouseStart;
 	DOUBLE mMoveDistanceX;
 	DOUBLE mMoveDistanceY;

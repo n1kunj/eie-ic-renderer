@@ -4,6 +4,7 @@
 #include <WinUser.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include <sstream>
 
 #define CAMERALOOKSCALE 0.005
 
@@ -11,13 +12,17 @@
 
 using namespace DirectX;
 
-Camera::Camera() : mHeldMouseLooking(FALSE),mMouseCentred(FALSE),mForceMouseLooking(FALSE), mMouseStart(), mMoveDistanceX(0), mMoveDistanceY(0),
-	mCamMoveBackward(),mCamMoveForward(),mCamStrafeLeft(),mCamStrafeRight(),mCamMoveUp(),mCamMoveDown()
+Camera::Camera() : mHeldMouseLooking(FALSE),mMouseCentred(FALSE),
+	mForceMouseLooking(FALSE), mMouseStart(), mMoveDistanceX(0),
+	mMoveDistanceY(0),mCamMoveBackward(),mCamMoveForward(),
+	mCamStrafeLeft(),mCamStrafeRight(),mCamMoveUp(),mCamMoveDown(),
+	mzFar(10000.0f),mzNear(0.1f),mYFOV(XM_PIDIV2)
 {
 	// Initialize the view matrix
-	mEye = XMVectorSet( 0.0f, 2.0f, 5.0f, 0.0f );
-	mLookVector = XMVectorSet( 0.0f, 0.0f, -1.0f, 0.0f );
+	mEye = XMVectorSet( 0.0f, 0.0f, 0.0f, 0.0f );
+	mLookVector = XMVectorSet( 0.0f, 0.0f, 1.0f, 0.0f );
 	mUp = XMVectorSet( 0.0f, 1.0f, 0.0f, 0.0f );
+	mActualUp = XMVectorSet(0.0f,1.0f,0.0f,0.0f);
 }
 
 Camera::~Camera()
@@ -32,9 +37,63 @@ void Camera::update(DXGI_SURFACE_DESC pSurfaceDesc)
 
 	mViewMatrix = XMMatrixLookAtLH( mEye, lookAt, mUp );
 
-	mProjectionMatrix = XMMatrixPerspectiveFovLH( XM_PIDIV2, pSurfaceDesc.Width / (FLOAT)pSurfaceDesc.Height, 0.01f, 100.0f );
+	FLOAT aspect = pSurfaceDesc.Width / (FLOAT)pSurfaceDesc.Height;
+
+	mProjectionMatrix = XMMatrixPerspectiveFovLH( mYFOV, aspect, mzNear, mzFar);
 
 	mViewProjectionMatrix = XMMatrixMultiply(mViewMatrix,mProjectionMatrix);
+
+	XMVECTOR rightVec = XMVector3Normalize(XMVector3Cross(mLookVector,mActualUp));
+
+	FLOAT height = 2 * tan(mYFOV/2);
+
+	FLOAT nearH = height * mzNear;
+	FLOAT nearW = nearH * aspect;
+
+	FLOAT farH = height * mzFar;
+	FLOAT farW = farH * aspect;
+
+	FLOAT halfNearH = nearH/2;
+	FLOAT halfNearW = nearW/2;
+
+	FLOAT halfFarH = farH/2;
+	FLOAT halfFarW = farW/2;
+
+	XMVECTOR nearUpVec = mActualUp * halfNearH;
+	XMVECTOR nearRightVec = rightVec * halfNearW;
+	
+	XMVECTOR farUpVec = mActualUp * halfFarH;
+	XMVECTOR farRightVec = rightVec * halfFarW;
+
+	XMVECTOR npc = mEye + (mLookVector * mzNear);
+
+	XMVECTOR nptl = npc + nearUpVec - nearRightVec;
+
+	XMVECTOR npbr = npc - nearUpVec - nearRightVec;
+
+	XMVECTOR fpc = mEye + (mLookVector * mzFar);
+
+	XMVECTOR fptl = fpc + farUpVec - farRightVec;
+
+	XMVECTOR fpbr = fpc - farUpVec + farRightVec;
+
+	mNearNormal = mLookVector;
+	mFarNormal = -mLookVector;
+
+	XMVECTOR ltv = nptl - fptl;
+	XMVECTOR rbv = fpbr - npbr;
+
+	mLeftNormal = XMVector3Normalize(XMVector3Cross(mActualUp,ltv));
+
+	mRightNormal = XMVector3Normalize(XMVector3Cross(mActualUp,rbv));
+
+	mTopNormal = XMVector3Normalize(XMVector3Cross(rightVec,ltv));
+
+	mBottomNormal = XMVector3Normalize(XMVector3Cross(rightVec,rbv));
+
+	mLeftTopNearPoint = nptl;
+	mRightBottomFarPoint = fpbr;
+
 }
 
 LRESULT Camera::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool* pbNoFurtherProcessing, void* pUserContext )
@@ -167,15 +226,9 @@ void Camera::updateCameraLook(XMINT2 pMoveDelta) {
 		}
 
 		//Look angle (really a unit vector)
-		DOUBLE angleX = sinX * cosY;
-		DOUBLE angleY = -sinY;
-		DOUBLE angleZ = -cosX * cosY;
-		DOUBLE angleMag = sqrt(angleX * angleX + angleY * angleY + angleZ * angleZ);
-		angleX /= angleMag;
-		angleY /= angleMag;
-		angleZ /= angleMag;
+		mLookVector = XMVector3Normalize(XMVectorSet(sinX * cosY,-sinY, -cosX * cosY, 0.0f));
 
-		mLookVector = XMVectorSet((FLOAT)angleX,(FLOAT)angleY,(FLOAT)angleZ,0.0f);
+		mActualUp = XMVector3Normalize(XMVectorSet(sinX * sinY, cosY, -sinY * cosX, 0.0f));
 }
 
 void Camera::keyInteracted(HWND hWnd, UINT uMsg, WPARAM wParam, bool* pbNoFurtherProcessing)
@@ -323,4 +376,58 @@ DWORD CameraButton::GetTicksPressedFor()
 	mLastProcessed = curTime;
 
 	return retTime;
+}
+
+//Returns TRUE if it passes
+BOOL Camera::testFrustum( XMFLOAT3 pPos, FLOAT pSphereRadius )
+{
+	XMVECTOR pos = XMVectorSet(pPos.x,pPos.y,pPos.z,0.0f);
+
+	XMVECTOR ltn = pos - mLeftTopNearPoint;
+
+	FLOAT test1 = XMVectorGetX(XMVector3Dot(ltn,mNearNormal));
+	if (test1 < 0) {
+		if (test1 + pSphereRadius < 0) {
+			return FALSE;
+		}
+	}
+
+	FLOAT test2 = XMVectorGetX(XMVector3Dot(ltn,mLeftNormal));
+	if (test2 < 0) {
+		if (test2 + pSphereRadius < 0) {
+			return FALSE;
+		}
+	}
+
+	FLOAT test3 = XMVectorGetX(XMVector3Dot(ltn,mTopNormal));
+	if (test3 < 0) {
+		if (test3 + pSphereRadius < 0) {
+			return FALSE;
+		}
+	}
+
+	XMVECTOR rbf = pos - mRightBottomFarPoint;
+
+	FLOAT test4 = XMVectorGetX(XMVector3Dot(rbf,mRightNormal));
+	if (test4 < 0) {
+		if (test4 + pSphereRadius < 0) {
+			return FALSE;
+		}
+	}
+
+	FLOAT test5 = XMVectorGetX(XMVector3Dot(rbf,mBottomNormal));
+	if (test5 < 0) {
+		if (test5 + pSphereRadius < 0) {
+			return FALSE;
+		}
+	}
+
+	FLOAT test6 = XMVectorGetX(XMVector3Dot(rbf,mFarNormal));
+	if (test6 < 0) {
+		if (test6 + pSphereRadius < 0) {
+			return FALSE;
+		}
+	}
+
+	return TRUE;
 }

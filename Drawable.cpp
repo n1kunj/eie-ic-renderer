@@ -6,8 +6,11 @@
 
 void BasicDrawable::Draw(ID3D11DeviceContext* pd3dContext)
 {
-	mState.updateMatrices();
-	mShader->DrawMesh(pd3dContext,mMesh,&mState,mCamera);
+	//TODO: bounds
+	if (mCamera->testFrustum(mState.mPosition,10) == TRUE) {
+		mState.updateMatrices();
+		mShader->DrawMesh(pd3dContext,mMesh,&mState,mCamera);
+	}
 }
 
 BasicDrawable::BasicDrawable(DrawableMesh* pMesh, DrawableShader* pShader, Camera* pCamera)
