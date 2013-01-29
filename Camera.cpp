@@ -20,7 +20,7 @@ Camera::Camera() : mHeldMouseLooking(FALSE),mMouseCentred(FALSE),
 {
 	// Initialize the view matrix
 	mEye = XMVectorSet( 0.0f, 0.0f, 0.0f, 0.0f );
-	mLookVector = XMVectorSet( 0.0f, 0.0f, 1.0f, 0.0f );
+	mLookVector = XMVectorSet( 0.0f, 0.0f, -1.0f, 0.0f );
 	mUp = XMVectorSet( 0.0f, 1.0f, 0.0f, 0.0f );
 	mActualUp = XMVectorSet(0.0f,1.0f,0.0f,0.0f);
 }

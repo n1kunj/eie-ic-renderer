@@ -14,7 +14,7 @@ void BasicDrawable::Draw(ID3D11DeviceContext* pd3dContext)
 }
 
 BasicDrawable::BasicDrawable(DrawableMesh* pMesh, DrawableShader* pShader, Camera* pCamera)
-	: mState(), mMesh(pMesh), mShader(pShader), mCamera(pCamera)
+	: mState(), mMesh(pMesh), mShader(pShader), Drawable(pCamera)
 {
 
 }
