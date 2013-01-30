@@ -16,7 +16,7 @@ Camera::Camera() : mHeldMouseLooking(FALSE),mMouseCentred(FALSE),
 	mForceMouseLooking(FALSE), mMouseStart(), mMoveDistanceX(0),
 	mMoveDistanceY(0),mCamMoveBackward(),mCamMoveForward(),
 	mCamStrafeLeft(),mCamStrafeRight(),mCamMoveUp(),mCamMoveDown(),
-	mzFar(10000.0f),mzNear(0.1f),mYFOV(XM_PIDIV2)
+	mzFar(10000.0f),mzNear(0.1f),mYFOV(XM_PIDIV2), mCoords(0,0,0)
 {
 	// Initialize the view matrix
 	mEye = XMVectorSet( 0.0f, 0.0f, 0.0f, 0.0f );
@@ -29,9 +29,58 @@ Camera::~Camera()
 {
 }
 
+void Camera::setEye(DOUBLE x, DOUBLE y, DOUBLE z) {
+	INT dX = (INT) floor(x);
+	INT dY = (INT) floor(y);
+	INT dZ = (INT) floor(z);
+	mEye = XMVectorSet((FLOAT)(x - dX),
+		(FLOAT)(y - dY),
+		(FLOAT)(z - dZ),1.0f);
+	mCoords = XMINT3(dX,dY,dZ);
+}
+
 void Camera::update(DXGI_SURFACE_DESC pSurfaceDesc)
 {
 	updateCameraMove();
+
+	FLOAT mEyeX = XMVectorGetX(mEye);
+	FLOAT mEyeY = XMVectorGetY(mEye);
+	FLOAT mEyeZ = XMVectorGetZ(mEye);
+
+	if (mEyeX > 1.0f) {
+		INT xDiff = (INT)floor(mEyeX);
+		mCoords.x+=xDiff;
+		mEyeX-=xDiff;
+	}
+	else if (mEyeX < -1.0f) {
+		INT xDiff = (INT)ceil(mEyeX);
+		mCoords.x+=xDiff;
+		mEyeX-=xDiff;
+	}
+
+	if (mEyeY > 1.0f) {
+		INT yDiff = (INT)floor(mEyeY);
+		mCoords.y+=yDiff;
+		mEyeY-=yDiff;
+	}
+	else if (mEyeY < -1.0f) {
+		INT yDiff = (INT)ceil(mEyeY);
+		mCoords.y+=yDiff;
+		mEyeY-=yDiff;
+	}
+
+	if (mEyeZ > 1.0f) {
+		INT zDiff = (INT)floor(mEyeZ);
+		mCoords.z+=zDiff;
+		mEyeZ-=zDiff;
+	}
+	else if (mEyeZ < -1.0f) {
+		INT zDiff = (INT)ceil(mEyeZ);
+		mCoords.z+=zDiff;
+		mEyeZ-=zDiff;
+	}
+
+	mEye = XMVectorSet(mEyeX,mEyeY,mEyeZ,0.0f);
 
 	XMVECTOR lookAt = XMVectorAdd(mEye,mLookVector);
 
@@ -226,9 +275,15 @@ void Camera::updateCameraLook(XMINT2 pMoveDelta) {
 		}
 
 		//Look angle (really a unit vector)
-		mLookVector = XMVector3Normalize(XMVectorSet(sinX * cosY,-sinY, -cosX * cosY, 0.0f));
+		mLookVector = XMVector3Normalize(XMVectorSet(
+			(FLOAT) (sinX * cosY),
+			(FLOAT) (-sinY),
+			(FLOAT) (-cosX * cosY), 0.0f));
 
-		mActualUp = XMVector3Normalize(XMVectorSet(sinX * sinY, cosY, -sinY * cosX, 0.0f));
+		mActualUp = XMVector3Normalize(XMVectorSet(
+			(FLOAT) (sinX * sinY),
+			(FLOAT) (cosY),
+			(FLOAT) (-sinY * cosX), 0.0f));
 }
 
 void Camera::keyInteracted(HWND hWnd, UINT uMsg, WPARAM wParam, bool* pbNoFurtherProcessing)
@@ -379,9 +434,11 @@ DWORD CameraButton::GetTicksPressedFor()
 }
 
 //Returns TRUE if it passes
-BOOL Camera::testFrustum( XMFLOAT3 pPos, FLOAT pSphereRadius )
+BOOL Camera::testFrustum( XMFLOAT3 pPos, XMINT3 pCoords, FLOAT pSphereRadius )
 {
-	XMVECTOR pos = XMVectorSet(pPos.x,pPos.y,pPos.z,0.0f);
+	XMVECTOR pos = XMVectorSet(pPos.x + (pCoords.x - mCoords.x),
+		pPos.y + (pCoords.y - mCoords.y),
+		pPos.z + (pCoords.z - mCoords.z),0.0f);
 
 	XMVECTOR ltn = pos - mLeftTopNearPoint;
 

@@ -38,7 +38,8 @@ RendererMessageProcessor::RendererMessageProcessor( MessageLogger* logger, Rende
 		.def("luaLog", (void(RendererMessageProcessor::*)(string))&RendererMessageProcessor::luaLog)
 		.def("luaLog", (void(RendererMessageProcessor::*)(float))&RendererMessageProcessor::luaLog)
 		.def("runScript", &RendererMessageProcessor::runScript),
-		class_<Camera>("Camera"),
+		class_<Camera>("Camera")
+		.def("setEye", &Camera::setEye),
 		class_<DrawableShader>("DrawableShader"),
 		class_<DrawableMesh>("DrawableMesh"),
 
@@ -48,7 +49,7 @@ RendererMessageProcessor::RendererMessageProcessor( MessageLogger* logger, Rende
 		.def_readwrite("z", &XMFLOAT3::z),
 
 		class_<DrawableState>("DrawableState")
-		.def_readwrite("mPosition", &DrawableState::mPosition)
+		.def("setPosition", &DrawableState::setPosition)
 		.def_readwrite("mScale", &DrawableState::mScale)
 		.def_readwrite("mRotation", &DrawableState::mRotation)
 		.def_readwrite("mDiffuseColour", &DrawableState::mDiffuseColour)

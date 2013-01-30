@@ -3,5 +3,15 @@
 
 Octree::Octree()
 {
-		
+	
+}
+
+Octree::~Octree()
+{
+
+}
+
+void Octree::add( Drawable* pDrawable )
+{
+
 }

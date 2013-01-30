@@ -59,7 +59,9 @@ void DefaultShader::DrawMesh(ID3D11DeviceContext* pd3dContext, const DrawableMes
 	// Update constant buffer
 	VSConstantBuffer vscb;
 
-	XMFLOAT3 lightPos = XMFLOAT3(5.0f,3.0f,2.0f);
+	XMFLOAT3 lightPos = XMFLOAT3(5.0f + pState->mCamOffset.x,
+		3.0f + pState->mCamOffset.y,
+		2.0f + pState->mCamOffset.z);
 	XMFLOAT3 DiffuseLightColour = XMFLOAT3(0.7f,0.7f,0.7f);
 	XMFLOAT3 AmbientLightColour = XMFLOAT3(0.03f,0.03f,0.03f);
 

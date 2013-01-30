@@ -28,10 +28,12 @@ public:
 
 	void update(DXGI_SURFACE_DESC pSurfaceDesc);
 	void updateWindowDimensions();
-	BOOL testFrustum( DirectX::XMFLOAT3 pPos, FLOAT pSphereRadius );
+	BOOL testFrustum( DirectX::XMFLOAT3 pPos, DirectX::XMINT3 pCoords, FLOAT pSphereRadius );
 
 	LRESULT MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool* pbNoFurtherProcessing,
 		void* pUserContext );
+
+	void setEye(DOUBLE x, DOUBLE y, DOUBLE z);
 
 	Camera();
 	~Camera();
@@ -76,6 +78,9 @@ private:
 	CameraButton mCamStrafeRight;
 	CameraButton mCamMoveDown;
 	CameraButton mCamMoveUp;
+
+public:
+	DirectX::XMINT3 mCoords;
 };
 
 #endif

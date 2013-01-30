@@ -7,8 +7,8 @@
 void BasicDrawable::Draw(ID3D11DeviceContext* pd3dContext)
 {
 	//TODO: bounds
-	if (mCamera->testFrustum(mState.mPosition,10) == TRUE) {
-		mState.updateMatrices();
+	if (mCamera->testFrustum(mState.mPosition,mState.mCoords,10) == TRUE) {
+		mState.updateMatrices(mCamera);
 		mShader->DrawMesh(pd3dContext,mMesh,&mState,mCamera);
 	}
 }
@@ -19,12 +19,11 @@ BasicDrawable::BasicDrawable(DrawableMesh* pMesh, DrawableShader* pShader, Camer
 
 }
 
-BasicDrawable::BasicDrawable( const BasicDrawable& copy )
+BasicDrawable::BasicDrawable( const BasicDrawable& copy ) : Drawable(copy.mCamera)
 {
 	mState = copy.mState;
 	mMesh = copy.mMesh;
 	mShader = copy.mShader;
-	mCamera = copy.mCamera;
 }
 
 BasicDrawable::~BasicDrawable()

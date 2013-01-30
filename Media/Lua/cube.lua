@@ -6,11 +6,11 @@ reset()
 
 lightSrc = BasicDrawable(MESH,SHADER,CAMERA)
 
+CAMERA:setEye(500000000,0,0)
+
 state = lightSrc.mState
 
-state.mPosition.x = 5
-state.mPosition.y = 3
-state.mPosition.z = 2
+state:setPosition(5,3,2)
 
 state.mAmbientColour.x = 99999
 state.mAmbientColour.y = 99999
@@ -25,17 +25,17 @@ DRAWMAN:addDrawable(lightSrc)
 for i=1,1000 do
 cubeptr = BasicDrawable(MESH,SHADER,CAMERA)
 
-pos = cubeptr.mState.mPosition
-
-dcol = cubeptr.mState.mDiffuseColour
-
 a = math.random()
 b = math.random()
 c = math.random()
 
-pos.x = 100 * a - 50
-pos.y = 100 * b - 50
-pos.z = 100 * c - 50
+posx = 100 * a - 50 + 500000000
+posy = 100 * b - 50
+posz = 100 * c - 50
+
+cubeptr.mState:setPosition(posx,posy,posz)
+
+dcol = cubeptr.mState.mDiffuseColour
 
 dcol.x = a
 dcol.y = b

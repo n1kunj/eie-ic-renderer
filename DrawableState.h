@@ -3,6 +3,8 @@
 #define DRAWABLE_STATE_H
 #include "DirectXMath\DirectXMath.h"
 
+class Camera;
+
 class DrawableState {
 public:
 	DirectX::XMMATRIX mModelMatrix;
@@ -12,12 +14,12 @@ public:
 	DirectX::XMFLOAT3 mDiffuseColour;
 	DirectX::XMFLOAT3 mAmbientColour;
 	DirectX::XMFLOAT3 mSpecularColour;
+	DirectX::XMINT3 mCoords;
+	DirectX::XMINT3 mCamOffset;
 	FLOAT mSpecularExponent;
 
-
-	boolean mDirty;
-
-	void updateMatrices();
+	void updateMatrices(Camera* pCamera);
+	void setPosition(DOUBLE x, DOUBLE y, DOUBLE z);
 
 	DrawableState();
 	~DrawableState();
