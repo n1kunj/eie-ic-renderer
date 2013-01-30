@@ -1,8 +1,7 @@
 #include "DXUT.h"
 #include "DrawableManager.h"
-#include "Octree.h"
 
-DrawableManager::DrawableManager() : mDrawableVector(), mOctreeVector()
+DrawableManager::DrawableManager() : mDrawableVector()
 {
 	mDrawableVector.reserve(10000);
 }
@@ -15,21 +14,6 @@ DrawableManager::~DrawableManager()
 void DrawableManager::addDrawable( Drawable* pDrawable )
 {
 	mDrawableVector.push_back(pDrawable);
-	for (UINT i = 0; i < mOctreeVector.size(); i++) {
-		if (mOctreeVector[i].mCamera == pDrawable->mCamera) {
-			mOctreeVector[i].mOctree->add(pDrawable);
-			return;
-		}
-	}
-
-	OctreeStruct octreeStruct;
-	octreeStruct.mCamera = pDrawable->mCamera;
-	octreeStruct.mOctree = new Octree();
-
-	octreeStruct.mOctree->add(pDrawable);
-
-	mOctreeVector.push_back(octreeStruct);
-
 }
 
 //Return TRUE if successfully removed, else FALSE
@@ -63,9 +47,4 @@ void DrawableManager::reset()
 		SAFE_DELETE(mDrawableVector[i]);
 	}
 	mDrawableVector.clear();
-
-	for (UINT i = 0; i < mOctreeVector.size(); i++) {
-		SAFE_DELETE(mOctreeVector[i].mOctree);
-	}
-	mOctreeVector.clear();
 }

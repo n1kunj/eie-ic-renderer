@@ -4,11 +4,9 @@
 #include <vector>
 #include "Drawable.h"
 
-class Octree;
 class Camera;
 
 struct OctreeStruct {
-	Octree* mOctree;
 	Camera* mCamera;
 };
 
@@ -22,7 +20,6 @@ public:
 	void reset();
 private:
 	std::vector<Drawable*> mDrawableVector;
-	std::vector<OctreeStruct> mOctreeVector;
 };
 
 #endif // !DRAWABLE_MANAGER_H

@@ -466,7 +466,6 @@
     <ClCompile Include="Gui.cpp" />
     <ClCompile Include="MessageProcessor.cpp" />
     <ClCompile Include="Meshes\CubeMeshLoader.cpp" />
-    <ClCompile Include="Octree.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Shaders\DefaultShader.cpp" />
     <ClCompile Include="Textures\Textures.cpp" />
@@ -482,7 +481,6 @@
     <ClInclude Include="DrawableState.h" />
     <ClInclude Include="MessageProcessor.h" />
     <ClInclude Include="Meshes\CubeMeshLoader.h" />
-    <ClInclude Include="Octree.h" />
     <ClInclude Include="Shaders\DefaultShader.h" />
     <ClInclude Include="Textures\Textures.h" />
     <ClInclude Include="Utils\ShaderTools.h" />
