@@ -6,7 +6,7 @@ reset()
 
 lightSrc = BasicDrawable(MESH,SHADER,CAMERA)
 
-CAMERA:setEye(500000000,0,0)
+CAMERA:setEye(1000000,0,0)
 
 state = lightSrc.mState
 
@@ -29,7 +29,7 @@ a = math.random()
 b = math.random()
 c = math.random()
 
-posx = 100 * a - 50 + 500000000
+posx = 100 * a - 50 + 1000000
 posy = 100 * b - 50
 posz = 100 * c - 50
 

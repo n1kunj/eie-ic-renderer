@@ -30,57 +30,58 @@ Camera::~Camera()
 }
 
 void Camera::setEye(DOUBLE x, DOUBLE y, DOUBLE z) {
-	INT dX = (INT) floor(x);
-	INT dY = (INT) floor(y);
-	INT dZ = (INT) floor(z);
-	mEye = XMVectorSet((FLOAT)(x - dX),
-		(FLOAT)(y - dY),
-		(FLOAT)(z - dZ),1.0f);
-	mCoords = XMINT3(dX,dY,dZ);
+	//INT dX = (INT) floor(x);
+	//INT dY = (INT) floor(y);
+	//INT dZ = (INT) floor(z);
+	//mEye = XMVectorSet((FLOAT)(x - dX),
+	//	(FLOAT)(y - dY),
+	//	(FLOAT)(z - dZ),1.0f);
+	//mCoords = XMINT3(dX,dY,dZ);
+	mEye = XMVectorSet(x,y,z,0.0f);
 }
 
 void Camera::update(DXGI_SURFACE_DESC pSurfaceDesc)
 {
 	updateCameraMove();
 
-	FLOAT mEyeX = XMVectorGetX(mEye);
-	FLOAT mEyeY = XMVectorGetY(mEye);
-	FLOAT mEyeZ = XMVectorGetZ(mEye);
+	//FLOAT mEyeX = XMVectorGetX(mEye);
+	//FLOAT mEyeY = XMVectorGetY(mEye);
+	//FLOAT mEyeZ = XMVectorGetZ(mEye);
 
-	if (mEyeX > 1.0f) {
-		INT xDiff = (INT)floor(mEyeX);
-		mCoords.x+=xDiff;
-		mEyeX-=xDiff;
-	}
-	else if (mEyeX < -1.0f) {
-		INT xDiff = (INT)ceil(mEyeX);
-		mCoords.x+=xDiff;
-		mEyeX-=xDiff;
-	}
+	//if (mEyeX > 1.0f) {
+	//	INT xDiff = (INT)floor(mEyeX);
+	//	mCoords.x+=xDiff;
+	//	mEyeX-=xDiff;
+	//}
+	//else if (mEyeX < -1.0f) {
+	//	INT xDiff = (INT)ceil(mEyeX);
+	//	mCoords.x+=xDiff;
+	//	mEyeX-=xDiff;
+	//}
 
-	if (mEyeY > 1.0f) {
-		INT yDiff = (INT)floor(mEyeY);
-		mCoords.y+=yDiff;
-		mEyeY-=yDiff;
-	}
-	else if (mEyeY < -1.0f) {
-		INT yDiff = (INT)ceil(mEyeY);
-		mCoords.y+=yDiff;
-		mEyeY-=yDiff;
-	}
+	//if (mEyeY > 1.0f) {
+	//	INT yDiff = (INT)floor(mEyeY);
+	//	mCoords.y+=yDiff;
+	//	mEyeY-=yDiff;
+	//}
+	//else if (mEyeY < -1.0f) {
+	//	INT yDiff = (INT)ceil(mEyeY);
+	//	mCoords.y+=yDiff;
+	//	mEyeY-=yDiff;
+	//}
 
-	if (mEyeZ > 1.0f) {
-		INT zDiff = (INT)floor(mEyeZ);
-		mCoords.z+=zDiff;
-		mEyeZ-=zDiff;
-	}
-	else if (mEyeZ < -1.0f) {
-		INT zDiff = (INT)ceil(mEyeZ);
-		mCoords.z+=zDiff;
-		mEyeZ-=zDiff;
-	}
+	//if (mEyeZ > 1.0f) {
+	//	INT zDiff = (INT)floor(mEyeZ);
+	//	mCoords.z+=zDiff;
+	//	mEyeZ-=zDiff;
+	//}
+	//else if (mEyeZ < -1.0f) {
+	//	INT zDiff = (INT)ceil(mEyeZ);
+	//	mCoords.z+=zDiff;
+	//	mEyeZ-=zDiff;
+	//}
 
-	mEye = XMVectorSet(mEyeX,mEyeY,mEyeZ,0.0f);
+	//mEye = XMVectorSet(mEyeX,mEyeY,mEyeZ,0.0f);
 
 	XMVECTOR lookAt = XMVectorAdd(mEye,mLookVector);
 
