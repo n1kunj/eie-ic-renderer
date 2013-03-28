@@ -37,7 +37,7 @@ PS_INPUT VS( VS_INPUT input)
     PS_INPUT output = (PS_INPUT)0;
 	
 	output.Pos = mul(input.Pos,MVP);
-	output.ModelPos = mul(input.Pos,Model);
+	output.ModelPos = mul(input.Pos,MV);
     output.Norm = normalize(mul(input.Norm,Model));
     return output;
 }
@@ -45,9 +45,6 @@ PS_INPUT VS( VS_INPUT input)
 float4 PS( PS_INPUT input ) : SV_Target
 {
 	float3 lightVec = normalize(LightPos - input.ModelPos);
-
-	//float3 norm = (cameraVec*0.5f) + 0.5f;
-	//return float4(norm,1.0f);
 
 	float diffuse = saturate( dot(lightVec, input.Norm));
 

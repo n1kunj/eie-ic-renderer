@@ -1,7 +1,7 @@
 --Globals
 RMP = 0
 CAMERA = 0
-SHADER = 0
+SHADERMAN = 0
 MESH = 0
 DRAWMAN = 0
 -- Set up console printer
@@ -21,8 +21,8 @@ function setCamera(pCam)
 CAMERA = pCam
 end
 
-function setShader(pShader)
-SHADER = pShader
+function setShaderMan(pShaderMan)
+SHADERMAN = pShaderMan
 end
 
 function setMesh(pMesh)

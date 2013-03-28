@@ -3,9 +3,13 @@
 #include "MessageProcessor.h"
 #include "Meshes/CubeMeshLoader.h"
 #include "Shaders/DefaultShader.h"
+#include "Shaders/DeferredTileComputeShader.h"
+#include "Shaders/GBufferShader.h"
 #include "DrawableState.h"
 #include "Drawable.h"
 #include "Camera.h"
+#include "ShaderManager.h"
+
 
 #include <sstream>
 
@@ -14,7 +18,9 @@ Renderer::Renderer(MessageLogger* mLogger) : mLogger(mLogger), mDrawableManager(
 	mCamera = new Camera();
 	mCubeLoader = new CubeMeshLoader();
 	mCubeMesh = new DrawableMesh(L"CubeMesh",mCubeLoader);
-	mDefaultShader = new DefaultShader();
+	mShaderManager = new ShaderManager(mLogger);
+	mShaderManager->addShader(new DefaultShader());
+	mShaderManager->addShader(new GBufferShader());
 
 #ifdef DEBUG
 	mRecompile = FALSE;
@@ -26,7 +32,6 @@ Renderer::~Renderer() {
 	SAFE_DELETE(mCamera);
 	SAFE_DELETE(mCubeLoader);
 	SAFE_DELETE(mCubeMesh);
-	SAFE_DELETE(mDefaultShader);
 };
 
 void Renderer::init()
@@ -38,8 +43,8 @@ void Renderer::init()
 HRESULT Renderer::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 {
 	mLogger->log(L"Renderer OnD3D11CreateDevice");
-	mDefaultShader->OnD3D11CreateDevice(pd3dDevice);
 	mCubeMesh->OnD3D11CreateDevice(pd3dDevice);
+	mShaderManager->OnD3D11CreateDevice(pd3dDevice);
 	return S_OK;
 }
 
@@ -77,7 +82,7 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 
 #ifdef DEBUG
 	if (mRecompile) {
-		mDefaultShader->OnD3D11CreateDevice(pd3dDevice);
+		mShaderManager->OnD3D11CreateDevice(pd3dDevice);
 		mRecompile = FALSE;
 	}
 #endif // DEBUG
@@ -92,6 +97,7 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 
 	mDrawableManager.Draw(pd3dImmediateContext);
 
+
 }
 
 void Renderer::OnExit()
@@ -104,5 +110,5 @@ void Renderer::OnExit()
 void Renderer::OnD3D11DestroyDevice()
 {
 	mCubeMesh->OnD3D11DestroyDevice();
-	mDefaultShader->OnD3D11DestroyDevice();
+	mShaderManager->OnD3D11DestroyDevice();
 }

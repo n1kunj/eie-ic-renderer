@@ -6,8 +6,10 @@
 class MessageLogger;
 class DrawableMesh;
 class DrawableShader;
+class DeferredTileComputeShader;
 class CubeMeshLoader;
 class BasicDrawable;
+class ShaderManager;
 class Camera;
 
 class Renderer {
@@ -30,8 +32,8 @@ public:
 	DrawableManager mDrawableManager;
 	MessageLogger* mLogger;
 	DrawableMesh* mCubeMesh;
-	DrawableShader* mDefaultShader;
 	CubeMeshLoader* mCubeLoader;
+	ShaderManager* mShaderManager;
 	Camera* mCamera;
 #ifdef DEBUG
 	boolean mRecompile;

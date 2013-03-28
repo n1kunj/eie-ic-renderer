@@ -17,9 +17,6 @@
     <Filter Include="Meshes">
       <UniqueIdentifier>{b454b8f0-873f-483e-bda8-40c84618c5cb}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Resource Files\Shaders">
-      <UniqueIdentifier>{a6ee4ba7-9ddb-4c29-8d21-3da1d47a680e}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Shaders">
       <UniqueIdentifier>{92abcaf0-17eb-41b1-8bc7-416f6c0abaed}</UniqueIdentifier>
     </Filter>
@@ -91,9 +88,6 @@
     <ClCompile Include="DXUT\Optional\SDKmisc.cpp">
       <Filter>DXUT</Filter>
     </ClCompile>
-    <None Include="Media\Shaders\Tutorial03.fx">
-      <Filter>Resource Files\Shaders</Filter>
-    </None>
     <None Include="DirectXMath\DirectXCollision.inl">
       <Filter>DirectXMath</Filter>
     </None>
@@ -149,6 +143,14 @@
     </ClInclude>
     <ClInclude Include="MessageProcessor.h" />
     <ClInclude Include="DrawableManager.h" />
+    <ClInclude Include="PostShader.h" />
+    <ClInclude Include="Shaders\DeferredTileComputeShader.h">
+      <Filter>Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\GBufferShader.h">
+      <Filter>Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugText.cpp" />
@@ -171,10 +173,15 @@
       <Filter>Meshes</Filter>
     </ClCompile>
     <ClCompile Include="Drawable.cpp" />
-    <ClCompile Include="DrawableShader.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="MessageProcessor.cpp" />
     <ClCompile Include="DrawableManager.cpp" />
+    <ClCompile Include="Shaders\DeferredTileComputeShader.cpp">
+      <Filter>Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders\GBufferShader.cpp">
+      <Filter>Shaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="eie-ic-renderer.rc">

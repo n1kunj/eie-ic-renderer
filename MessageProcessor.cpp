@@ -5,6 +5,7 @@
 #include "Camera.h"
 #include "DrawableShader.h"
 #include "DrawableMesh.h"
+#include "ShaderManager.h"
 #include <string>
 #include "DirectXMath\DirectXMath.h"
 
@@ -64,13 +65,16 @@ RendererMessageProcessor::RendererMessageProcessor( MessageLogger* logger, Rende
 
 		class_<DrawableManager>("DrawableManager")
 		.def("addDrawable",&DrawableManager::addDrawable)
-		.def("reset",&DrawableManager::reset)
+		.def("reset",&DrawableManager::reset),
+
+		class_<ShaderManager>("ShaderManager")
+		.def("getDrawableShader",&ShaderManager::getDrawableShader)
 	];
 	runScript("setup.lua");
 
 	call_function<void>(mLuaState,"setRMP",this);
 	call_function<void>(mLuaState,"setCamera",boost::ref(mRenderer->mCamera));
-	call_function<void>(mLuaState,"setShader",boost::ref(mRenderer->mDefaultShader));
+	call_function<void>(mLuaState,"setShaderMan",boost::ref(mRenderer->mShaderManager));
 	call_function<void>(mLuaState,"setMesh",boost::ref(mRenderer->mCubeMesh));
 	call_function<void>(mLuaState,"setDrawMan",boost::ref(mRenderer->mDrawableManager));
 
@@ -86,8 +90,6 @@ RendererMessageProcessor::~RendererMessageProcessor()
 
 void RendererMessageProcessor::processMessage(WCHAR* pInput)
 {
-	//TODO: this!
-
 	//TODO: make this not so horribly inefficient!
 	wstring ws = wstring(pInput);
 	string s(ws.begin(),ws.end());

@@ -3,10 +3,11 @@ run("cube.lua")
 end
 
 reset()
+shader = SHADERMAN:getDrawableShader("GBufferShader")
+--shader = SHADERMAN:getDrawableShader("DefaultShader")
+lightSrc = BasicDrawable(MESH,shader,CAMERA)
 
-lightSrc = BasicDrawable(MESH,SHADER,CAMERA)
-
-CAMERA:setEye(500000000,0,0)
+CAMERA:setEye(0,0,0)
 
 state = lightSrc.mState
 
@@ -23,13 +24,13 @@ state.mScale.z = 0.2
 DRAWMAN:addDrawable(lightSrc)
 
 for i=1,1000 do
-cubeptr = BasicDrawable(MESH,SHADER,CAMERA)
+cubeptr = BasicDrawable(MESH,shader,CAMERA)
 
 a = math.random()
 b = math.random()
 c = math.random()
 
-posx = 100 * a - 50 + 500000000
+posx = 100 * a - 50
 posy = 100 * b - 50
 posz = 100 * c - 50
 
