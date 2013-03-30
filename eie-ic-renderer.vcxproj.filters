@@ -150,6 +150,7 @@
     <ClInclude Include="Shaders\FXAAShader.h">
       <Filter>Shaders</Filter>
     </ClInclude>
+    <ClInclude Include="Texture2D.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugText.cpp" />

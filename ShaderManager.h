@@ -11,6 +11,7 @@ public:
 	ShaderManager(MessageLogger* pLogger) : mLogger(pLogger) {
 	}
 
+	//Memory now belongs to the shader manager. It'll delete as required.
 	void addShader(DrawableShader* pShader) {
 		mDrawableShaders.push_back(pShader);
 	}

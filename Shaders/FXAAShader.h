@@ -4,7 +4,7 @@
 
 class FXAAShader{
 public:
-	void FXAAShader::DrawPost(ID3D11DeviceContext* pd3dContext, ID3D11ShaderResourceView* pInputSRV, ID3D11RenderTargetView* pOutputRTV);
+	void FXAAShader::DrawPost(ID3D11DeviceContext* pd3dContext, ID3D11ShaderResourceView* pInputSRV);
 	HRESULT OnD3D11CreateDevice(ID3D11Device* pd3dDevice);
 	void OnD3D11DestroyDevice();
 
@@ -15,9 +15,6 @@ public:
 
 private:
 	static boolean sCompiled;
-	//static ID3D11Texture2D*				mProxyTexture;
-	//static ID3D11ShaderResourceView*	mProxyTextureSRV;
-	//static ID3D11RenderTargetView*		mProxyTextureRTV;
 	static ID3D11VertexShader* sVertexShader;
 	static ID3D11PixelShader* sPixelShader;
 	static ID3D11Buffer* sConstantBuffer;

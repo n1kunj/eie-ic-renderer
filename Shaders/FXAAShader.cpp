@@ -16,7 +16,7 @@ ID3D11VertexShader*			FXAAShader::sVertexShader = NULL;
 ID3D11PixelShader*			FXAAShader::sPixelShader = NULL;
 ID3D11Buffer*				FXAAShader::sConstantBuffer = NULL;
 
-void FXAAShader::DrawPost(ID3D11DeviceContext* pd3dContext, ID3D11ShaderResourceView* pInputSRV, ID3D11RenderTargetView* pOutputRTV)
+void FXAAShader::DrawPost(ID3D11DeviceContext* pd3dContext, ID3D11ShaderResourceView* pInputSRV)
 {
 	D3D11_MAPPED_SUBRESOURCE MappedResource;
 	pd3dContext->Map(sConstantBuffer,0,D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
@@ -29,8 +29,6 @@ void FXAAShader::DrawPost(ID3D11DeviceContext* pd3dContext, ID3D11ShaderResource
 	pd3dContext->VSSetConstantBuffers( 1, 1, &sConstantBuffer );
 	pd3dContext->PSSetConstantBuffers( 1, 1, &sConstantBuffer );
 
-	ID3D11RenderTargetView* pRTV = DXUTGetD3D11RenderTargetView();
-	pd3dContext->OMSetRenderTargets( 1, &pOutputRTV, 0 );
 	pd3dContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP );
 	pd3dContext->VSSetShader( sVertexShader, NULL, 0 );
 	pd3dContext->PSSetShader( sPixelShader, NULL, 0 );

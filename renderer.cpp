@@ -12,14 +12,6 @@
 
 #include <sstream>
 
-ID3D11Texture2D*			g_pProxyTexture = NULL;
-ID3D11ShaderResourceView*	g_pProxyTextureSRV = NULL;
-ID3D11Texture2D*			g_pCopyResolveTexture = NULL;
-ID3D11ShaderResourceView*	g_pCopyResolveTextureSRV = NULL;
-ID3D11RenderTargetView*     g_pProxyTextureRTV = NULL;
-
-void FxaaIntegrateResource(ID3D11Device* pd3dDevice, const DXGI_SURFACE_DESC* pBackBufferSurfaceDesc);
-
 Renderer::Renderer(MessageLogger* mLogger) : mLogger(mLogger), mDrawableManager()
 {
 	mCamera = new Camera();
@@ -29,6 +21,7 @@ Renderer::Renderer(MessageLogger* mLogger) : mLogger(mLogger), mDrawableManager(
 	mShaderManager->addShader(new DefaultShader());
 	mShaderManager->addShader(new GBufferShader());
 	mFXAAShader = new FXAAShader();
+
 
 #ifdef DEBUG
 	mRecompile = FALSE;
@@ -54,14 +47,9 @@ HRESULT Renderer::OnD3D11CreateDevice( ID3D11Device* pd3dDevice, const DXGI_SURF
 {
 	mLogger->log(L"Renderer OnD3D11CreateDevice");
 
-	this->mSurfaceDescription = *pBackBufferSurfaceDesc;
-	mCamera->updateWindowDimensions();
-
 	mCubeMesh->OnD3D11CreateDevice(pd3dDevice);
 	mShaderManager->OnD3D11CreateDevice(pd3dDevice);
 	mFXAAShader->OnD3D11CreateDevice(pd3dDevice);
-
-	FxaaIntegrateResource(pd3dDevice, pBackBufferSurfaceDesc);
 	return S_OK;
 }
 
@@ -71,12 +59,20 @@ HRESULT Renderer::OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, const DXGI_
 	this->mSurfaceDescription = *pBackBufferSurfaceDesc;
 	mCamera->updateWindowDimensions();
 
-	SAFE_RELEASE( g_pProxyTexture );
-	SAFE_RELEASE( g_pProxyTextureSRV );
-	SAFE_RELEASE( g_pProxyTextureRTV );
-	SAFE_RELEASE( g_pCopyResolveTexture );
-	SAFE_RELEASE( g_pCopyResolveTextureSRV );
-	FxaaIntegrateResource(pd3dDevice, pBackBufferSurfaceDesc);
+
+	D3D11_TEXTURE2D_DESC desc;
+	::ZeroMemory (&desc, sizeof (desc));
+	desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	desc.Height = pBackBufferSurfaceDesc->Height;
+	desc.Width = pBackBufferSurfaceDesc->Width;
+	desc.ArraySize = 1;
+	desc.SampleDesc.Count = 1;
+	desc.SampleDesc.Quality = 0;
+	desc.MipLevels = 1;
+
+	mProxyTexture.mDesc = desc;
+	mProxyTexture.CreateTexture(pd3dDevice);
 
 	return S_OK;
 }
@@ -117,18 +113,18 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 
 	ID3D11RenderTargetView* rtv = DXUTGetD3D11RenderTargetView();
 	ID3D11DepthStencilView* dsv = DXUTGetD3D11DepthStencilView();
-	//pd3dImmediateContext->ClearRenderTargetView( rtv, ClearColor );
 
-	pd3dImmediateContext->ClearRenderTargetView( g_pProxyTextureRTV, ClearColor );
+	pd3dImmediateContext->ClearRenderTargetView( mProxyTexture.mRTV, ClearColor );
+
 	pd3dImmediateContext->ClearDepthStencilView( dsv, D3D11_CLEAR_DEPTH, 1.0, 0 );
-
-	ID3D11RenderTargetView* pRTVs[1] = { g_pProxyTextureRTV};
-
-	pd3dImmediateContext->OMSetRenderTargets(1, pRTVs, dsv);
+	pd3dImmediateContext->OMSetRenderTargets(1, &mProxyTexture.mRTV, dsv);
 
 	mDrawableManager.Draw(pd3dImmediateContext);
 
-	mFXAAShader->DrawPost(pd3dImmediateContext,g_pProxyTextureSRV,rtv);
+	pd3dImmediateContext->OMSetRenderTargets(1, &rtv, dsv);
+
+	mFXAAShader->DrawPost(pd3dImmediateContext,mProxyTexture.mSRV);
+
 }
 
 void Renderer::OnExit()
@@ -143,30 +139,5 @@ void Renderer::OnD3D11DestroyDevice()
 	mCubeMesh->OnD3D11DestroyDevice();
 	mShaderManager->OnD3D11DestroyDevice();
 	mFXAAShader->OnD3D11DestroyDevice();
-
-	SAFE_RELEASE( g_pProxyTexture );
-	SAFE_RELEASE( g_pProxyTextureSRV );
-	SAFE_RELEASE( g_pProxyTextureRTV );
-	SAFE_RELEASE( g_pCopyResolveTexture );
-	SAFE_RELEASE( g_pCopyResolveTextureSRV );
-}
-
-void FxaaIntegrateResource(ID3D11Device* pd3dDevice, const DXGI_SURFACE_DESC* pBackBufferSurfaceDesc)
-{
-	D3D11_TEXTURE2D_DESC desc;
-	::ZeroMemory (&desc, sizeof (desc));
-	desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	desc.Height = pBackBufferSurfaceDesc->Height;
-	desc.Width = pBackBufferSurfaceDesc->Width;
-	desc.ArraySize = 1;
-	desc.SampleDesc.Count = 1;
-	desc.SampleDesc.Quality = 0;
-	desc.MipLevels = 1;
-	desc.SampleDesc.Count = pBackBufferSurfaceDesc->SampleDesc.Count;
-	desc.SampleDesc.Quality = pBackBufferSurfaceDesc->SampleDesc.Quality;
-	desc.MipLevels = 1;
-	pd3dDevice->CreateTexture2D( &desc, 0, &g_pProxyTexture );
-	pd3dDevice->CreateRenderTargetView( g_pProxyTexture, 0, &g_pProxyTextureRTV );
-	pd3dDevice->CreateShaderResourceView( g_pProxyTexture, 0, &g_pProxyTextureSRV);
+	mProxyTexture.OnD3D11DestroyDevice();
 }

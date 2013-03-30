@@ -21,7 +21,7 @@ void Gui::init(CDXUTDialogResourceManager* g_DialogResourceManager )
 	int iY = 30;
 	int iYo = 26;
 	hud.AddButton( IDC_TOGGLEFULLSCREEN, L"Toggle full screen", 0, iY, 170, 22 );
-	hud.AddButton( IDC_TOGGLEREF, L"Toggle REF (F3)", 0, iY += iYo, 170, 22, VK_F3 );
+	//hud.AddButton( IDC_TOGGLEREF, L"Toggle REF (F3)", 0, iY += iYo, 170, 22, VK_F3 );
 	hud.AddButton( IDC_CHANGEDEVICE, L"Change device (F2)", 0, iY += iYo, 170, 22, VK_F2 );
 
 	sampleUI.SetCallback(&Gui::OnGUIEvent); iY = 10;

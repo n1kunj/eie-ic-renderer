@@ -2,6 +2,7 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 #include "DrawableManager.h"
+#include "Texture2D.h"
 
 class MessageLogger;
 class DrawableMesh;
@@ -12,6 +13,7 @@ class BasicDrawable;
 class ShaderManager;
 class Camera;
 class FXAAShader;
+class Texture2D;
 
 class Renderer {
 public:
@@ -37,6 +39,7 @@ public:
 	ShaderManager* mShaderManager;
 	Camera* mCamera;
 	FXAAShader* mFXAAShader;
+	Texture2D mProxyTexture;
 
 #ifdef DEBUG
 	boolean mRecompile;
