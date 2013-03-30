@@ -1,13 +1,11 @@
 #include "DXUT.h"
 #include <vector>
 #include "DrawableShader.h"
-#include "PostShader.h"
 #include "MessageProcessor.h"
 
 class ShaderManager{
 private:
 	std::vector<DrawableShader*> mDrawableShaders;
-	std::vector<PostShader*> mPostShaders;
 	MessageLogger* mLogger;
 public:
 	ShaderManager(MessageLogger* pLogger) : mLogger(pLogger) {
@@ -27,25 +25,11 @@ public:
 		ss << "Drawable Shader " << ws.c_str() << " Does not exist!"; 
 		throw std::exception(ss.str().c_str());
 	}
-	PostShader* getPostShader(std::string pShaderName ) {
-		std::wstring ws(pShaderName.begin(),pShaderName.end());
-		for (int i = 0; i < mPostShaders.size(); i++) {
-			if (mPostShaders[i]->mShaderHandle == ws) {
-				return mPostShaders[i];
-			}
-		}
-		std::stringstream ss;
-		ss << "Post Shader " << ws.c_str() << " Does not exist!"; 
-		throw std::exception(ss.str().c_str());
-	}
 
 	void OnD3D11CreateDevice( ID3D11Device* pd3dDevice ) 
 	{
 		for (int i = 0; i < mDrawableShaders.size(); i++) {
 			mDrawableShaders[i]->OnD3D11CreateDevice(pd3dDevice);
-		}
-		for (int i = 0; i < mPostShaders.size(); i++) {
-			mPostShaders[i]->OnD3D11CreateDevice(pd3dDevice);
 		}
 	}
 
@@ -54,11 +38,11 @@ public:
 		for (int i = 0; i < mDrawableShaders.size(); i++) {
 			mDrawableShaders[i]->OnD3D11DestroyDevice();
 		}
-		for (int i = 0; i < mPostShaders.size(); i++) {
-			mPostShaders[i]->OnD3D11DestroyDevice();
-		}
 	}
 
-
-
+	~ShaderManager() {
+		for (int i = 0; i < mDrawableShaders.size(); i++) {
+			delete mDrawableShaders[i];
+		}
+	}
 };

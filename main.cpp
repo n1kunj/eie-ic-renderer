@@ -59,7 +59,7 @@ HRESULT CALLBACK OnD3D11CreateDevice( ID3D11Device* pd3dDevice, const DXGI_SURFA
 	V_RETURN(dxutDialogResourceManager.OnD3D11CreateDevice( pd3dDevice, pd3dImmediateContext ) );
 	V_RETURN(debugText.OnD3D11CreateDevice(pd3dDevice,&dxutDialogResourceManager));
 	V_RETURN(gui.OnD3D11CreateDevice(pd3dDevice));
-	V_RETURN(renderer.OnD3D11CreateDevice(pd3dDevice));
+	V_RETURN(renderer.OnD3D11CreateDevice(pd3dDevice,pBackBufferSurfaceDesc));
 
 	return S_OK;
 }

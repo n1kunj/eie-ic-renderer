@@ -170,5 +170,5 @@ DefaultShader::DefaultShader() : DrawableShader(L"DefaultShader")
 
 DefaultShader::~DefaultShader()
 {
-
+	OnD3D11DestroyDevice();
 }

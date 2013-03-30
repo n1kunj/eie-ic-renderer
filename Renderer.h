@@ -11,6 +11,7 @@ class CubeMeshLoader;
 class BasicDrawable;
 class ShaderManager;
 class Camera;
+class FXAAShader;
 
 class Renderer {
 public:
@@ -18,7 +19,7 @@ public:
 	~Renderer();
 	void init();
 
-	HRESULT OnD3D11CreateDevice(ID3D11Device* pd3dDevice);
+	HRESULT OnD3D11CreateDevice(ID3D11Device* pd3dDevice, const DXGI_SURFACE_DESC* pBackBufferSurfaceDesc );
 	HRESULT OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, const DXGI_SURFACE_DESC* pBackBufferSurfaceDesc );
 	LRESULT MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool* pbNoFurtherProcessing,
 		void* pUserContext );
@@ -35,10 +36,11 @@ public:
 	CubeMeshLoader* mCubeLoader;
 	ShaderManager* mShaderManager;
 	Camera* mCamera;
+	FXAAShader* mFXAAShader;
+
 #ifdef DEBUG
 	boolean mRecompile;
 #endif // DEBUG
-
 };
 
 #endif

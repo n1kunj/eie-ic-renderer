@@ -143,14 +143,13 @@
     </ClInclude>
     <ClInclude Include="MessageProcessor.h" />
     <ClInclude Include="DrawableManager.h" />
-    <ClInclude Include="PostShader.h" />
-    <ClInclude Include="Shaders\DeferredTileComputeShader.h">
-      <Filter>Shaders</Filter>
-    </ClInclude>
     <ClInclude Include="Shaders\GBufferShader.h">
       <Filter>Shaders</Filter>
     </ClInclude>
     <ClInclude Include="ShaderManager.h" />
+    <ClInclude Include="Shaders\FXAAShader.h">
+      <Filter>Shaders</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugText.cpp" />
@@ -176,10 +175,10 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="MessageProcessor.cpp" />
     <ClCompile Include="DrawableManager.cpp" />
-    <ClCompile Include="Shaders\DeferredTileComputeShader.cpp">
+    <ClCompile Include="Shaders\GBufferShader.cpp">
       <Filter>Shaders</Filter>
     </ClCompile>
-    <ClCompile Include="Shaders\GBufferShader.cpp">
+    <ClCompile Include="Shaders\FXAAShader.cpp">
       <Filter>Shaders</Filter>
     </ClCompile>
   </ItemGroup>

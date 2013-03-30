@@ -467,7 +467,7 @@
     <ClCompile Include="Meshes\CubeMeshLoader.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Shaders\DefaultShader.cpp" />
-    <ClCompile Include="Shaders\DeferredTileComputeShader.cpp" />
+    <ClCompile Include="Shaders\FXAAShader.cpp" />
     <ClCompile Include="Shaders\GBufferShader.cpp" />
     <ClCompile Include="Textures\Textures.cpp" />
     <ClCompile Include="Utils\ShaderTools.cpp" />
@@ -482,10 +482,9 @@
     <ClInclude Include="DrawableState.h" />
     <ClInclude Include="MessageProcessor.h" />
     <ClInclude Include="Meshes\CubeMeshLoader.h" />
-    <ClInclude Include="PostShader.h" />
     <ClInclude Include="ShaderManager.h" />
     <ClInclude Include="Shaders\DefaultShader.h" />
-    <ClInclude Include="Shaders\DeferredTileComputeShader.h" />
+    <ClInclude Include="Shaders\FXAAShader.h" />
     <ClInclude Include="Shaders\GBufferShader.h" />
     <ClInclude Include="Textures\Textures.h" />
     <ClInclude Include="Utils\ShaderTools.h" />

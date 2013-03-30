@@ -9,8 +9,12 @@ public:
 	HRESULT OnD3D11CreateDevice(ID3D11Device* pd3dDevice);
 	void OnD3D11DestroyDevice();
 
-	GBufferShader();
-	~GBufferShader();
+	GBufferShader() : DrawableShader(L"GBufferShader") {}
+
+	GBufferShader::~GBufferShader()
+	{
+		OnD3D11DestroyDevice();
+	}
 
 	//Statics
 private:

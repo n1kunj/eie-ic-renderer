@@ -46,12 +46,6 @@ void GBufferShader::DrawMesh(ID3D11DeviceContext* pd3dContext, const DrawableMes
 	// Update constant buffer
 	VSConstantBuffer vscb;
 
-	XMFLOAT3 lightPos = XMFLOAT3(5.0f + pState->mCamOffset.x,
-		3.0f + pState->mCamOffset.y,
-		2.0f + pState->mCamOffset.z);
-	XMFLOAT3 DiffuseLightColour = XMFLOAT3(0.7f,0.7f,0.7f);
-	XMFLOAT3 AmbientLightColour = XMFLOAT3(0.03f,0.03f,0.03f);
-
 	vscb.Model = XMMatrixTranspose(pState->mModelMatrix);
 	vscb.View = XMMatrixTranspose(pCamera->mViewMatrix);
 	vscb.Projection = XMMatrixTranspose(pCamera->mProjectionMatrix);
@@ -67,7 +61,6 @@ void GBufferShader::DrawMesh(ID3D11DeviceContext* pd3dContext, const DrawableMes
 
 	pd3dContext->UpdateSubresource( sPSConstantBuffer, 0, NULL, &pscb, 0, 0 );
 	pd3dContext->PSSetConstantBuffers( 1, 1, &sPSConstantBuffer );
-
 
 	//Set vertex layout and bind buffers
 	pd3dContext->IASetInputLayout( sVertexLayout );
@@ -140,14 +133,4 @@ void GBufferShader::OnD3D11DestroyDevice() {
 	SAFE_RELEASE(sVSConstantBuffer);
 	SAFE_RELEASE(sPSConstantBuffer);
 	sCompiled = FALSE;
-}
-
-GBufferShader::GBufferShader() : DrawableShader(L"GBufferShader")
-{
-
-}
-
-GBufferShader::~GBufferShader()
-{
-
 }
