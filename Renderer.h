@@ -40,6 +40,7 @@ public:
 	Camera* mCamera;
 	FXAAShader* mFXAAShader;
 	Texture2D mProxyTexture;
+	Texture2D mGBuffer[2];
 
 #ifdef DEBUG
 	boolean mRecompile;

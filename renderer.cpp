@@ -12,6 +12,8 @@
 
 #include <sstream>
 
+ID3D11DepthStencilState* gDepthState;
+
 Renderer::Renderer(MessageLogger* mLogger) : mLogger(mLogger), mDrawableManager()
 {
 	mCamera = new Camera();
@@ -21,7 +23,6 @@ Renderer::Renderer(MessageLogger* mLogger) : mLogger(mLogger), mDrawableManager(
 	mShaderManager->addShader(new DefaultShader());
 	mShaderManager->addShader(new GBufferShader());
 	mFXAAShader = new FXAAShader();
-
 
 #ifdef DEBUG
 	mRecompile = FALSE;
@@ -50,6 +51,14 @@ HRESULT Renderer::OnD3D11CreateDevice( ID3D11Device* pd3dDevice, const DXGI_SURF
 	mCubeMesh->OnD3D11CreateDevice(pd3dDevice);
 	mShaderManager->OnD3D11CreateDevice(pd3dDevice);
 	mFXAAShader->OnD3D11CreateDevice(pd3dDevice);
+
+
+
+
+
+
+
+
 	return S_OK;
 }
 
@@ -74,6 +83,14 @@ HRESULT Renderer::OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, const DXGI_
 	mProxyTexture.mDesc = desc;
 	mProxyTexture.CreateTexture(pd3dDevice);
 
+	mGBuffer[1].mDesc = desc;
+	mGBuffer[1].CreateTexture(pd3dDevice);
+
+	desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	mGBuffer[0].mDesc = desc;
+	mGBuffer[0].CreateTexture(pd3dDevice);
+	
 	return S_OK;
 }
 
@@ -114,9 +131,20 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 	ID3D11RenderTargetView* rtv = DXUTGetD3D11RenderTargetView();
 	ID3D11DepthStencilView* dsv = DXUTGetD3D11DepthStencilView();
 
+
+
+	pd3dImmediateContext->ClearDepthStencilView( dsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0, 0 );
+
+
 	pd3dImmediateContext->ClearRenderTargetView( mProxyTexture.mRTV, ClearColor );
 
-	pd3dImmediateContext->ClearDepthStencilView( dsv, D3D11_CLEAR_DEPTH, 1.0, 0 );
+
+
+
+
+
+
+
 	pd3dImmediateContext->OMSetRenderTargets(1, &mProxyTexture.mRTV, dsv);
 
 	mDrawableManager.Draw(pd3dImmediateContext);
@@ -140,4 +168,6 @@ void Renderer::OnD3D11DestroyDevice()
 	mShaderManager->OnD3D11DestroyDevice();
 	mFXAAShader->OnD3D11DestroyDevice();
 	mProxyTexture.OnD3D11DestroyDevice();
+	mGBuffer[0].OnD3D11DestroyDevice();
+	mGBuffer[1].OnD3D11DestroyDevice();
 }
