@@ -131,12 +131,10 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 	ID3D11RenderTargetView* rtv = DXUTGetD3D11RenderTargetView();
 	ID3D11DepthStencilView* dsv = DXUTGetD3D11DepthStencilView();
 
-
-
+	pd3dImmediateContext->ClearRenderTargetView( mProxyTexture.mRTV, ClearColor );
 	pd3dImmediateContext->ClearDepthStencilView( dsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0, 0 );
 
 
-	pd3dImmediateContext->ClearRenderTargetView( mProxyTexture.mRTV, ClearColor );
 
 
 
@@ -150,6 +148,8 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 	mDrawableManager.Draw(pd3dImmediateContext);
 
 	pd3dImmediateContext->OMSetRenderTargets(1, &rtv, dsv);
+
+
 
 	mFXAAShader->DrawPost(pd3dImmediateContext,mProxyTexture.mSRV);
 

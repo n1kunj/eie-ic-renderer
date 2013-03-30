@@ -467,7 +467,6 @@
     <ClCompile Include="Meshes\CubeMeshLoader.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Shaders\DefaultShader.cpp" />
-    <ClCompile Include="Shaders\FXAAShader.cpp" />
     <ClCompile Include="Shaders\GBufferShader.cpp" />
     <ClCompile Include="Textures\Textures.cpp" />
     <ClCompile Include="Utils\ShaderTools.cpp" />

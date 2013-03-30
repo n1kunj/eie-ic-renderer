@@ -179,9 +179,6 @@
     <ClCompile Include="Shaders\GBufferShader.cpp">
       <Filter>Shaders</Filter>
     </ClCompile>
-    <ClCompile Include="Shaders\FXAAShader.cpp">
-      <Filter>Shaders</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="eie-ic-renderer.rc">
