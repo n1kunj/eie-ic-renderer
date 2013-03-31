@@ -26,9 +26,7 @@ Renderer::Renderer(MessageLogger* mLogger) : mLogger(mLogger), mDrawableManager(
 	mFXAAShader = new FXAAShader();
 	mLightingShader = new LightingShader();
 
-#ifdef DEBUG
 	mRecompile = FALSE;
-#endif // DEBUG
 
 };
 
@@ -40,6 +38,20 @@ Renderer::~Renderer() {
 	SAFE_DELETE(mFXAAShader);
 	SAFE_DELETE(mLightingShader);
 };
+
+void Renderer::OnD3D11DestroyDevice()
+{
+	mCubeMesh->OnD3D11DestroyDevice();
+	mShaderManager->OnD3D11DestroyDevice();
+	mFXAAShader->OnD3D11DestroyDevice();
+	mLightingShader->OnD3D11DestroyDevice();
+	mProxyTexture.OnD3D11DestroyDevice();
+	mGBuffer[0].OnD3D11DestroyDevice();
+	mGBuffer[1].OnD3D11DestroyDevice();
+	mDepthStencil.OnD3D11DestroyDevice();
+	mDSV.OnD3D11DestroyDevice();
+	mDSSRV.OnD3D11DestroyDevice();
+}
 
 void Renderer::init()
 {
@@ -83,10 +95,46 @@ HRESULT Renderer::OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, const DXGI_
 		mGBuffer[1].mDesc = desc;
 		mGBuffer[1].CreateTexture(pd3dDevice);
 
-		desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
 		desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 		mGBuffer[0].mDesc = desc;
 		mGBuffer[0].CreateTexture(pd3dDevice);
+	}
+
+	{
+		D3D11_TEXTURE2D_DESC desc;
+		::ZeroMemory (&desc, sizeof (desc));
+		desc.Height = pBackBufferSurfaceDesc->Height;
+		desc.Width = pBackBufferSurfaceDesc->Width;
+		desc.MipLevels = 1;
+		desc.ArraySize = 1;
+		desc.Format = DXGI_FORMAT_R32G8X24_TYPELESS;
+		desc.SampleDesc.Count = 1;
+		desc.SampleDesc.Quality = 0;
+		desc.Usage = D3D11_USAGE_DEFAULT;
+		desc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
+		desc.CPUAccessFlags = 0;
+		desc.MiscFlags = 0;
+
+		mDepthStencil.mDesc = desc;
+		mDepthStencil.CreateTexture(pd3dDevice);
+	}
+	{
+		D3D11_DEPTH_STENCIL_VIEW_DESC desc;
+		::ZeroMemory (&desc, sizeof (desc));
+		desc.Format = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+		desc.Flags = 0;
+		desc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+		desc.Texture2D.MipSlice = 0;
+		mDSV.mDesc = desc;
+		mDSV.CreateDSV(pd3dDevice,mDepthStencil);
+	}
+	{
+		CD3D11_SHADER_RESOURCE_VIEW_DESC desc(D3D11_SRV_DIMENSION_TEXTURE2D, DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS, 0, 1, 0, 1);
+		mDSSRV.mDesc = desc;
+		mDSSRV.CreateSRV(pd3dDevice,mDepthStencil);
+
+		//::ZeroMemory (&desc, sizeof (desc));
+
 	}
 
 	return S_OK;
@@ -94,13 +142,11 @@ HRESULT Renderer::OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, const DXGI_
 
 LRESULT Renderer::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool* pbNoFurtherProcessing,void* pUserContext )
 {
-#ifdef DEBUG
 	if (uMsg == WM_KEYDOWN) {
 		if (wParam == 'R') {
 			mRecompile = TRUE;
 		}
 	}
-#endif //DEBUG
 	mCamera->MsgProc(hWnd,uMsg,wParam,lParam,pbNoFurtherProcessing,pUserContext);
 	if (*pbNoFurtherProcessing) {
 		return 0;
@@ -115,50 +161,39 @@ void Renderer::OnFrameMove( double fTime, float fElapsedTime, void* pUserContext
 
 void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dImmediateContext, double fTime, float fElapsedTime, void* pUserContext )
 {
-
-#ifdef DEBUG
 	if (mRecompile) {
 		mShaderManager->OnD3D11CreateDevice(pd3dDevice);
 		mLightingShader->OnD3D11CreateDevice(pd3dDevice);
 		mRecompile = FALSE;
 	}
-#endif // DEBUG
 
 	// Clear render target and the depth stencil 
 	float ClearColor[4] = { 0.329f, 0.608f, 0.722f, 1.0f };
-
 	ID3D11RenderTargetView* rtv = DXUTGetD3D11RenderTargetView();
-	ID3D11DepthStencilView* dsv = DXUTGetD3D11DepthStencilView();
+
+	ID3D11DepthStencilView* dsv = mDSV.mDSV;
 
 	//Clear render targets
-	pd3dImmediateContext->ClearRenderTargetView( mProxyTexture.mRTV, ClearColor );
-	pd3dImmediateContext->ClearRenderTargetView( mGBuffer[0].mRTV, ClearColor );
-	pd3dImmediateContext->ClearRenderTargetView( mGBuffer[1].mRTV, ClearColor );
+	//pd3dImmediateContext->ClearRenderTargetView( mProxyTexture.mRTV, ClearColor );
+	//pd3dImmediateContext->ClearRenderTargetView( mGBuffer[0].mRTV, ClearColor );
+	//pd3dImmediateContext->ClearRenderTargetView( mGBuffer[1].mRTV, ClearColor );
 	pd3dImmediateContext->ClearDepthStencilView( dsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0, 0 );
 
-	//Set GBuffer
+	//Set ,then draw GBuffer
 	ID3D11RenderTargetView* rtvs[2] = {mGBuffer[0].mRTV,mGBuffer[1].mRTV};
 	pd3dImmediateContext->OMSetRenderTargets(2, rtvs, dsv);
-
 	mDrawableManager.Draw(pd3dImmediateContext);
 
-	pd3dImmediateContext->OMSetRenderTargets(1, &mProxyTexture.mRTV, dsv);
-
+	//Do lighting
+	pd3dImmediateContext->OMSetRenderTargets(1, &mProxyTexture.mRTV, NULL);
 	pd3dImmediateContext->PSSetShaderResources( 0, 1, &mGBuffer[0].mSRV );
+	pd3dImmediateContext->PSSetShaderResources( 1, 1, &mGBuffer[1].mSRV );
+	pd3dImmediateContext->PSSetShaderResources( 2, 1, &mDSSRV.mSRV );
 	mLightingShader->DrawPost(pd3dImmediateContext);
 
-	pd3dImmediateContext->ClearDepthStencilView( dsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0, 0 );
-
-
-
+	//FXAA into back buffer
 	pd3dImmediateContext->OMSetRenderTargets(1, &rtv, dsv);
-
-
 	mFXAAShader->DrawPost(pd3dImmediateContext,mProxyTexture.mSRV);
-
-
-
-
 }
 
 void Renderer::OnExit()
@@ -166,15 +201,4 @@ void Renderer::OnExit()
 	mLogger->log(L"Renderer OnExit");
 	//TODO: cleanup
 	mDrawableManager.reset();
-}
-
-void Renderer::OnD3D11DestroyDevice()
-{
-	mCubeMesh->OnD3D11DestroyDevice();
-	mShaderManager->OnD3D11DestroyDevice();
-	mFXAAShader->OnD3D11DestroyDevice();
-	mLightingShader->OnD3D11DestroyDevice();
-	mProxyTexture.OnD3D11DestroyDevice();
-	mGBuffer[0].OnD3D11DestroyDevice();
-	mGBuffer[1].OnD3D11DestroyDevice();
 }

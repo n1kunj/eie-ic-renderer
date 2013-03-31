@@ -41,6 +41,7 @@ bool CALLBACK IsD3D11DeviceAcceptable( const CD3D11EnumAdapterInfo *AdapterInfo,
 bool CALLBACK ModifyDeviceSettings( DXUTDeviceSettings* pDeviceSettings, void* pUserContext )
 {
 	devConsole.log(L"ModifyDeviceSettings");
+	pDeviceSettings->d3d11.AutoCreateDepthStencil = FALSE;
 	return true;
 }
 

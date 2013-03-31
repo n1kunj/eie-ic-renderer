@@ -39,6 +39,10 @@ public:
 
 void FXAAShader::DrawPost(ID3D11DeviceContext* pd3dContext, ID3D11ShaderResourceView* pInputSRV)
 {
+	if (!mCompiled) {
+		return;
+	}
+
 	using namespace DirectX;
 	D3D11_MAPPED_SUBRESOURCE MappedResource;
 	pd3dContext->Map(mConstantBuffer,0,D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);

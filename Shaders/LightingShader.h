@@ -26,6 +26,9 @@ public:
 
 	void DrawPost(ID3D11DeviceContext* pd3dContext)
 	{
+		if (!mCompiled) {
+			return;
+		}
 		pd3dContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP );
 		pd3dContext->VSSetShader( mVertexShader, NULL, 0 );
 		pd3dContext->PSSetShader( mPixelShader, NULL, 0 );

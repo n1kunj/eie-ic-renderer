@@ -38,18 +38,6 @@ float2 EncodeSphereMap(float3 n)
     return n.xy / p * 0.5f + 0.5f;
 }
 
-float3 DecodeSphereMap(float2 e)
-{
-    float2 tmp = e - e * e;
-    float f = tmp.x + tmp.y;
-    float m = sqrt(4.0f * f - 1.0f);
-    
-    float3 n;
-    n.xy = m * (e * 4.0f - 2.0f);
-    n.z  = 3.0f - 8.0f * f;
-    return n;
-}
-
 PS_INPUT VS( VS_INPUT input)
 {
     PS_INPUT output = (PS_INPUT)0;
@@ -60,12 +48,6 @@ PS_INPUT VS( VS_INPUT input)
     return output;
 }
 
-// float4 PS( PS_INPUT input ) : SV_Target
-// {
-//	float3 normal = ((input.Norm.xyz)+1)/2;
-	// return float4(input.Norm.xyz, 1.0f);
-// }
-
 GBuffer PS( PS_INPUT input )
 {
 	GBuffer output;
@@ -74,6 +56,4 @@ GBuffer PS( PS_INPUT input )
 	output.normal_specular = float4(EncodeSphereMap(input.Norm),specularAmount,specularPower);
 	output.albedo = float4(1.0f,1.0f,1.0f,1.0f);
 	return output;
-	//float3 normal = ((input.Norm.xyz)+1)/2;
-	//return float4(input.Norm.xyz, 1.0f);
 }

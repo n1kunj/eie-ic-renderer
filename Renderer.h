@@ -14,7 +14,6 @@ class ShaderManager;
 class Camera;
 class FXAAShader;
 class LightingShader;
-class Texture2D;
 
 class Renderer {
 public:
@@ -43,10 +42,11 @@ public:
 	LightingShader* mLightingShader;
 	Texture2D mProxyTexture;
 	Texture2D mGBuffer[2];
+	Depth2D mDepthStencil;
+	Depth2DDSV mDSV;
+	Depth2DSRV mDSSRV;
 
-#ifdef DEBUG
 	boolean mRecompile;
-#endif // DEBUG
 };
 
 #endif

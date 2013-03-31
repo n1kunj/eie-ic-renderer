@@ -51,12 +51,6 @@ public:
 	}
 
 	HRESULT OnD3D11CreateDevice(ID3D11Device* pd3dDevice) {
-#ifndef DEBUG
-		if (mCompiled) {
-			return S_OK;
-		}
-#endif
-
 		//Make sure everything is clean before we start
 		OnD3D11DestroyDevice();
 
@@ -102,12 +96,9 @@ public:
 		assert(pState != NULL);
 		assert(pCamera != NULL);
 
-#ifdef DEBUG
-		//Allow shaders to be recompiled in debug mode
 		if (!mCompiled) {
 			return;
 		}
-#endif // DEBUG
 
 		using namespace DirectX;
 
@@ -146,7 +137,6 @@ public:
 
 		pd3dContext->DrawIndexed( pMesh->mNumIndices, 0, 0 );
 	}
-
 };
 
 #endif
