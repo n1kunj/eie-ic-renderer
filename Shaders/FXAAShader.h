@@ -16,6 +16,7 @@ private:
 	ID3D11VertexShader* mVertexShader;
 	ID3D11PixelShader* mPixelShader;
 	ID3D11Buffer* mConstantBuffer;
+	ID3D11SamplerState* mSamAni;
 
 public:
 	void OnD3D11DestroyDevice()
@@ -23,11 +24,12 @@ public:
 		SAFE_RELEASE(mVertexShader);
 		SAFE_RELEASE(mPixelShader);
 		SAFE_RELEASE(mConstantBuffer);
+		SAFE_RELEASE(mSamAni);
 		mCompiled = FALSE;
 	}
 
 	FXAAShader() : mCompiled(FALSE),mVertexShader(NULL),
-	mPixelShader(NULL),mConstantBuffer(NULL){}
+	mPixelShader(NULL),mConstantBuffer(NULL),mSamAni(NULL){}
 
 	~FXAAShader(){
 		OnD3D11DestroyDevice();
@@ -60,7 +62,14 @@ void FXAAShader::DrawPost(ID3D11DeviceContext* pd3dContext, ID3D11ShaderResource
 	pd3dContext->PSSetShader( mPixelShader, NULL, 0 );
 
 	pd3dContext->PSSetShaderResources( 0, 1, &pInputSRV );
+	pd3dContext->PSSetSamplers( 0, 1, &mSamAni );
 	pd3dContext->Draw( 4, 0 );
+
+	//Make the runtime happy
+	ID3D11ShaderResourceView* srv = NULL;
+	ID3D11SamplerState* sam = NULL;
+	pd3dContext->PSSetShaderResources( 0, 1, &srv );
+	pd3dContext->PSSetSamplers( 0, 1, &sam );
 }
 
 HRESULT FXAAShader::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
@@ -90,6 +99,19 @@ HRESULT FXAAShader::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 	cbDesc.ByteWidth = sizeof( FXAAConstantBuffer );
 
 	V_RETURN( pd3dDevice->CreateBuffer( &cbDesc, NULL, &mConstantBuffer ) );
+
+	{
+		D3D11_SAMPLER_DESC desc;
+		::ZeroMemory( &desc, sizeof(desc) );
+		desc.MipLODBias = 0.0f;
+		desc.Filter = D3D11_FILTER_ANISOTROPIC;
+		desc.AddressU = desc.AddressV = desc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+		desc.MaxAnisotropy = 4;
+		desc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+		desc.MaxLOD = 0.0f;
+		desc.MinLOD = 0.0f;
+		V_RETURN( pd3dDevice->CreateSamplerState( &desc, &mSamAni));
+	}
 
 	mCompiled = TRUE;
 	return S_OK;

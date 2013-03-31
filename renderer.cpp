@@ -132,9 +132,6 @@ HRESULT Renderer::OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, const DXGI_
 		CD3D11_SHADER_RESOURCE_VIEW_DESC desc(D3D11_SRV_DIMENSION_TEXTURE2D, DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS, 0, 1, 0, 1);
 		mDSSRV.mDesc = desc;
 		mDSSRV.CreateSRV(pd3dDevice,mDepthStencil);
-
-		//::ZeroMemory (&desc, sizeof (desc));
-
 	}
 
 	return S_OK;
@@ -167,32 +164,32 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 		mRecompile = FALSE;
 	}
 
-	// Clear render target and the depth stencil 
-	float ClearColor[4] = { 0.329f, 0.608f, 0.722f, 1.0f };
-	ID3D11RenderTargetView* rtv = DXUTGetD3D11RenderTargetView();
-
 	ID3D11DepthStencilView* dsv = mDSV.mDSV;
 
 	//Clear render targets
+	//float ClearColor[4] = { 0.329f, 0.608f, 0.722f, 1.0f };
 	//pd3dImmediateContext->ClearRenderTargetView( mProxyTexture.mRTV, ClearColor );
-	//pd3dImmediateContext->ClearRenderTargetView( mGBuffer[0].mRTV, ClearColor );
-	//pd3dImmediateContext->ClearRenderTargetView( mGBuffer[1].mRTV, ClearColor );
 	pd3dImmediateContext->ClearDepthStencilView( dsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0, 0 );
 
 	//Set ,then draw GBuffer
 	ID3D11RenderTargetView* rtvs[2] = {mGBuffer[0].mRTV,mGBuffer[1].mRTV};
 	pd3dImmediateContext->OMSetRenderTargets(2, rtvs, dsv);
+
 	mDrawableManager.Draw(pd3dImmediateContext);
+
+	//Make the runtime happy
+	ID3D11RenderTargetView* rtvs2[2] = {NULL,NULL};
+	pd3dImmediateContext->OMSetRenderTargets(2,rtvs2,dsv);
 
 	//Do lighting
 	pd3dImmediateContext->OMSetRenderTargets(1, &mProxyTexture.mRTV, NULL);
-	pd3dImmediateContext->PSSetShaderResources( 0, 1, &mGBuffer[0].mSRV );
-	pd3dImmediateContext->PSSetShaderResources( 1, 1, &mGBuffer[1].mSRV );
-	pd3dImmediateContext->PSSetShaderResources( 2, 1, &mDSSRV.mSRV );
-	mLightingShader->DrawPost(pd3dImmediateContext);
+
+	ID3D11ShaderResourceView* srvs[3] = {mGBuffer[0].mSRV,mGBuffer[1].mSRV,mDSSRV.mSRV};
+	mLightingShader->DrawPost(pd3dImmediateContext,srvs);
 
 	//FXAA into back buffer
-	pd3dImmediateContext->OMSetRenderTargets(1, &rtv, dsv);
+	ID3D11RenderTargetView* backBuffer = DXUTGetD3D11RenderTargetView();
+	pd3dImmediateContext->OMSetRenderTargets(1, &backBuffer, NULL);
 	mFXAAShader->DrawPost(pd3dImmediateContext,mProxyTexture.mSRV);
 }
 

@@ -796,7 +796,7 @@ FxaaVS_Output FxaaVS(uint id : SV_VertexID) {
 		float2(-1.0f, 1.0f), 0.0f, 1.0f);
     return Output; }
 
-SamplerState anisotropicSampler : register(s3);
+SamplerState anisotropicSampler : register(s0);
 Texture2D	 inputTexture       : register(t0);
 
 float4 FxaaPS(FxaaVS_Output Input) : SV_TARGET {

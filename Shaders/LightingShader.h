@@ -24,15 +24,21 @@ public:
 		OnD3D11DestroyDevice();
 	}
 
-	void DrawPost(ID3D11DeviceContext* pd3dContext)
+	void DrawPost(ID3D11DeviceContext* pd3dContext,ID3D11ShaderResourceView* pSRV[3])
 	{
 		if (!mCompiled) {
 			return;
 		}
+
+		pd3dContext->PSSetShaderResources(0,3,pSRV);
+
 		pd3dContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP );
 		pd3dContext->VSSetShader( mVertexShader, NULL, 0 );
 		pd3dContext->PSSetShader( mPixelShader, NULL, 0 );
 		pd3dContext->Draw( 4, 0 );
+
+		ID3D11ShaderResourceView* srvs[3] = {NULL,NULL,NULL};
+		pd3dContext->PSSetShaderResources(0,3,srvs);
 	}
 
 	HRESULT OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
