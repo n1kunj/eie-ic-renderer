@@ -1,3 +1,12 @@
+Texture2D	 inputTexture       : register(t0);
+
+SamplerState samLinear
+{
+    Filter = MIN_MAG_MIP_LINEAR;
+    AddressU = Wrap;
+    AddressV = Wrap;
+};
+
 struct LightingVSOutput {  
 	float4 Pos : SV_POSITION;              
 	float2 Tex : TEXCOORD0; };
@@ -11,6 +20,5 @@ LightingVSOutput LightingVS(uint id : SV_VertexID) {
 	
 float4 LightingPS(LightingVSOutput input) : SV_TARGET {
 //discard;
-	return float4(input.Tex,1.0f,1.0f);
-	return float4(0.0f,1.0f,1.0f,1.0f);
+	return inputTexture.Sample(samLinear,input.Tex);
 }

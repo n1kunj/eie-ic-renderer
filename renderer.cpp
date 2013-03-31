@@ -65,29 +65,30 @@ HRESULT Renderer::OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, const DXGI_
 	this->mSurfaceDescription = *pBackBufferSurfaceDesc;
 	mCamera->updateWindowDimensions();
 
+	{
+		D3D11_TEXTURE2D_DESC desc;
+		::ZeroMemory (&desc, sizeof (desc));
+		desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+		desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		desc.Height = pBackBufferSurfaceDesc->Height;
+		desc.Width = pBackBufferSurfaceDesc->Width;
+		desc.ArraySize = 1;
+		desc.SampleDesc.Count = 1;
+		desc.SampleDesc.Quality = 0;
+		desc.MipLevels = 1;
 
-	D3D11_TEXTURE2D_DESC desc;
-	::ZeroMemory (&desc, sizeof (desc));
-	desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	desc.Height = pBackBufferSurfaceDesc->Height;
-	desc.Width = pBackBufferSurfaceDesc->Width;
-	desc.ArraySize = 1;
-	desc.SampleDesc.Count = 1;
-	desc.SampleDesc.Quality = 0;
-	desc.MipLevels = 1;
+		mProxyTexture.mDesc = desc;
+		mProxyTexture.CreateTexture(pd3dDevice);
 
-	mProxyTexture.mDesc = desc;
-	mProxyTexture.CreateTexture(pd3dDevice);
+		mGBuffer[1].mDesc = desc;
+		mGBuffer[1].CreateTexture(pd3dDevice);
 
-	mGBuffer[1].mDesc = desc;
-	mGBuffer[1].CreateTexture(pd3dDevice);
+		desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+		desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+		mGBuffer[0].mDesc = desc;
+		mGBuffer[0].CreateTexture(pd3dDevice);
+	}
 
-	desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-	desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	mGBuffer[0].mDesc = desc;
-	mGBuffer[0].CreateTexture(pd3dDevice);
-	
 	return S_OK;
 }
 
@@ -129,16 +130,29 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 	ID3D11RenderTargetView* rtv = DXUTGetD3D11RenderTargetView();
 	ID3D11DepthStencilView* dsv = DXUTGetD3D11DepthStencilView();
 
+	//Clear render targets
 	pd3dImmediateContext->ClearRenderTargetView( mProxyTexture.mRTV, ClearColor );
+	pd3dImmediateContext->ClearRenderTargetView( mGBuffer[0].mRTV, ClearColor );
+	pd3dImmediateContext->ClearRenderTargetView( mGBuffer[1].mRTV, ClearColor );
 	pd3dImmediateContext->ClearDepthStencilView( dsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0, 0 );
 
-	pd3dImmediateContext->OMSetRenderTargets(1, &mProxyTexture.mRTV, dsv);
+	//Set GBuffer
+	ID3D11RenderTargetView* rtvs[2] = {mGBuffer[0].mRTV,mGBuffer[1].mRTV};
+	pd3dImmediateContext->OMSetRenderTargets(2, rtvs, dsv);
 
 	mDrawableManager.Draw(pd3dImmediateContext);
 
+	pd3dImmediateContext->OMSetRenderTargets(1, &mProxyTexture.mRTV, dsv);
+
+	pd3dImmediateContext->PSSetShaderResources( 0, 1, &mGBuffer[0].mSRV );
+	mLightingShader->DrawPost(pd3dImmediateContext);
+
+	pd3dImmediateContext->ClearDepthStencilView( dsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0, 0 );
+
+
+
 	pd3dImmediateContext->OMSetRenderTargets(1, &rtv, dsv);
 
-	//mLightingShader->DrawPost(pd3dImmediateContext);
 
 	mFXAAShader->DrawPost(pd3dImmediateContext,mProxyTexture.mSRV);
 
