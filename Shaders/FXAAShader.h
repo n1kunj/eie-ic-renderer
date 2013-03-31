@@ -1,7 +1,7 @@
+#include "DXUT.h"
 #pragma once
 #ifndef SHADERS_FXAASHADER_H
 #define SHADERS_FXAASHADER_H
-#include "DXUT.h"
 #include "../Utils/ShaderTools.h"
 #include "../DirectXMath/DirectXMath.h"
 
@@ -11,22 +11,30 @@ struct FXAAConstantBuffer
 };
 
 class FXAAShader{
-public:
-	void FXAAShader::DrawPost(ID3D11DeviceContext* pd3dContext, ID3D11ShaderResourceView* pInputSRV);
-	HRESULT OnD3D11CreateDevice(ID3D11Device* pd3dDevice);
-	void OnD3D11DestroyDevice();
-
-	FXAAShader() : mCompiled(false),mVertexShader(NULL),
-	mPixelShader(NULL),mConstantBuffer(NULL){}
-	~FXAAShader(){
-		OnD3D11DestroyDevice();
-	}
-
 private:
 	boolean mCompiled;
 	ID3D11VertexShader* mVertexShader;
 	ID3D11PixelShader* mPixelShader;
 	ID3D11Buffer* mConstantBuffer;
+
+public:
+	void OnD3D11DestroyDevice()
+	{
+		SAFE_RELEASE(mVertexShader);
+		SAFE_RELEASE(mPixelShader);
+		SAFE_RELEASE(mConstantBuffer);
+		mCompiled = FALSE;
+	}
+
+	FXAAShader() : mCompiled(FALSE),mVertexShader(NULL),
+	mPixelShader(NULL),mConstantBuffer(NULL){}
+
+	~FXAAShader(){
+		OnD3D11DestroyDevice();
+	}
+
+	void DrawPost(ID3D11DeviceContext* pd3dContext, ID3D11ShaderResourceView* pInputSRV);
+	HRESULT OnD3D11CreateDevice(ID3D11Device* pd3dDevice);
 };
 
 void FXAAShader::DrawPost(ID3D11DeviceContext* pd3dContext, ID3D11ShaderResourceView* pInputSRV)
@@ -81,14 +89,6 @@ HRESULT FXAAShader::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 
 	mCompiled = TRUE;
 	return S_OK;
-}
-
-void FXAAShader::OnD3D11DestroyDevice()
-{
-	SAFE_RELEASE(mVertexShader);
-	SAFE_RELEASE(mPixelShader);
-	SAFE_RELEASE(mConstantBuffer);
-	mCompiled = FALSE;
 }
 
 #endif

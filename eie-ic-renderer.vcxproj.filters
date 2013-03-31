@@ -176,7 +176,7 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="MessageProcessor.cpp" />
     <ClCompile Include="DrawableManager.cpp" />
-    <ClCompile Include="Shaders\GBufferShader.cpp">
+    <ClCompile Include="Shaders\LightingShader.h">
       <Filter>Shaders</Filter>
     </ClCompile>
   </ItemGroup>

@@ -8,7 +8,8 @@
 #include "Drawable.h"
 #include "Camera.h"
 #include "ShaderManager.h"
-#include "Shaders\FXAAShader.h"
+#include "Shaders/FXAAShader.h"
+#include "Shaders/LightingShader.h"
 
 #include <sstream>
 
@@ -23,6 +24,7 @@ Renderer::Renderer(MessageLogger* mLogger) : mLogger(mLogger), mDrawableManager(
 	mShaderManager->addShader(new DefaultShader());
 	mShaderManager->addShader(new GBufferShader());
 	mFXAAShader = new FXAAShader();
+	mLightingShader = new LightingShader();
 
 #ifdef DEBUG
 	mRecompile = FALSE;
@@ -36,6 +38,7 @@ Renderer::~Renderer() {
 	SAFE_DELETE(mCubeMesh);
 	SAFE_DELETE(mShaderManager);
 	SAFE_DELETE(mFXAAShader);
+	SAFE_DELETE(mLightingShader);
 };
 
 void Renderer::init()
@@ -51,13 +54,7 @@ HRESULT Renderer::OnD3D11CreateDevice( ID3D11Device* pd3dDevice, const DXGI_SURF
 	mCubeMesh->OnD3D11CreateDevice(pd3dDevice);
 	mShaderManager->OnD3D11CreateDevice(pd3dDevice);
 	mFXAAShader->OnD3D11CreateDevice(pd3dDevice);
-
-
-
-
-
-
-
+	mLightingShader->OnD3D11CreateDevice(pd3dDevice);
 
 	return S_OK;
 }
@@ -121,6 +118,7 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 #ifdef DEBUG
 	if (mRecompile) {
 		mShaderManager->OnD3D11CreateDevice(pd3dDevice);
+		mLightingShader->OnD3D11CreateDevice(pd3dDevice);
 		mRecompile = FALSE;
 	}
 #endif // DEBUG
@@ -134,24 +132,18 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 	pd3dImmediateContext->ClearRenderTargetView( mProxyTexture.mRTV, ClearColor );
 	pd3dImmediateContext->ClearDepthStencilView( dsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0, 0 );
 
-
-
-
-
-
-
-
-
-
 	pd3dImmediateContext->OMSetRenderTargets(1, &mProxyTexture.mRTV, dsv);
 
 	mDrawableManager.Draw(pd3dImmediateContext);
 
 	pd3dImmediateContext->OMSetRenderTargets(1, &rtv, dsv);
 
-
+	//mLightingShader->DrawPost(pd3dImmediateContext);
 
 	mFXAAShader->DrawPost(pd3dImmediateContext,mProxyTexture.mSRV);
+
+
+
 
 }
 
@@ -167,6 +159,7 @@ void Renderer::OnD3D11DestroyDevice()
 	mCubeMesh->OnD3D11DestroyDevice();
 	mShaderManager->OnD3D11DestroyDevice();
 	mFXAAShader->OnD3D11DestroyDevice();
+	mLightingShader->OnD3D11DestroyDevice();
 	mProxyTexture.OnD3D11DestroyDevice();
 	mGBuffer[0].OnD3D11DestroyDevice();
 	mGBuffer[1].OnD3D11DestroyDevice();

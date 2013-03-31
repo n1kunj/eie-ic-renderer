@@ -13,6 +13,7 @@ class BasicDrawable;
 class ShaderManager;
 class Camera;
 class FXAAShader;
+class LightingShader;
 class Texture2D;
 
 class Renderer {
@@ -39,6 +40,7 @@ public:
 	ShaderManager* mShaderManager;
 	Camera* mCamera;
 	FXAAShader* mFXAAShader;
+	LightingShader* mLightingShader;
 	Texture2D mProxyTexture;
 	Texture2D mGBuffer[2];
 
