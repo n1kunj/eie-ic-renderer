@@ -4,31 +4,47 @@
 #define SHADERS_LIGHTINGSHADER_H
 #include "../Utils/ShaderTools.h"
 #include "../DirectXMath/DirectXMath.h"
+#include "../Camera.h"
+
+__declspec(align(16)) struct LightingPSCB
+{
+	DirectX::XMMATRIX Projection;
+};
 
 class LightingShader{
 private:
 	boolean mCompiled;
 	ID3D11VertexShader* mVertexShader;
 	ID3D11PixelShader* mPixelShader;
+	ID3D11Buffer* mPSCB;
 public:
 	void OnD3D11DestroyDevice() {
 		SAFE_RELEASE(mVertexShader);
 		SAFE_RELEASE(mPixelShader);
+		SAFE_RELEASE(mPSCB);
 		mCompiled = FALSE;
 	}
 
 	LightingShader() : mCompiled(FALSE),mPixelShader(NULL),
-		mVertexShader(NULL)	{}
+		mVertexShader(NULL),mPSCB(NULL)	{}
 
 	~LightingShader() {
 		OnD3D11DestroyDevice();
 	}
 
-	void DrawPost(ID3D11DeviceContext* pd3dContext,ID3D11ShaderResourceView* pSRV[3])
+	void DrawPost(ID3D11DeviceContext* pd3dContext,ID3D11ShaderResourceView* pSRV[3], const Camera* pCamera)
 	{
 		if (!mCompiled) {
 			return;
 		}
+
+		D3D11_MAPPED_SUBRESOURCE MappedResource;
+		pd3dContext->Map(mPSCB,0,D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
+		LightingPSCB* pscb = (LightingPSCB*)MappedResource.pData;
+		pscb->Projection = XMMatrixTranspose(pCamera->mProjectionMatrix);
+		pd3dContext->Unmap(mPSCB,0);
+
+		pd3dContext->PSSetConstantBuffers(0,1,&mPSCB);
 
 		pd3dContext->PSSetShaderResources(0,3,pSRV);
 
@@ -59,6 +75,14 @@ public:
 		V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\LightingShader.fx", "LightingPS", "ps_5_0", &pPSBlob ));
 
 		V_RELEASE_AND_RETURN(pPSBlob, pd3dDevice->CreatePixelShader( pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), NULL, &mPixelShader ));
+
+		D3D11_BUFFER_DESC bd;
+		ZeroMemory( &bd, sizeof(bd) );
+		bd.Usage = D3D11_USAGE_DYNAMIC;
+		bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		bd.ByteWidth = sizeof(LightingPSCB);
+		V_RETURN(pd3dDevice->CreateBuffer( &bd, NULL, &mPSCB ));
 
 		mCompiled = TRUE;
 		return S_OK;

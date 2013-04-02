@@ -230,7 +230,7 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 	pd3dImmediateContext->OMSetRenderTargets(1, &mProxyTexture.mRTV, mDSVRO.mDSV);
 
 	ID3D11ShaderResourceView* srvs[3] = {mGBuffer[0].mSRV,mGBuffer[1].mSRV,mDSSRV.mSRV};
-	mLightingShader->DrawPost(pd3dImmediateContext,srvs);
+	mLightingShader->DrawPost(pd3dImmediateContext,srvs,mCamera);
 
 	//FXAA into back buffer
 	//Back to the default depth state

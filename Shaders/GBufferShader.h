@@ -77,9 +77,9 @@ public:
 		// Create the constant buffer
 		D3D11_BUFFER_DESC bd;
 		ZeroMemory( &bd, sizeof(bd) );
-		bd.Usage = D3D11_USAGE_DEFAULT;
+		bd.Usage = D3D11_USAGE_DYNAMIC;
 		bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		bd.CPUAccessFlags = 0;
+		bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 		bd.ByteWidth = sizeof(GBufferVSCB);
 		V_RETURN(pd3dDevice->CreateBuffer( &bd, NULL, &mVSConstantBuffer ));
 
@@ -103,22 +103,23 @@ public:
 		using namespace DirectX;
 
 		// Update constant buffer
-		GBufferVSCB vscb;
+		D3D11_MAPPED_SUBRESOURCE MappedResource;
+		pd3dContext->Map(mVSConstantBuffer,0,D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
+		GBufferVSCB* vscb = (GBufferVSCB*)MappedResource.pData;
+		vscb->Model = XMMatrixTranspose(pState->mModelMatrix);
+		vscb->View = XMMatrixTranspose(pCamera->mViewMatrix);
+		vscb->Projection = XMMatrixTranspose(pCamera->mProjectionMatrix);
+		vscb->MV = XMMatrixMultiplyTranspose(pState->mModelMatrix,pCamera->mViewMatrix);
+		vscb->MVP = XMMatrixMultiplyTranspose(pState->mModelMatrix,pCamera->mViewProjectionMatrix);
+		pd3dContext->Unmap(mVSConstantBuffer,0);
 
-		vscb.Model = XMMatrixTranspose(pState->mModelMatrix);
-		vscb.View = XMMatrixTranspose(pCamera->mViewMatrix);
-		vscb.Projection = XMMatrixTranspose(pCamera->mProjectionMatrix);
-		vscb.MV = XMMatrixMultiplyTranspose(pState->mModelMatrix,pCamera->mViewMatrix);
-		vscb.MVP = XMMatrixMultiplyTranspose(pState->mModelMatrix,pCamera->mViewProjectionMatrix);
-
-		pd3dContext->UpdateSubresource( mVSConstantBuffer, 0, NULL, &vscb, 0, 0 );
 		pd3dContext->VSSetConstantBuffers( 0, 1, &mVSConstantBuffer );
 
-		GBufferPSCB pscb;
+		pd3dContext->Map(mPSConstantBuffer,0,D3D11_MAP_WRITE_DISCARD,0,&MappedResource);
+		GBufferPSCB* pscb = (GBufferPSCB*)MappedResource.pData;
+		XMStoreFloat3(&pscb->CameraPos, pCamera->mEye);
+		pd3dContext->Unmap(mPSConstantBuffer,0);
 
-		XMStoreFloat3(&pscb.CameraPos, pCamera->mEye);
-
-		pd3dContext->UpdateSubresource( mPSConstantBuffer, 0, NULL, &pscb, 0, 0 );
 		pd3dContext->PSSetConstantBuffers( 1, 1, &mPSConstantBuffer );
 
 		//Set vertex layout and bind buffers

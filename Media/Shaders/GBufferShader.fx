@@ -44,7 +44,7 @@ PS_INPUT VS( VS_INPUT input)
 	
 	output.Pos = mul(input.Pos,MVP);
 	output.ModelPos = mul(input.Pos,Model);
-    output.Norm = normalize(mul(input.Norm,MV));
+    output.Norm = normalize(mul(input.Norm,Model));
     return output;
 }
 

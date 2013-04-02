@@ -10,6 +10,11 @@ float3 DecodeSphereMap(float2 e)
     return n;
 }
 
+cbuffer PSCB : register( b0 )
+{
+	matrix Projection;
+}
+
 Texture2D normals_specular : register(t0);
 Texture2D albedo : register(t1);
 Texture2D depthTex : register(t2);
@@ -32,5 +37,7 @@ float4 LightingPS(LightingVSOutput input) : SV_TARGET {
 	float4 nor_spec = normals_specular.Load(pix_pos);
 	float4 alb = albedo.Load(pix_pos);
 	float3 normal = DecodeSphereMap(nor_spec.xy);
+	normal/2;
+	normal+=0.5f;
 	return float4(normal,1.0f);
 }
