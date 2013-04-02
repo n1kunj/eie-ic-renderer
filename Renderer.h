@@ -44,7 +44,11 @@ public:
 	Texture2D mGBuffer[2];
 	Depth2D mDepthStencil;
 	Depth2DDSV mDSV;
+	Depth2DDSV mDSVRO;
 	Depth2DSRV mDSSRV;
+	ID3D11DepthStencilState* mDSStateDefault;
+	ID3D11DepthStencilState* mDSStateStencilWrite;
+	ID3D11DepthStencilState* mDSStateStencilCull;
 
 	boolean mRecompile;
 };

@@ -22,7 +22,7 @@ state.mScale.y = 0.2
 state.mScale.z = 0.2
 
 DRAWMAN:addDrawable(lightSrc)
-
+math.randomseed(100)
 for i=1,1000 do
 cubeptr = BasicDrawable(MESH,shader,CAMERA)
 

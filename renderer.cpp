@@ -26,6 +26,11 @@ Renderer::Renderer(MessageLogger* mLogger) : mLogger(mLogger), mDrawableManager(
 	mFXAAShader = new FXAAShader();
 	mLightingShader = new LightingShader();
 
+	mDSStateDefault = NULL;
+	mDSStateStencilCull = NULL;
+	mDSStateStencilWrite = NULL;
+
+
 	mRecompile = FALSE;
 
 };
@@ -50,7 +55,12 @@ void Renderer::OnD3D11DestroyDevice()
 	mGBuffer[1].OnD3D11DestroyDevice();
 	mDepthStencil.OnD3D11DestroyDevice();
 	mDSV.OnD3D11DestroyDevice();
+	mDSVRO.OnD3D11DestroyDevice();
 	mDSSRV.OnD3D11DestroyDevice();
+
+	SAFE_RELEASE(mDSStateDefault);
+	SAFE_RELEASE(mDSStateStencilCull);
+	SAFE_RELEASE(mDSStateStencilWrite);
 }
 
 void Renderer::init()
@@ -67,6 +77,30 @@ HRESULT Renderer::OnD3D11CreateDevice( ID3D11Device* pd3dDevice, const DXGI_SURF
 	mShaderManager->OnD3D11CreateDevice(pd3dDevice);
 	mFXAAShader->OnD3D11CreateDevice(pd3dDevice);
 	mLightingShader->OnD3D11CreateDevice(pd3dDevice);
+
+	{
+		//Default depth state
+		CD3D11_DEFAULT dsDefault;
+		CD3D11_DEPTH_STENCIL_DESC desc = CD3D11_DEPTH_STENCIL_DESC(dsDefault);
+		pd3dDevice->CreateDepthStencilState(&desc,&mDSStateDefault);
+
+		//Depth Test, Stencil writes
+		desc.DepthEnable = TRUE;
+		desc.StencilEnable = TRUE;
+		//Write to the stencil buffer with reference value, if the depth test passes
+		desc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+		desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_REPLACE;   
+		//Don't care about back face so keep at default (never write)
+		pd3dDevice->CreateDepthStencilState(&desc,&mDSStateStencilWrite);
+
+		//No Depth test or writes, stencil cull
+		desc.DepthEnable = FALSE;
+		desc.StencilEnable = TRUE;
+		//If equal to ref value, pass
+		desc.FrontFace.StencilFunc = D3D11_COMPARISON_EQUAL;
+		desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;  
+		pd3dDevice->CreateDepthStencilState(&desc,&mDSStateStencilCull);
+	}
 
 	return S_OK;
 }
@@ -127,6 +161,11 @@ HRESULT Renderer::OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, const DXGI_
 		desc.Texture2D.MipSlice = 0;
 		mDSV.mDesc = desc;
 		mDSV.CreateDSV(pd3dDevice,mDepthStencil);
+
+		//Read only DSV for stencil culling
+		desc.Flags = D3D11_DSV_READ_ONLY_DEPTH | D3D11_DSV_READ_ONLY_STENCIL;
+		mDSVRO.mDesc = desc;
+		mDSVRO.CreateDSV(pd3dDevice,mDepthStencil);
 	}
 	{
 		CD3D11_SHADER_RESOURCE_VIEW_DESC desc(D3D11_SRV_DIMENSION_TEXTURE2D, DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS, 0, 1, 0, 1);
@@ -166,28 +205,36 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 
 	ID3D11DepthStencilView* dsv = mDSV.mDSV;
 
-	//Clear render targets
-	//float ClearColor[4] = { 0.329f, 0.608f, 0.722f, 1.0f };
-	//pd3dImmediateContext->ClearRenderTargetView( mProxyTexture.mRTV, ClearColor );
+	//Clear depth stencil target
 	pd3dImmediateContext->ClearDepthStencilView( dsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0, 0 );
 
 	//Set ,then draw GBuffer
 	ID3D11RenderTargetView* rtvs[2] = {mGBuffer[0].mRTV,mGBuffer[1].mRTV};
 	pd3dImmediateContext->OMSetRenderTargets(2, rtvs, dsv);
 
+	//Stencil buffer writes
+	pd3dImmediateContext->OMSetDepthStencilState(mDSStateStencilWrite,1);
 	mDrawableManager.Draw(pd3dImmediateContext);
 
 	//Make the runtime happy
 	ID3D11RenderTargetView* rtvs2[2] = {NULL,NULL};
 	pd3dImmediateContext->OMSetRenderTargets(2,rtvs2,dsv);
 
+	//Temporary clear until I get a skybox
+	float ClearColor[4] = { 0.329f, 0.608f, 0.722f, 1.0f };
+	pd3dImmediateContext->ClearRenderTargetView( mProxyTexture.mRTV, ClearColor );
+
 	//Do lighting
-	pd3dImmediateContext->OMSetRenderTargets(1, &mProxyTexture.mRTV, NULL);
+	//Stencil buffer cull with read only stencil and depth buffer
+	pd3dImmediateContext->OMSetDepthStencilState(mDSStateStencilCull,1);
+	pd3dImmediateContext->OMSetRenderTargets(1, &mProxyTexture.mRTV, mDSVRO.mDSV);
 
 	ID3D11ShaderResourceView* srvs[3] = {mGBuffer[0].mSRV,mGBuffer[1].mSRV,mDSSRV.mSRV};
 	mLightingShader->DrawPost(pd3dImmediateContext,srvs);
 
 	//FXAA into back buffer
+	//Back to the default depth state
+	pd3dImmediateContext->OMSetDepthStencilState(mDSStateDefault,1);
 	ID3D11RenderTargetView* backBuffer = DXUTGetD3D11RenderTargetView();
 	pd3dImmediateContext->OMSetRenderTargets(1, &backBuffer, NULL);
 	mFXAAShader->DrawPost(pd3dImmediateContext,mProxyTexture.mSRV);
