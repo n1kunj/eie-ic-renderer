@@ -485,6 +485,7 @@
     <ClInclude Include="Shaders\DefaultShader.h" />
     <ClInclude Include="Shaders\FXAAShader.h" />
     <ClInclude Include="Shaders\GBufferShader.h" />
+    <ClInclude Include="Shaders\LightingCompute.h" />
     <ClInclude Include="Texture2D.h" />
     <ClInclude Include="Textures\Textures.h" />
     <ClInclude Include="Utils\ShaderTools.h" />

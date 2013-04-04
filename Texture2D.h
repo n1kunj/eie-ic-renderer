@@ -30,6 +30,45 @@ public:
 	}
 };
 
+template <typename T>
+class StructuredBuffer {
+public:
+	UINT mBindFlags;
+	D3D11_USAGE mUsage;
+	UINT mElements;
+	UINT mCPUAccessFlags;
+	ID3D11Buffer* mBuffer;
+	ID3D11ShaderResourceView* mSRV;
+	ID3D11UnorderedAccessView* mUAV;
+
+	StructuredBuffer() : mBuffer(NULL), mSRV(NULL), mUAV(NULL) {}
+
+	void CreateBuffer(ID3D11Device* pd3dDevice) {
+		OnD3D11DestroyDevice();
+		D3D11_BUFFER_DESC desc;
+		::ZeroMemory (&desc, sizeof (desc));
+		desc.BindFlags = mBindFlags;
+		desc.Usage = mUsage;
+		desc.ByteWidth = mElements * sizeof(T);
+		desc.CPUAccessFlags = mCPUAccessFlags;
+		desc.StructureByteStride = sizeof(T);
+		desc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+		pd3dDevice->CreateBuffer(&desc,0,&mBuffer);
+		pd3dDevice->CreateShaderResourceView(mBuffer,0,&mSRV);
+		pd3dDevice->CreateUnorderedAccessView(mBuffer,0,&mUAV);
+	}
+
+	void OnD3D11DestroyDevice() {
+		SAFE_RELEASE(mBuffer);
+		SAFE_RELEASE(mSRV);
+		SAFE_RELEASE(mUAV);
+	}
+
+	~StructuredBuffer() {
+		OnD3D11DestroyDevice();
+	}
+};
+
 class Depth2D {
 public:
 	D3D11_TEXTURE2D_DESC mDesc;

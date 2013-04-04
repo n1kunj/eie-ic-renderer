@@ -13,8 +13,6 @@
 
 #include <sstream>
 
-ID3D11DepthStencilState* gDepthState;
-
 Renderer::Renderer(MessageLogger* mLogger) : mLogger(mLogger), mDrawableManager()
 {
 	mCamera = new Camera();
@@ -25,6 +23,7 @@ Renderer::Renderer(MessageLogger* mLogger) : mLogger(mLogger), mDrawableManager(
 	mShaderManager->addShader(new GBufferShader());
 	mFXAAShader = new FXAAShader();
 	mLightingShader = new LightingShader();
+	mLightingCompute = new LightingCompute();
 
 	mDSStateDefault = NULL;
 	mDSStateStencilCull = NULL;
@@ -42,6 +41,7 @@ Renderer::~Renderer() {
 	SAFE_DELETE(mShaderManager);
 	SAFE_DELETE(mFXAAShader);
 	SAFE_DELETE(mLightingShader);
+	SAFE_DELETE(mLightingCompute);
 };
 
 void Renderer::OnD3D11DestroyDevice()
@@ -50,6 +50,8 @@ void Renderer::OnD3D11DestroyDevice()
 	mShaderManager->OnD3D11DestroyDevice();
 	mFXAAShader->OnD3D11DestroyDevice();
 	mLightingShader->OnD3D11DestroyDevice();
+	mLightingCompute->OnD3D11DestroyDevice();
+
 	mProxyTexture.OnD3D11DestroyDevice();
 	mGBuffer[0].OnD3D11DestroyDevice();
 	mGBuffer[1].OnD3D11DestroyDevice();
@@ -57,6 +59,7 @@ void Renderer::OnD3D11DestroyDevice()
 	mDSV.OnD3D11DestroyDevice();
 	mDSVRO.OnD3D11DestroyDevice();
 	mDSSRV.OnD3D11DestroyDevice();
+	mLightingCSFBSB.OnD3D11DestroyDevice();
 
 	SAFE_RELEASE(mDSStateDefault);
 	SAFE_RELEASE(mDSStateStencilCull);
@@ -77,6 +80,7 @@ HRESULT Renderer::OnD3D11CreateDevice( ID3D11Device* pd3dDevice, const DXGI_SURF
 	mShaderManager->OnD3D11CreateDevice(pd3dDevice);
 	mFXAAShader->OnD3D11CreateDevice(pd3dDevice);
 	mLightingShader->OnD3D11CreateDevice(pd3dDevice);
+	mLightingCompute->OnD3D11CreateDevice(pd3dDevice);
 
 	{
 		//Default depth state
@@ -111,6 +115,7 @@ HRESULT Renderer::OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, const DXGI_
 	this->mSurfaceDescription = *pBackBufferSurfaceDesc;
 	mCamera->updateWindowDimensions();
 
+	//Create Proxy texture and GBuffers
 	{
 		D3D11_TEXTURE2D_DESC desc;
 		::ZeroMemory (&desc, sizeof (desc));
@@ -134,6 +139,16 @@ HRESULT Renderer::OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, const DXGI_
 		mGBuffer[0].CreateTexture(pd3dDevice);
 	}
 
+	//Create Structure Buffer for Compute Shader output
+	{
+		mLightingCSFBSB.mBindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
+		mLightingCSFBSB.mCPUAccessFlags = 0;
+		mLightingCSFBSB.mElements = pBackBufferSurfaceDesc->Height * pBackBufferSurfaceDesc->Width;
+		mLightingCSFBSB.mUsage = D3D11_USAGE_DEFAULT;
+		mLightingCSFBSB.CreateBuffer(pd3dDevice);
+	}
+
+	//Create Depth Buffer
 	{
 		D3D11_TEXTURE2D_DESC desc;
 		::ZeroMemory (&desc, sizeof (desc));
@@ -153,6 +168,7 @@ HRESULT Renderer::OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, const DXGI_
 		mDepthStencil.CreateTexture(pd3dDevice);
 	}
 	{
+		//Create Depth Stencil View
 		D3D11_DEPTH_STENCIL_VIEW_DESC desc;
 		::ZeroMemory (&desc, sizeof (desc));
 		desc.Format = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
@@ -168,6 +184,7 @@ HRESULT Renderer::OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, const DXGI_
 		mDSVRO.CreateDSV(pd3dDevice,mDepthStencil);
 	}
 	{
+		//Create DS Shader Resource View
 		CD3D11_SHADER_RESOURCE_VIEW_DESC desc(D3D11_SRV_DIMENSION_TEXTURE2D, DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS, 0, 1, 0, 1);
 		mDSSRV.mDesc = desc;
 		mDSSRV.CreateSRV(pd3dDevice,mDepthStencil);
@@ -200,6 +217,7 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 	if (mRecompile) {
 		mShaderManager->OnD3D11CreateDevice(pd3dDevice);
 		mLightingShader->OnD3D11CreateDevice(pd3dDevice);
+		mLightingCompute->OnD3D11CreateDevice(pd3dDevice);
 		mRecompile = FALSE;
 	}
 
@@ -224,12 +242,17 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 	float ClearColor[4] = { 0.329f, 0.608f, 0.722f, 1.0f };
 	pd3dImmediateContext->ClearRenderTargetView( mProxyTexture.mRTV, ClearColor );
 
+	ID3D11ShaderResourceView* srvs[3] = {mGBuffer[0].mSRV,mGBuffer[1].mSRV,mDSSRV.mSRV};
+
+	//Lighting CS
+	pd3dImmediateContext->OMSetDepthStencilState(mDSStateStencilCull,1);
+	mLightingCompute->DrawPost(pd3dImmediateContext,srvs,&mLightingCSFBSB);
+
 	//Do lighting
 	//Stencil buffer cull with read only stencil and depth buffer
 	pd3dImmediateContext->OMSetDepthStencilState(mDSStateStencilCull,1);
 	pd3dImmediateContext->OMSetRenderTargets(1, &mProxyTexture.mRTV, mDSVRO.mDSV);
 
-	ID3D11ShaderResourceView* srvs[3] = {mGBuffer[0].mSRV,mGBuffer[1].mSRV,mDSSRV.mSRV};
 	mLightingShader->DrawPost(pd3dImmediateContext,srvs,mCamera);
 
 	//FXAA into back buffer

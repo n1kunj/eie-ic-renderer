@@ -3,6 +3,7 @@
 #define RENDERER_H
 #include "DrawableManager.h"
 #include "Texture2D.h"
+#include "Shaders/LightingCompute.h"
 
 class MessageLogger;
 class DrawableMesh;
@@ -40,12 +41,15 @@ public:
 	Camera* mCamera;
 	FXAAShader* mFXAAShader;
 	LightingShader* mLightingShader;
+	LightingCompute* mLightingCompute;
+
 	Texture2D mProxyTexture;
 	Texture2D mGBuffer[2];
 	Depth2D mDepthStencil;
 	Depth2DDSV mDSV;
 	Depth2DDSV mDSVRO;
 	Depth2DSRV mDSSRV;
+	StructuredBuffer<LightingCSFB> mLightingCSFBSB;
 	ID3D11DepthStencilState* mDSStateDefault;
 	ID3D11DepthStencilState* mDSStateStencilWrite;
 	ID3D11DepthStencilState* mDSStateStencilCull;
