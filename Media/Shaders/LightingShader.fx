@@ -1,18 +1,6 @@
-float3 DecodeSphereMap(float2 e)
-{
-    float2 tmp = e - e * e;
-    float f = tmp.x + tmp.y;
-    float m = sqrt(4.0f * f - 1.0f);
-    
-    float3 n;
-    n.xy = m * (e * 4.0f - 2.0f);
-    n.z  = 3.0f - 8.0f * f;
-    return n;
-}
-
 float4 UnpackRGBA16(uint2 e)
 {
-    return float4(f16tof32(e), f16tof32(e >> 16));
+	return float4(f16tof32(e), f16tof32(e >> 16));
 }
 
 cbuffer PSCB : register( b0 )
@@ -38,6 +26,12 @@ LightingVSOutput LightingVS(uint id : SV_VertexID) {
 	
 float4 LightingPS(LightingVSOutput input) : SV_TARGET {
 
+	int3 pix_pos = int3(input.Pos.xy,0);
+	float depth = depthTex.Load(pix_pos);
+	if (depth == 1.0f) {
+	//Skybox
+		return float4( 0.329f, 0.608f, 0.722f, 1.0f );
+	}
 	uint offset = (input.Pos.x - 0.5) + (input.Pos.y - 0.5) * bufferDim.x;
 	float4 litSample = UnpackRGBA16(litTex[offset]);
 	return litSample;

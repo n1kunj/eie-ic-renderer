@@ -226,31 +226,24 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 	//Clear depth stencil target
 	pd3dImmediateContext->ClearDepthStencilView( dsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0, 0 );
 
-	//Set ,then draw GBuffer
+	//Set, then draw GBuffer
 	ID3D11RenderTargetView* rtvs[2] = {mGBuffer[0].mRTV,mGBuffer[1].mRTV};
 	pd3dImmediateContext->OMSetRenderTargets(2, rtvs, dsv);
-
-	//Stencil buffer writes
-	pd3dImmediateContext->OMSetDepthStencilState(mDSStateStencilWrite,1);
 	mDrawableManager.Draw(pd3dImmediateContext);
 
 	//Make the runtime happy
 	ID3D11RenderTargetView* rtvs2[2] = {NULL,NULL};
 	pd3dImmediateContext->OMSetRenderTargets(2,rtvs2,dsv);
 
-	//Temporary clear until I get a skybox
-	float ClearColor[4] = { 0.329f, 0.608f, 0.722f, 1.0f };
-	pd3dImmediateContext->ClearRenderTargetView( mProxyTexture.mRTV, ClearColor );
-
 	ID3D11ShaderResourceView* srvs[4] = {mGBuffer[0].mSRV,mGBuffer[1].mSRV,mDSSRV.mSRV,mLightingCSFBSB.mSRV};
 
-	//Stencil buffer cull with read only stencil and depth buffer
-	pd3dImmediateContext->OMSetDepthStencilState(mDSStateStencilCull,1);
+	//Set read only DS and proxy output texture
 	pd3dImmediateContext->OMSetRenderTargets(1, &mProxyTexture.mRTV, mDSVRO.mDSV);
+
 	//Lighting CS
 	mLightingCompute->Compute(pd3dImmediateContext,srvs,&mLightingCSFBSB);
 
-	//Final lighting shader
+	//Final lighting shader (skybox etc.)
 	mLightingShader->DrawPost(pd3dImmediateContext,srvs,mCamera);
 
 	//FXAA into back buffer

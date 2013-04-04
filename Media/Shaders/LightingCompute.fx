@@ -60,10 +60,9 @@ void LightingCS(uint3 groupId          : SV_GroupID,
 	normal/=2;
 	normal+=0.5f;
 	
-	if (depth == 1.0f) {
-		WriteSample(globalCoords, float4(0.0f, 0.0f, 0.0f, 0.0f));
-	}
-	else if (all(globalCoords < bufferDim.xy)) {
-		WriteSample(globalCoords, float4(normal, 0.0f));
+	if (all(globalCoords < bufferDim.xy)) {
+		if (depth != 1.0f) {
+			WriteSample(globalCoords, float4(normal, 0.0f));
+		}
 	}
 }
