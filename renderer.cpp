@@ -242,17 +242,15 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 	float ClearColor[4] = { 0.329f, 0.608f, 0.722f, 1.0f };
 	pd3dImmediateContext->ClearRenderTargetView( mProxyTexture.mRTV, ClearColor );
 
-	ID3D11ShaderResourceView* srvs[3] = {mGBuffer[0].mSRV,mGBuffer[1].mSRV,mDSSRV.mSRV};
+	ID3D11ShaderResourceView* srvs[4] = {mGBuffer[0].mSRV,mGBuffer[1].mSRV,mDSSRV.mSRV,mLightingCSFBSB.mSRV};
 
-	//Lighting CS
-	pd3dImmediateContext->OMSetDepthStencilState(mDSStateStencilCull,1);
-	mLightingCompute->DrawPost(pd3dImmediateContext,srvs,&mLightingCSFBSB);
-
-	//Do lighting
 	//Stencil buffer cull with read only stencil and depth buffer
 	pd3dImmediateContext->OMSetDepthStencilState(mDSStateStencilCull,1);
 	pd3dImmediateContext->OMSetRenderTargets(1, &mProxyTexture.mRTV, mDSVRO.mDSV);
+	//Lighting CS
+	mLightingCompute->Compute(pd3dImmediateContext,srvs,&mLightingCSFBSB);
 
+	//Final lighting shader
 	mLightingShader->DrawPost(pd3dImmediateContext,srvs,mCamera);
 
 	//FXAA into back buffer

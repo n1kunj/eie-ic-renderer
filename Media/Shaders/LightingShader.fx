@@ -10,14 +10,20 @@ float3 DecodeSphereMap(float2 e)
     return n;
 }
 
+float4 UnpackRGBA16(uint2 e)
+{
+    return float4(f16tof32(e), f16tof32(e >> 16));
+}
+
 cbuffer PSCB : register( b0 )
 {
-	matrix Projection;
+	uint2 bufferDim;
 }
 
 Texture2D normals_specular : register(t0);
 Texture2D albedo : register(t1);
 Texture2D depthTex : register(t2);
+StructuredBuffer<uint2> litTex : register(t3);
 
 struct LightingVSOutput {  
 	float4 Pos : SV_POSITION;
@@ -31,13 +37,8 @@ LightingVSOutput LightingVS(uint id : SV_VertexID) {
 	return output; }
 	
 float4 LightingPS(LightingVSOutput input) : SV_TARGET {
-	
-	int3 pix_pos = int3(input.Pos.xy,0);
-	float depth = depthTex.Load(pix_pos);
-	float4 nor_spec = normals_specular.Load(pix_pos);
-	float4 alb = albedo.Load(pix_pos);
-	float3 normal = DecodeSphereMap(nor_spec.xy);
-	normal/2;
-	normal+=0.5f;
-	return float4(normal,1.0f);
+
+	uint offset = (input.Pos.x - 0.5) + (input.Pos.y - 0.5) * bufferDim.x;
+	float4 litSample = UnpackRGBA16(litTex[offset]);
+	return litSample;
 }

@@ -8,7 +8,7 @@
 
 __declspec(align(16)) struct LightingPSCB
 {
-	DirectX::XMMATRIX Projection;
+	DirectX::XMUINT2 bufferDim;
 };
 
 class LightingShader{
@@ -32,29 +32,32 @@ public:
 		OnD3D11DestroyDevice();
 	}
 
-	void DrawPost(ID3D11DeviceContext* pd3dContext,ID3D11ShaderResourceView* pSRV[3], const Camera* pCamera)
+	void DrawPost(ID3D11DeviceContext* pd3dContext,ID3D11ShaderResourceView* pSRV[4], const Camera* pCamera)
 	{
 		if (!mCompiled) {
 			return;
 		}
 
+		UINT width = DXUTGetDXGIBackBufferSurfaceDesc()->Width;
+		UINT height = DXUTGetDXGIBackBufferSurfaceDesc()->Height;
+
 		D3D11_MAPPED_SUBRESOURCE MappedResource;
 		pd3dContext->Map(mPSCB,0,D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
 		LightingPSCB* pscb = (LightingPSCB*)MappedResource.pData;
-		pscb->Projection = XMMatrixTranspose(pCamera->mProjectionMatrix);
+		pscb->bufferDim = DirectX::XMUINT2(width,height);
 		pd3dContext->Unmap(mPSCB,0);
 
 		pd3dContext->PSSetConstantBuffers(0,1,&mPSCB);
 
-		pd3dContext->PSSetShaderResources(0,3,pSRV);
+		pd3dContext->PSSetShaderResources(0,4,pSRV);
 
 		pd3dContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP );
 		pd3dContext->VSSetShader( mVertexShader, NULL, 0 );
 		pd3dContext->PSSetShader( mPixelShader, NULL, 0 );
 		pd3dContext->Draw( 4, 0 );
 
-		ID3D11ShaderResourceView* srvs[3] = {NULL,NULL,NULL};
-		pd3dContext->PSSetShaderResources(0,3,srvs);
+		ID3D11ShaderResourceView* srvs[4] = {NULL,NULL,NULL,NULL};
+		pd3dContext->PSSetShaderResources(0,4,srvs);
 	}
 
 	HRESULT OnD3D11CreateDevice( ID3D11Device* pd3dDevice )

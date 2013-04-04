@@ -37,7 +37,7 @@ public:
 		OnD3D11DestroyDevice();
 	}
 
-	void DrawPost(ID3D11DeviceContext* pd3dContext, ID3D11ShaderResourceView* pSRV[3], StructuredBuffer<LightingCSFB>* pSB)
+	void Compute(ID3D11DeviceContext* pd3dContext, ID3D11ShaderResourceView* pSRV[3], StructuredBuffer<LightingCSFB>* pSB)
 	{
 		if (!mCompiled) {
 			return;
@@ -66,6 +66,8 @@ public:
 
 		ID3D11ShaderResourceView* srvs[3] = {NULL,NULL,NULL};
 		pd3dContext->CSSetShaderResources(0,3,srvs);
+		ID3D11UnorderedAccessView* uavs[1] = {NULL};
+		pd3dContext->CSSetUnorderedAccessViews(0,1,uavs,0);
 	}
 
 	HRESULT OnD3D11CreateDevice( ID3D11Device* pd3dDevice )

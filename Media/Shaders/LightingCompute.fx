@@ -1,22 +1,13 @@
-// Copyright 2010 Intel Corporation
-// All Rights Reserved
-//
-// Permission is granted to use, copy, distribute and prepare derivative works of this
-// software for any purpose and without fee, provided, that the above copyright notice
-// and this statement appear in all copies.  Intel makes no representations about the
-// suitability of this software for any purpose.  THIS SOFTWARE IS PROVIDED "AS IS."
-// INTEL SPECIFICALLY DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, AND ALL LIABILITY,
-// INCLUDING CONSEQUENTIAL AND OTHER INDIRECT DAMAGES, FOR THE USE OF THIS SOFTWARE,
-// INCLUDING LIABILITY FOR INFRINGEMENT OF ANY PROPRIETARY RIGHTS, AND INCLUDING THE
-// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.  Intel does not
-// assume any responsibility for any errors which may appear in this software nor any
-// responsibility to update it.
-
 #define MAX_LIGHTS 1024
 
 // This determines the tile size for light binning and associated tradeoffs
 #define COMPUTE_SHADER_TILE_GROUP_DIM 16
 #define COMPUTE_SHADER_TILE_GROUP_SIZE (COMPUTE_SHADER_TILE_GROUP_DIM*COMPUTE_SHADER_TILE_GROUP_DIM)
+
+uint2 PackRGBA16(float4 c)
+{
+	return f32tof16(c.rg) | (f32tof16(c.ba) << 16);
+}
 
 groupshared uint sMinZ;
 groupshared uint sMaxZ;
@@ -25,9 +16,9 @@ groupshared uint sMaxZ;
 groupshared uint sTileLightIndices[MAX_LIGHTS];
 groupshared uint sTileNumLights;
 
-Texture2D normals_specular : register(t0);
-Texture2D albedo : register(t1);
-Texture2D depthTex : register(t2);
+Texture2D<float4> normals_specular : register(t0);
+Texture2D<float4> albedo : register(t1);
+Texture2D<float> depthTex : register(t2);
 RWStructuredBuffer<uint2> gFramebuffer : register(u0);
 
 cbuffer LightingCSCB : register( b0 )
@@ -35,9 +26,16 @@ cbuffer LightingCSCB : register( b0 )
 	uint2 bufferDim;
 }
 
-uint2 PackRGBA16(float4 c)
+float3 DecodeSphereMap(float2 e)
 {
-	return f32tof16(c.rg) | (f32tof16(c.ba) << 16);
+    float2 tmp = e - e * e;
+    float f = tmp.x + tmp.y;
+    float m = sqrt(4.0f * f - 1.0f);
+    
+    float3 n;
+    n.xy = m * (e * 4.0f - 2.0f);
+    n.z  = 3.0f - 8.0f * f;
+    return n;
 }
 
 void WriteSample(uint2 coords, float4 value)
@@ -54,7 +52,18 @@ void LightingCS(uint3 groupId          : SV_GroupID,
 						 )
 {
 	uint2 globalCoords = dispatchThreadId.xy;
-	if (all(globalCoords < bufferDim.xy)) {
-		WriteSample(globalCoords, float4(1.0f, 0.0f, 0.0f, 0.0f));
+	int3 pix_pos = int3(globalCoords,0);
+	float depth = depthTex.Load(pix_pos);
+	float4 nor_spec = normals_specular.Load(pix_pos);
+	float4 alb = albedo.Load(pix_pos);
+	float3 normal = DecodeSphereMap(nor_spec.xy);
+	normal/=2;
+	normal+=0.5f;
+	
+	if (depth == 1.0f) {
+		WriteSample(globalCoords, float4(0.0f, 0.0f, 0.0f, 0.0f));
+	}
+	else if (all(globalCoords < bufferDim.xy)) {
+		WriteSample(globalCoords, float4(normal, 0.0f));
 	}
 }
