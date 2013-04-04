@@ -22,7 +22,10 @@ RWStructuredBuffer<uint2> gFramebuffer : register(u0);
 
 cbuffer LightingCSCB : register( b0 )
 {
+	matrix Projection;
 	uint2 bufferDim;
+	int3 coordOffset;
+	float3 lightLoc;
 }
 
 float3 DecodeSphereMap(float2 e)
@@ -62,7 +65,8 @@ void LightingCS(uint3 groupId 			: SV_GroupID,
 	
 	if (all(globalCoords < bufferDim.xy)) {
 		if (depth != 1.0f) {
-			WriteSample(globalCoords, float4(normal, 0.0f));
+			float3 crds = coordOffset.xyz;
+			WriteSample(globalCoords, float4(lightLoc, 0.0f));
 		}
 	}
 }

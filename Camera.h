@@ -25,6 +25,7 @@ public:
 	DirectX::XMMATRIX mViewMatrix;
 	DirectX::XMMATRIX mProjectionMatrix;
 	DirectX::XMMATRIX mViewProjectionMatrix;
+	DirectX::XMINT3 mCoords;
 
 	void update(DXGI_SURFACE_DESC pSurfaceDesc);
 	void updateWindowDimensions();
@@ -78,9 +79,6 @@ private:
 	CameraButton mCamStrafeRight;
 	CameraButton mCamMoveDown;
 	CameraButton mCamMoveUp;
-
-public:
-	DirectX::XMINT3 mCoords;
 };
 
 #endif

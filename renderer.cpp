@@ -243,7 +243,7 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 	pd3dImmediateContext->OMSetRenderTargets(1, &mProxyTexture.mRTV, mDSVRO.mDSV);
 
 	//Lighting CS
-	mLightingCompute->Compute(pd3dImmediateContext,GBufferSRVs,&mLightingCSFBSB);
+	mLightingCompute->Compute(pd3dImmediateContext,GBufferSRVs,&mLightingCSFBSB,mCamera);
 
 	ID3D11ShaderResourceView* SkyboxSRVs[2] = {mDSSRV.mSRV,mLightingCSFBSB.mSRV};
 

@@ -53,8 +53,6 @@ PS_INPUT VS( VS_INPUT input)
 GBuffer PS( PS_INPUT input )
 {
 	GBuffer output;
-	float specularAmount = SpecAmount;
-	float specularPower = SpecPower;
 	output.normal_specular = float4(EncodeSphereMap(input.Norm),SpecAmount,SpecPower);
 	output.albedo = float4(Albedo,1.0f);
 	return output;
