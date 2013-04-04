@@ -1,6 +1,5 @@
 #define MAX_LIGHTS 1024
 
-// This determines the tile size for light binning and associated tradeoffs
 #define COMPUTE_SHADER_TILE_GROUP_DIM 16
 #define COMPUTE_SHADER_TILE_GROUP_SIZE (COMPUTE_SHADER_TILE_GROUP_DIM*COMPUTE_SHADER_TILE_GROUP_DIM)
 
@@ -45,17 +44,18 @@ void WriteSample(uint2 coords, float4 value)
 }
 
 [numthreads(COMPUTE_SHADER_TILE_GROUP_DIM, COMPUTE_SHADER_TILE_GROUP_DIM, 1)]
-void LightingCS(uint3 groupId          : SV_GroupID,
-						 uint3 dispatchThreadId : SV_DispatchThreadID,
-						 uint3 groupThreadId    : SV_GroupThreadID,
-						 uint groupIndex : SV_GroupIndex
-						 )
+void LightingCS(uint3 groupId 			: SV_GroupID,
+				uint3 dispatchThreadId 	: SV_DispatchThreadID,
+				uint3 groupThreadId    	: SV_GroupThreadID,
+				uint groupIndex 		: SV_GroupIndex )
 {
 	uint2 globalCoords = dispatchThreadId.xy;
 	int3 pix_pos = int3(globalCoords,0);
 	float depth = depthTex.Load(pix_pos);
 	float4 nor_spec = normals_specular.Load(pix_pos);
 	float4 alb = albedo.Load(pix_pos);
+	float specAmount = nor_spec.z;
+	float specExp = nor_spec.w;
 	float3 normal = DecodeSphereMap(nor_spec.xy);
 	normal/=2;
 	normal+=0.5f;

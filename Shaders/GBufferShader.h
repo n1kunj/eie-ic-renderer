@@ -20,7 +20,9 @@ __declspec(align(16)) struct GBufferVSCB
 
 __declspec(align(16)) struct GBufferPSCB
 {
-	DirectX::XMFLOAT3 CameraPos;
+	DirectX::XMFLOAT3 Albedo;
+	FLOAT SpecPower;
+	FLOAT SpecAmount;
 };
 
 class GBufferShader : public DrawableShader {
@@ -117,7 +119,9 @@ public:
 
 		pd3dContext->Map(mPSConstantBuffer,0,D3D11_MAP_WRITE_DISCARD,0,&MappedResource);
 		GBufferPSCB* pscb = (GBufferPSCB*)MappedResource.pData;
-		XMStoreFloat3(&pscb->CameraPos, pCamera->mEye);
+		pscb->Albedo = XMFLOAT3(pState->mDiffuseColour);
+		pscb->SpecPower = pState->mSpecularExponent;
+		pscb->SpecAmount = pState->mSpecularAmount;
 		pd3dContext->Unmap(mPSConstantBuffer,0);
 
 		pd3dContext->PSSetConstantBuffers( 1, 1, &mPSConstantBuffer );

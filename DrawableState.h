@@ -17,6 +17,7 @@ public:
 	DirectX::XMINT3 mCoords;
 	DirectX::XMINT3 mCamOffset;
 	FLOAT mSpecularExponent;
+	FLOAT mSpecularAmount;
 
 	void updateMatrices(Camera* pCamera);
 	void setPosition(DOUBLE x, DOUBLE y, DOUBLE z);

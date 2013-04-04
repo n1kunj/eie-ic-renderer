@@ -9,7 +9,9 @@ cbuffer VSConstantBuffer : register( b0 )
 
 cbuffer PSConstantBuffer : register( b1 )
 {
-	float3 CameraPos;
+	float3 Albedo;
+	float SpecPower;
+	float SpecAmount;
 }
 
 struct VS_INPUT
@@ -44,16 +46,16 @@ PS_INPUT VS( VS_INPUT input)
 	
 	output.Pos = mul(input.Pos,MVP);
 	output.ModelPos = mul(input.Pos,Model);
-    output.Norm = normalize(mul(input.Norm,Model));
+    output.Norm = normalize(mul(input.Norm,MV));
     return output;
 }
 
 GBuffer PS( PS_INPUT input )
 {
 	GBuffer output;
-	float specularAmount = 1.0f;
-	float specularPower = 1.0f;
-	output.normal_specular = float4(EncodeSphereMap(input.Norm),specularAmount,specularPower);
-	output.albedo = float4(1.0f,1.0f,1.0f,1.0f);
+	float specularAmount = SpecAmount;
+	float specularPower = SpecPower;
+	output.normal_specular = float4(EncodeSphereMap(input.Norm),SpecAmount,SpecPower);
+	output.albedo = float4(Albedo,1.0f);
 	return output;
 }
