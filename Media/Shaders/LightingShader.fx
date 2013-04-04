@@ -8,10 +8,8 @@ cbuffer PSCB : register( b0 )
 	uint2 bufferDim;
 }
 
-Texture2D normals_specular : register(t0);
-Texture2D albedo : register(t1);
-Texture2D depthTex : register(t2);
-StructuredBuffer<uint2> litTex : register(t3);
+Texture2D<float> depthTex : register(t0);
+StructuredBuffer<uint2> litTex : register(t1);
 
 struct LightingVSOutput {  
 	float4 Pos : SV_POSITION;

@@ -221,6 +221,7 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 		mRecompile = FALSE;
 	}
 
+	ID3D11RenderTargetView* backBuffer = DXUTGetD3D11RenderTargetView();
 	ID3D11DepthStencilView* dsv = mDSV.mDSV;
 
 	//Clear depth stencil target
@@ -235,21 +236,21 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 	ID3D11RenderTargetView* rtvs2[2] = {NULL,NULL};
 	pd3dImmediateContext->OMSetRenderTargets(2,rtvs2,dsv);
 
-	ID3D11ShaderResourceView* srvs[4] = {mGBuffer[0].mSRV,mGBuffer[1].mSRV,mDSSRV.mSRV,mLightingCSFBSB.mSRV};
+	ID3D11ShaderResourceView* GBufferSRVs[4] = {mGBuffer[0].mSRV,mGBuffer[1].mSRV,mDSSRV.mSRV,mLightingCSFBSB.mSRV};
 
 	//Set read only DS and proxy output texture
+	//We set this here to prevent the runtime from complaining
 	pd3dImmediateContext->OMSetRenderTargets(1, &mProxyTexture.mRTV, mDSVRO.mDSV);
 
 	//Lighting CS
-	mLightingCompute->Compute(pd3dImmediateContext,srvs,&mLightingCSFBSB);
+	mLightingCompute->Compute(pd3dImmediateContext,GBufferSRVs,&mLightingCSFBSB);
+
+	ID3D11ShaderResourceView* SkyboxSRVs[2] = {mDSSRV.mSRV,mLightingCSFBSB.mSRV};
 
 	//Final lighting shader (skybox etc.)
-	mLightingShader->DrawPost(pd3dImmediateContext,srvs,mCamera);
+	mLightingShader->DrawPost(pd3dImmediateContext,SkyboxSRVs,mCamera);
 
-	//FXAA into back buffer
-	//Back to the default depth state
-	pd3dImmediateContext->OMSetDepthStencilState(mDSStateDefault,1);
-	ID3D11RenderTargetView* backBuffer = DXUTGetD3D11RenderTargetView();
+	//FXAA into back buffer, no need for a depth buffer to be bound
 	pd3dImmediateContext->OMSetRenderTargets(1, &backBuffer, NULL);
 	mFXAAShader->DrawPost(pd3dImmediateContext,mProxyTexture.mSRV);
 }

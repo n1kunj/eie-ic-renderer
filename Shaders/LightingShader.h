@@ -32,7 +32,7 @@ public:
 		OnD3D11DestroyDevice();
 	}
 
-	void DrawPost(ID3D11DeviceContext* pd3dContext,ID3D11ShaderResourceView* pSRV[4], const Camera* pCamera)
+	void DrawPost(ID3D11DeviceContext* pd3dContext,ID3D11ShaderResourceView* pSRV[2], const Camera* pCamera)
 	{
 		if (!mCompiled) {
 			return;
@@ -49,15 +49,15 @@ public:
 
 		pd3dContext->PSSetConstantBuffers(0,1,&mPSCB);
 
-		pd3dContext->PSSetShaderResources(0,4,pSRV);
+		pd3dContext->PSSetShaderResources(0,2,pSRV);
 
 		pd3dContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP );
 		pd3dContext->VSSetShader( mVertexShader, NULL, 0 );
 		pd3dContext->PSSetShader( mPixelShader, NULL, 0 );
 		pd3dContext->Draw( 4, 0 );
 
-		ID3D11ShaderResourceView* srvs[4] = {NULL,NULL,NULL,NULL};
-		pd3dContext->PSSetShaderResources(0,4,srvs);
+		ID3D11ShaderResourceView* srvs[2] = {NULL,NULL};
+		pd3dContext->PSSetShaderResources(0,2,srvs);
 	}
 
 	HRESULT OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
