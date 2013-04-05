@@ -55,20 +55,12 @@ PS_INPUT VS( VS_INPUT input)
 
 GBuffer PS( PS_INPUT input )
 {
-	float3 ll = float3(5,3,2);
-	ll = input.lil;
+	//float3 ll = float3(5,3,2);
+	//ll = input.lil;
 	
 	GBuffer output;
 	output.normal_specular = float4(EncodeSphereMap(input.Norm),SpecAmount,SpecPower);
-	//output.albedo = float4(-Albedo,1.0f);
-	output.albedo = float4(input.ModelPos,1.0f);
-	//float3 lightDir = normalize(input.ModelPos.xyz - ll);
-	//float diffuse = saturate(dot(input.Norm, -lightDir));
-	//output.albedo = diffuse.xxxx;
-	
-	
-	
-	//output.albedo = float4(input.Norm,0.0f);
+	output.albedo = float4(Albedo,1.0f);
 	
 	return output;
 }

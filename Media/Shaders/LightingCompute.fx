@@ -81,30 +81,21 @@ void LightingCS(uint3 groupId 			: SV_GroupID,
 		float2 screenPixelOffset = float2(2.0f, -2.0f) / bufferDim;
 		float2 positionScreen = (float2(globalCoords.xy) + 0.5f) * screenPixelOffset.xy + float2(-1.0f, 1.0f);
 		
-		float viewSpaceZ = Projection._43 / ((1.0-depth) - Projection._33);
+		float viewSpaceZ = Projection[3][2] / ( depth - Projection[2][2]);
 		
 		positionView = ComputePositionViewFromZ(positionScreen, viewSpaceZ);
 	}
 	
-	//Normal is correct
-	//Position is correct
-	//Lightpos is correct
-	
-	//float4 ll2 = mul(float4(5,3,2,1),View);
-	//ll = lightLoc;
-	//float3 ll = ll2.xyz/ll2.w;
 	float3 ll = lightLoc;
 	
-	float3 lightDir = normalize(alb.xyz - ll);
+	float3 lightDir = normalize(positionView.xyz - ll);
 	float diffuse = saturate(dot(normal, -lightDir));
 	
-	//float3 dalb = diffuse * float3(1.0f,1.0f,1.0f);
-	//alb = normalize(alb);
+	float3 dalb = diffuse * alb;
 	
 	if (all(globalCoords < bufferDim.xy)) {
 		if (depth != 1.0f) {
-			float3 diff = abs(alb - positionView);
-			WriteSample(globalCoords, float4(-positionView, 0.0f));
+			WriteSample(globalCoords, float4(dalb, 0.0f));
 		}
 	}
 }

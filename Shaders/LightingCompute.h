@@ -69,7 +69,7 @@ public:
 		cscb->bufferDim = DirectX::XMUINT2(width,height);
 		cscb->coords = pCamera->mCoords;
 		//No transpose
-		cscb->Projection = pCamera->mProjectionMatrix;
+		cscb->Projection = XMMatrixTranspose(pCamera->mProjectionMatrix);
 		cscb->View = XMMatrixTranspose(pCamera->mViewMatrix);
 
 		pd3dContext->Unmap(mCSCB,0);
