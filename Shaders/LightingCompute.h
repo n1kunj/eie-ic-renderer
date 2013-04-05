@@ -12,7 +12,6 @@
 __declspec(align(16)) struct LightingCSCB
 {
 	DirectX::XMMATRIX Projection;
-	DirectX::XMMATRIX View;
 	DirectX::XMUINT2 bufferDim;
 	DirectX::XMFLOAT2 padding0;
 	DirectX::XMINT3 coords;
@@ -57,20 +56,17 @@ public:
 		pd3dContext->Map(mCSCB,0,D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
 		LightingCSCB* cscb = (LightingCSCB*)MappedResource.pData;
 
-
 		//5,3,2
 		DirectX::XMVECTOR ll = DirectX::XMVectorSet(5,3,2,1.0f);
-		//DirectX::XMVECTOR offset = DirectX::XMVectorSet(pCamera->mCoords.x,pCamera->mCoords.y,pCamera->mCoords.z,0.0f);
-		//ll = DirectX::XMVectorSubtract(ll, offset);
+		DirectX::XMVECTOR offset = DirectX::XMVectorSet(pCamera->mCoords.x,pCamera->mCoords.y,pCamera->mCoords.z,0.0f);
+		ll = DirectX::XMVectorSubtract(ll, offset);
 
 		ll = DirectX::XMVector3TransformCoord(ll,pCamera->mViewMatrix);
 
 		DirectX::XMStoreFloat3(&cscb->lightLoc, ll);
 		cscb->bufferDim = DirectX::XMUINT2(width,height);
 		cscb->coords = pCamera->mCoords;
-		//No transpose
 		cscb->Projection = XMMatrixTranspose(pCamera->mProjectionMatrix);
-		cscb->View = XMMatrixTranspose(pCamera->mViewMatrix);
 
 		pd3dContext->Unmap(mCSCB,0);
 

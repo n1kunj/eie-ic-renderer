@@ -47,38 +47,38 @@ void Camera::update(DXGI_SURFACE_DESC pSurfaceDesc)
 	FLOAT mEyeY = XMVectorGetY(mEye);
 	FLOAT mEyeZ = XMVectorGetZ(mEye);
 
-	//if (mEyeX > 1.0f) {
-	//	INT xDiff = (INT)floor(mEyeX);
-	//	mCoords.x+=xDiff;
-	//	mEyeX-=xDiff;
-	//}
-	//else if (mEyeX < -1.0f) {
-	//	INT xDiff = (INT)ceil(mEyeX);
-	//	mCoords.x+=xDiff;
-	//	mEyeX-=xDiff;
-	//}
+	if (mEyeX > 1.0f) {
+		INT xDiff = (INT)floor(mEyeX);
+		mCoords.x+=xDiff;
+		mEyeX-=xDiff;
+	}
+	else if (mEyeX < -1.0f) {
+		INT xDiff = (INT)ceil(mEyeX);
+		mCoords.x+=xDiff;
+		mEyeX-=xDiff;
+	}
 
-	//if (mEyeY > 1.0f) {
-	//	INT yDiff = (INT)floor(mEyeY);
-	//	mCoords.y+=yDiff;
-	//	mEyeY-=yDiff;
-	//}
-	//else if (mEyeY < -1.0f) {
-	//	INT yDiff = (INT)ceil(mEyeY);
-	//	mCoords.y+=yDiff;
-	//	mEyeY-=yDiff;
-	//}
+	if (mEyeY > 1.0f) {
+		INT yDiff = (INT)floor(mEyeY);
+		mCoords.y+=yDiff;
+		mEyeY-=yDiff;
+	}
+	else if (mEyeY < -1.0f) {
+		INT yDiff = (INT)ceil(mEyeY);
+		mCoords.y+=yDiff;
+		mEyeY-=yDiff;
+	}
 
-	//if (mEyeZ > 1.0f) {
-	//	INT zDiff = (INT)floor(mEyeZ);
-	//	mCoords.z+=zDiff;
-	//	mEyeZ-=zDiff;
-	//}
-	//else if (mEyeZ < -1.0f) {
-	//	INT zDiff = (INT)ceil(mEyeZ);
-	//	mCoords.z+=zDiff;
-	//	mEyeZ-=zDiff;
-	//}
+	if (mEyeZ > 1.0f) {
+		INT zDiff = (INT)floor(mEyeZ);
+		mCoords.z+=zDiff;
+		mEyeZ-=zDiff;
+	}
+	else if (mEyeZ < -1.0f) {
+		INT zDiff = (INT)ceil(mEyeZ);
+		mCoords.z+=zDiff;
+		mEyeZ-=zDiff;
+	}
 
 	mEye = XMVectorSet(mEyeX,mEyeY,mEyeZ,0.0f);
 

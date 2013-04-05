@@ -25,7 +25,6 @@ struct PS_INPUT
     float4 Pos : SV_POSITION;
 	float3 ModelPos : POSITION0;
     float3 Norm : NORMAL0;
-	float3 lil : POSITION1;
 };
 
 struct GBuffer
@@ -48,16 +47,11 @@ PS_INPUT VS( VS_INPUT input)
 	output.Pos = mul(input.Pos,MVP);
 	output.ModelPos = mul(input.Pos,MV);
     output.Norm = normalize(mul(input.Norm,MV));
-	float4 ll = mul(float4(5,3,2,1),View);
-	output.lil = ll.xyz/ll.w;
     return output;
 }
 
 GBuffer PS( PS_INPUT input )
 {
-	//float3 ll = float3(5,3,2);
-	//ll = input.lil;
-	
 	GBuffer output;
 	output.normal_specular = float4(EncodeSphereMap(input.Norm),SpecAmount,SpecPower);
 	output.albedo = float4(Albedo,1.0f);
