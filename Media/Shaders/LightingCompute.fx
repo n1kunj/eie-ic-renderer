@@ -52,6 +52,7 @@ void LightingCS(uint3 groupId 			: SV_GroupID,
 	uint3 screenPix = uint3(dispatchThreadId.xy,0);
 	
 	float rawDepth = depthTex.Load(screenPix);
+	
 	float4 norSpec = norSpecTex.Load(screenPix);
 	
 	float3 gbAlbedo = albedoTex.Load(screenPix).xyz;
@@ -63,11 +64,25 @@ void LightingCS(uint3 groupId 			: SV_GroupID,
 	float3 lightVec = normalize(gbViewPos - lightLoc);
 	float diffuse = saturate(dot(gbNormal, -lightVec));
 	
-	float3 dalb = diffuse * gbAlbedo;
+	float3 pixVal = float3(0,0,0);
+	
+	float3 ambient = float3(0.02,0.02,0.02);
+	
+	if (diffuse > 0) {
+		float3 cameraVec = normalize(-gbViewPos);
+
+		float3 reflected = reflect(lightVec, gbNormal);
+		float rdotv = max(0.0f, dot(reflected,cameraVec));
+		float specular = pow(rdotv, gbSpecExp);
+		pixVal += (ambient + diffuse + specular*gbSpecAmount) * gbAlbedo;
+	}
+	else {
+		pixVal += ambient * gbAlbedo;
+	}
 	
 	if (all(screenPix.xy < bufferDim.xy)) {
 		if (rawDepth != 1.0f) {
-			WriteSample(screenPix.xy,bufferDim.xy, float4(dalb, 0.0f));
+			WriteSample(screenPix.xy,bufferDim.xy, float4(pixVal, 0.0f));
 		}
 	}
 }

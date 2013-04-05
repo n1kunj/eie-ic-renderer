@@ -12,11 +12,15 @@
 __declspec(align(16)) struct LightingCSCB
 {
 	DirectX::XMMATRIX Projection;
+
 	DirectX::XMUINT2 bufferDim;
 	DirectX::XMFLOAT2 padding0;
-	DirectX::XMINT3 coords;
+
+	DirectX::XMINT3 coordOffset;
 	FLOAT padding1;
+
 	DirectX::XMFLOAT3 lightLoc;
+	FLOAT padding3;
 };
 
 struct LightingCSFB {
@@ -65,7 +69,7 @@ public:
 
 		DirectX::XMStoreFloat3(&cscb->lightLoc, ll);
 		cscb->bufferDim = DirectX::XMUINT2(width,height);
-		cscb->coords = pCamera->mCoords;
+		cscb->coordOffset = pCamera->mCoords;
 		cscb->Projection = XMMatrixTranspose(pCamera->mProjectionMatrix);
 
 		pd3dContext->Unmap(mCSCB,0);

@@ -240,6 +240,7 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 
 	//Set read only DS and proxy output texture
 	//We set this here to prevent the runtime from complaining
+	//We don't actually need it for the compute shader
 	pd3dImmediateContext->OMSetRenderTargets(1, &mProxyTexture.mRTV, mDSVRO.mDSV);
 
 	//Lighting CS
