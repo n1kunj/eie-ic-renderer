@@ -23,6 +23,7 @@ RWStructuredBuffer<uint2> gFramebuffer : register(u0);
 cbuffer LightingCSCB : register( b0 )
 {
 	matrix Projection;
+	matrix View;
 	uint2 bufferDim;
 	int3 coordOffset;
 	float3 lightLoc;
@@ -40,6 +41,20 @@ float3 DecodeSphereMap(float2 e)
     return n;
 }
 
+float3 ComputePositionViewFromZ(float2 positionScreen,
+                                float viewSpaceZ)
+{
+    float2 screenSpaceRay = float2(positionScreen.x / Projection._11,
+                                   positionScreen.y / Projection._22);
+    
+    float3 positionView;
+    positionView.z = viewSpaceZ;
+    // Solve the two projection equations
+    positionView.xy = screenSpaceRay.xy * positionView.z;
+    
+    return -positionView;
+}
+
 void WriteSample(uint2 coords, float4 value)
 {
 	uint addr = coords.y * bufferDim.x + coords.x;
@@ -52,6 +67,7 @@ void LightingCS(uint3 groupId 			: SV_GroupID,
 				uint3 groupThreadId    	: SV_GroupThreadID,
 				uint groupIndex 		: SV_GroupIndex )
 {
+
 	uint2 globalCoords = dispatchThreadId.xy;
 	int3 pix_pos = int3(globalCoords,0);
 	float depth = depthTex.Load(pix_pos);
@@ -60,13 +76,26 @@ void LightingCS(uint3 groupId 			: SV_GroupID,
 	float specAmount = nor_spec.z;
 	float specExp = nor_spec.w;
 	float3 normal = DecodeSphereMap(nor_spec.xy);
-	normal/=2;
-	normal+=0.5f;
+	float3 positionView;
+	{
+		float2 screenPixelOffset = float2(2.0f, -2.0f) / bufferDim;
+		float2 positionScreen = (float2(globalCoords.xy) + 0.5f) * screenPixelOffset.xy + float2(-1.0f, 1.0f);
+		
+		float viewSpaceZ = Projection._43 / ((depth) - Projection._33);
+		
+		positionView = ComputePositionViewFromZ(positionScreen, viewSpaceZ);
+	}
+	float3 ll = float3(0,0,0);
+	//float3 lightVec = normalize(lightLoc - positionView);
+	float3 lightVec = normalize(alb.xyz - ll);
+	
+	float diffuse = saturate( dot(-lightVec, normal));
+	
+	float3 dalb = diffuse * float3(1.0f,1.0f,1.0f);
 	
 	if (all(globalCoords < bufferDim.xy)) {
 		if (depth != 1.0f) {
-			float3 crds = coordOffset.xyz;
-			WriteSample(globalCoords, float4(lightLoc, 0.0f));
+			WriteSample(globalCoords, float4(alb.xyz, 0.0f));
 		}
 	}
 }

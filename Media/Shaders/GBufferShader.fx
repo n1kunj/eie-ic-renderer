@@ -46,14 +46,20 @@ PS_INPUT VS( VS_INPUT input)
 	
 	output.Pos = mul(input.Pos,MVP);
 	output.ModelPos = mul(input.Pos,Model);
-    output.Norm = normalize(mul(input.Norm,MV));
+    output.Norm = normalize(mul(input.Norm,Model));
     return output;
 }
 
 GBuffer PS( PS_INPUT input )
 {
+	float3 ll = float3(5,3,2);
 	GBuffer output;
 	output.normal_specular = float4(EncodeSphereMap(input.Norm),SpecAmount,SpecPower);
-	output.albedo = float4(Albedo,1.0f);
+	//output.albedo = float4(Albedo,1.0f);
+	//output.albedo = float4(input.ModelPos,1.0f);
+	float3 lightDir = normalize(input.ModelPos.xyz - ll);
+	float diffuse = saturate(dot(input.Norm, -lightDir));
+	output.albedo = diffuse.xxxx;
+	
 	return output;
 }
