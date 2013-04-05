@@ -52,7 +52,7 @@ float3 ComputePositionViewFromZ(float2 positionScreen,
     // Solve the two projection equations
     positionView.xy = screenSpaceRay.xy * positionView.z;
     
-    return -positionView;
+    return positionView;
 }
 
 void WriteSample(uint2 coords, float4 value)
@@ -72,7 +72,7 @@ void LightingCS(uint3 groupId 			: SV_GroupID,
 	int3 pix_pos = int3(globalCoords,0);
 	float depth = depthTex.Load(pix_pos);
 	float4 nor_spec = normals_specular.Load(pix_pos);
-	float4 alb = albedo.Load(pix_pos);
+	float3 alb = albedo.Load(pix_pos).xyz;
 	float specAmount = nor_spec.z;
 	float specExp = nor_spec.w;
 	float3 normal = DecodeSphereMap(nor_spec.xy);
@@ -81,21 +81,30 @@ void LightingCS(uint3 groupId 			: SV_GroupID,
 		float2 screenPixelOffset = float2(2.0f, -2.0f) / bufferDim;
 		float2 positionScreen = (float2(globalCoords.xy) + 0.5f) * screenPixelOffset.xy + float2(-1.0f, 1.0f);
 		
-		float viewSpaceZ = Projection._43 / ((depth) - Projection._33);
+		float viewSpaceZ = Projection._43 / ((1.0-depth) - Projection._33);
 		
 		positionView = ComputePositionViewFromZ(positionScreen, viewSpaceZ);
 	}
-	float3 ll = float3(0,0,0);
-	//float3 lightVec = normalize(lightLoc - positionView);
-	float3 lightVec = normalize(alb.xyz - ll);
 	
-	float diffuse = saturate( dot(-lightVec, normal));
+	//Normal is correct
+	//Position is correct
+	//Lightpos is correct
 	
-	float3 dalb = diffuse * float3(1.0f,1.0f,1.0f);
+	//float4 ll2 = mul(float4(5,3,2,1),View);
+	//ll = lightLoc;
+	//float3 ll = ll2.xyz/ll2.w;
+	float3 ll = lightLoc;
+	
+	float3 lightDir = normalize(alb.xyz - ll);
+	float diffuse = saturate(dot(normal, -lightDir));
+	
+	//float3 dalb = diffuse * float3(1.0f,1.0f,1.0f);
+	//alb = normalize(alb);
 	
 	if (all(globalCoords < bufferDim.xy)) {
 		if (depth != 1.0f) {
-			WriteSample(globalCoords, float4(alb.xyz, 0.0f));
+			float3 diff = abs(alb - positionView);
+			WriteSample(globalCoords, float4(-positionView, 0.0f));
 		}
 	}
 }

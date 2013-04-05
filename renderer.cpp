@@ -131,6 +131,9 @@ HRESULT Renderer::OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, const DXGI_
 		mProxyTexture.mDesc = desc;
 		mProxyTexture.CreateTexture(pd3dDevice);
 
+		//TODO: this to R8g8 etc.
+		desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+
 		mGBuffer[1].mDesc = desc;
 		mGBuffer[1].CreateTexture(pd3dDevice);
 

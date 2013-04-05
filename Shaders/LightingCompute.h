@@ -70,6 +70,7 @@ public:
 		cscb->coords = pCamera->mCoords;
 		//No transpose
 		cscb->Projection = pCamera->mProjectionMatrix;
+		cscb->View = XMMatrixTranspose(pCamera->mViewMatrix);
 
 		pd3dContext->Unmap(mCSCB,0);
 
