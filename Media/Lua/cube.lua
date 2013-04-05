@@ -23,7 +23,7 @@ state.mScale.z = 0.2
 
 DRAWMAN:addDrawable(lightSrc)
 math.randomseed(100)
-for i=1,1000 do
+for i=1,2000 do
 cubeptr = BasicDrawable(MESH,shader,CAMERA)
 
 a = math.random()

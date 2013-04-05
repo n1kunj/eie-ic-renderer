@@ -10,14 +10,14 @@ uint2 PackRGBA16(float4 c)
 
 float3 DecodeSphereMap(float2 e)
 {
-    float2 tmp = e - e * e;
-    float f = tmp.x + tmp.y;
-    float m = sqrt(4.0f * f - 1.0f);
-    
-    float3 n;
-    n.xy = m * (e * 4.0f - 2.0f);
-    n.z  = 3.0f - 8.0f * f;
-    return n;
+	float2 tmp = e - e * e;
+	float f = tmp.x + tmp.y;
+	float m = sqrt(4.0f * f - 1.0f);
+	
+	float3 n;
+	n.xy = m * (e * 4.0f - 2.0f);
+	n.z  = 3.0f - 8.0f * f;
+	return n;
 }
 
 float3 calculateViewPos(uint2 pScreenPix, uint2 pBufferDim, float pRawDepth);
@@ -61,24 +61,35 @@ void LightingCS(uint3 groupId 			: SV_GroupID,
 	float gbSpecExp = norSpec.w;
 	float3 gbViewPos = calculateViewPos(screenPix.xy, bufferDim, rawDepth);
 	
-	float3 lightVec = normalize(gbViewPos - lightLoc);
-	float diffuse = saturate(dot(gbNormal, -lightVec));
+	float3 lightVec = gbViewPos - lightLoc;
+	float lightDist = length(lightVec);
+	lightVec = normalize(lightVec);
+	float diffuse = dot(gbNormal, -lightVec);
 	
 	float3 pixVal = float3(0,0,0);
 	
-	float3 ambient = float3(0.02,0.02,0.02);
+	float3 ambient = float3(0.01,0.01,0.01);
+	//float3 ambient = 0;
 	
-	if (diffuse > 0) {
+	float attenEnd = 60;
+	
+	float lightFactor = 0.0f;
+	if (attenEnd > lightDist) {
+		lightFactor = 1 - sqrt(lightDist/attenEnd);
+	}
+
+	if (diffuse > 0 && lightFactor > 0.0f) {
 		float3 cameraVec = normalize(-gbViewPos);
 
 		float3 reflected = reflect(lightVec, gbNormal);
 		float rdotv = max(0.0f, dot(reflected,cameraVec));
 		float specular = pow(rdotv, gbSpecExp);
-		pixVal += (ambient + diffuse + specular*gbSpecAmount) * gbAlbedo;
+		pixVal += ((ambient + diffuse + specular*gbSpecAmount) * lightFactor) * gbAlbedo;
 	}
 	else {
 		pixVal += ambient * gbAlbedo;
 	}
+	//pixVal = lightFactor;
 	
 	if (all(screenPix.xy < bufferDim.xy)) {
 		if (rawDepth != 1.0f) {
