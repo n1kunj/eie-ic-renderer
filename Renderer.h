@@ -32,6 +32,8 @@ public:
 	void OnD3D11DestroyDevice();
 	void OnExit();
 
+	void SetUpLights(ID3D11DeviceContext* pd3dImmediateContext);
+
 	DXGI_SURFACE_DESC mSurfaceDescription;
 	DrawableManager mDrawableManager;
 	MessageLogger* mLogger;
@@ -50,9 +52,12 @@ public:
 	Depth2DDSV mDSVRO;
 	Depth2DSRV mDSSRV;
 	StructuredBuffer<LightingCSFB> mLightingCSFBSB;
+	StructuredBuffer<LightListCSSB> mLightListCSSB;
 	ID3D11DepthStencilState* mDSStateDefault;
 	ID3D11DepthStencilState* mDSStateStencilWrite;
 	ID3D11DepthStencilState* mDSStateStencilCull;
+
+	LightListCSSB mLightList[1024];
 
 	boolean mRecompile;
 };

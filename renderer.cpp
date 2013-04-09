@@ -29,9 +29,7 @@ Renderer::Renderer(MessageLogger* mLogger) : mLogger(mLogger), mDrawableManager(
 	mDSStateStencilCull = NULL;
 	mDSStateStencilWrite = NULL;
 
-
 	mRecompile = FALSE;
-
 };
 
 Renderer::~Renderer() {
@@ -60,6 +58,7 @@ void Renderer::OnD3D11DestroyDevice()
 	mDSVRO.OnD3D11DestroyDevice();
 	mDSSRV.OnD3D11DestroyDevice();
 	mLightingCSFBSB.OnD3D11DestroyDevice();
+	mLightListCSSB.OnD3D11DestroyDevice();
 
 	SAFE_RELEASE(mDSStateDefault);
 	SAFE_RELEASE(mDSStateStencilCull);
@@ -69,6 +68,19 @@ void Renderer::OnD3D11DestroyDevice()
 void Renderer::init()
 {
 	mLogger->log(L"Renderer Initialisation");
+
+	for (int i = 0; i < 1024; i++) {
+		LightListCSSB* ll = &mLightList[i];
+		ll->ambient = 0.01f;
+		ll->attenuationEnd = ((float)rand()/(float)RAND_MAX) * 10 + 10;
+		ll->colour.x = ((float)rand()/(float)RAND_MAX) * 1;
+		ll->colour.y = ((float)rand()/(float)RAND_MAX) * 1;
+		ll->colour.z = ((float)rand()/(float)RAND_MAX) * 1;
+
+		ll->viewPos.x = ((float)rand()/(float)RAND_MAX) * 100 - 50;
+		ll->viewPos.y = ((float)rand()/(float)RAND_MAX) * 100 - 50;
+		ll->viewPos.z = ((float)rand()/(float)RAND_MAX) * 100 - 50;
+	}
 }
 
 
@@ -104,6 +116,15 @@ HRESULT Renderer::OnD3D11CreateDevice( ID3D11Device* pd3dDevice, const DXGI_SURF
 		desc.FrontFace.StencilFunc = D3D11_COMPARISON_EQUAL;
 		desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;  
 		pd3dDevice->CreateDepthStencilState(&desc,&mDSStateStencilCull);
+	}
+
+	//Create Structured Buffer to hold the lights for the compute shader
+	{
+		mLightListCSSB.mBindFlags = D3D11_BIND_SHADER_RESOURCE;
+		mLightListCSSB.mCPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		mLightListCSSB.mUsage = D3D11_USAGE_DYNAMIC;
+		mLightListCSSB.mElements = 1024;
+		mLightListCSSB.CreateBuffer(pd3dDevice);
 	}
 
 	return S_OK;
@@ -227,7 +248,7 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 	//Clear depth stencil target
 	pd3dImmediateContext->ClearDepthStencilView( dsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0, 0 );
 
-	//Set, then draw GBuffer
+	//Set, then draw all objects into the GBuffer
 	ID3D11RenderTargetView* rtvs[2] = {mGBuffer[0].mRTV,mGBuffer[1].mRTV};
 	pd3dImmediateContext->OMSetRenderTargets(2, rtvs, dsv);
 	mDrawableManager.Draw(pd3dImmediateContext);
@@ -236,7 +257,10 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 	ID3D11RenderTargetView* rtvs2[2] = {NULL,NULL};
 	pd3dImmediateContext->OMSetRenderTargets(2,rtvs2,dsv);
 
-	ID3D11ShaderResourceView* GBufferSRVs[4] = {mGBuffer[0].mSRV,mGBuffer[1].mSRV,mDSSRV.mSRV,mLightingCSFBSB.mSRV};
+	//Set up lights
+	SetUpLights(pd3dImmediateContext);
+
+	ID3D11ShaderResourceView* GBufferSRVs[4] = {mGBuffer[0].mSRV,mGBuffer[1].mSRV,mDSSRV.mSRV,mLightListCSSB.mSRV};
 
 	//Set read only DS and proxy output texture
 	//We set this here to prevent the runtime from complaining
@@ -261,4 +285,25 @@ void Renderer::OnExit()
 	mLogger->log(L"Renderer OnExit");
 	//TODO: cleanup
 	mDrawableManager.reset();
+}
+
+void Renderer::SetUpLights(ID3D11DeviceContext* pd3dImmediateContext)
+{
+	using namespace DirectX;
+	const UINT numLights = 1024;
+
+	XMVECTOR offset = DirectX::XMVectorSet(mCamera->mCoords.x,mCamera->mCoords.y,mCamera->mCoords.z,0.0f);
+
+	XMVECTOR posList[numLights];
+
+	LightListCSSB* llist = mLightListCSSB.MapDiscard(pd3dImmediateContext);
+
+	for (int i = 0; i < numLights; i++) {
+		XMVECTOR pos = XMLoadFloat3(&(mLightList[i].viewPos));
+		posList[i] = XMVectorSubtract(pos,offset);
+		llist[i] = mLightList[i];
+	}
+	XMVector3TransformCoordStream(&llist->viewPos,sizeof(LightListCSSB),(XMFLOAT3*)posList,sizeof(XMVECTOR),numLights,mCamera->mViewMatrix);
+
+	mLightListCSSB.Unmap(pd3dImmediateContext);
 }

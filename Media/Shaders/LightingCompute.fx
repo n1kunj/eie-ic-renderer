@@ -3,6 +3,13 @@
 #define COMPUTE_SHADER_TILE_GROUP_DIM 16
 #define COMPUTE_SHADER_TILE_GROUP_SIZE (COMPUTE_SHADER_TILE_GROUP_DIM*COMPUTE_SHADER_TILE_GROUP_DIM)
 
+struct PointLight {
+	float3 viewPos;
+	float attenEnd;
+	float3 colour;
+	float ambient;
+};
+
 uint2 PackRGBA16(float4 c)
 {
 	return f32tof16(c.rg) | (f32tof16(c.ba) << 16);
@@ -41,7 +48,9 @@ groupshared uint sTileNumLights;
 Texture2D<float4> norSpecTex : register(t0);
 Texture2D<float4> albedoTex : register(t1);
 Texture2D<float> depthTex : register(t2);
+StructuredBuffer<PointLight> lightBuffer : register(t3);
 RWStructuredBuffer<uint2> gFrameBuffer : register(u0);
+
 
 [numthreads(COMPUTE_SHADER_TILE_GROUP_DIM, COMPUTE_SHADER_TILE_GROUP_DIM, 1)]
 void LightingCS(uint3 groupId 			: SV_GroupID,
@@ -61,35 +70,43 @@ void LightingCS(uint3 groupId 			: SV_GroupID,
 	float gbSpecExp = norSpec.w;
 	float3 gbViewPos = calculateViewPos(screenPix.xy, bufferDim, rawDepth);
 	
-	float3 lightVec = gbViewPos - lightLoc;
-	float lightDist = length(lightVec);
-	lightVec = normalize(lightVec);
-	float diffuse = dot(gbNormal, -lightVec);
 	
+	//float3 lightVec = gbViewPos - lightLoc;
+
 	float3 pixVal = float3(0,0,0);
 	
-	float3 ambient = float3(0.01,0.01,0.01);
-	//float3 ambient = 0;
-	
-	float attenEnd = 60;
-	
-	float lightFactor = 0.0f;
-	if (attenEnd > lightDist) {
-		lightFactor = 1 - sqrt(lightDist/attenEnd);
-	}
+	for (int i = 0; i < 10; i++) {
+		
+		PointLight pl = lightBuffer[i];
+		
+		float3 lightVec = gbViewPos - pl.viewPos;
 
-	if (diffuse > 0 && lightFactor > 0.0f) {
-		float3 cameraVec = normalize(-gbViewPos);
+		float lightDist = length(lightVec);
+		lightVec = normalize(lightVec);
+		float diffuse = dot(gbNormal, -lightVec);
+		
+		float ambient = pl.ambient;
+		
+		float attenEnd = pl.attenEnd;
+		
+		float lightFactor = 0.0f;
+		if (attenEnd > lightDist) {
+			lightFactor = 1 - sqrt(lightDist/attenEnd);
+		}
 
-		float3 reflected = reflect(lightVec, gbNormal);
-		float rdotv = max(0.0f, dot(reflected,cameraVec));
-		float specular = pow(rdotv, gbSpecExp);
-		pixVal += ((ambient + diffuse + specular*gbSpecAmount) * lightFactor) * gbAlbedo;
+		if (diffuse > 0 && lightFactor > 0.0f) {
+			float3 cameraVec = normalize(-gbViewPos);
+
+			float3 reflected = reflect(lightVec, gbNormal);
+			float rdotv = max(0.0f, dot(reflected,cameraVec));
+			float specular = pow(rdotv, gbSpecExp);
+			pixVal += ((ambient + diffuse + specular*gbSpecAmount) * lightFactor) * gbAlbedo * pl.colour;
+		}
 	}
-	else {
-		pixVal += ambient * gbAlbedo;
-	}
-	//pixVal = lightFactor;
+	//else {
+	//	pixVal += ambient * gbAlbedo;
+	//}
+	//pixVal = float3(1.0f,0.0f,0.0f);
 	
 	if (all(screenPix.xy < bufferDim.xy)) {
 		if (rawDepth != 1.0f) {

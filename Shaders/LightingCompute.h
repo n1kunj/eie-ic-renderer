@@ -27,6 +27,13 @@ struct LightingCSFB {
 	DirectX::XMUINT2 rgba;
 };
 
+struct LightListCSSB {
+	DirectX::XMFLOAT3 viewPos;
+	FLOAT attenuationEnd;
+	DirectX::XMFLOAT3 colour;
+	FLOAT ambient;
+};
+
 class LightingCompute{
 private:
 	boolean mCompiled;
@@ -45,13 +52,13 @@ public:
 		OnD3D11DestroyDevice();
 	}
 
-	void Compute(ID3D11DeviceContext* pd3dContext, ID3D11ShaderResourceView* pSRV[3], StructuredBuffer<LightingCSFB>* pSB, Camera* pCamera)
+	void Compute(ID3D11DeviceContext* pd3dContext, ID3D11ShaderResourceView* pSRV[4], StructuredBuffer<LightingCSFB>* pSB, Camera* pCamera)
 	{
 		if (!mCompiled) {
 			return;
 		}
 		using namespace DirectX;
-		pd3dContext->CSSetShaderResources(0,3,pSRV);
+		pd3dContext->CSSetShaderResources(0,4,pSRV);
 
 		UINT width = DXUTGetDXGIBackBufferSurfaceDesc()->Width;
 		UINT height = DXUTGetDXGIBackBufferSurfaceDesc()->Height;
@@ -84,8 +91,8 @@ public:
 
 		pd3dContext->Dispatch(dispatchWidth, dispatchHeight, 1);
 
-		ID3D11ShaderResourceView* srvs[3] = {NULL,NULL,NULL};
-		pd3dContext->CSSetShaderResources(0,3,srvs);
+		ID3D11ShaderResourceView* srvs[4] = {NULL,NULL,NULL,NULL};
+		pd3dContext->CSSetShaderResources(0,4,srvs);
 		ID3D11UnorderedAccessView* uavs[1] = {NULL};
 		pd3dContext->CSSetUnorderedAccessViews(0,1,uavs,0);
 	}

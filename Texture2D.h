@@ -54,14 +54,30 @@ public:
 		desc.StructureByteStride = sizeof(T);
 		desc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
 		pd3dDevice->CreateBuffer(&desc,0,&mBuffer);
-		pd3dDevice->CreateShaderResourceView(mBuffer,0,&mSRV);
-		pd3dDevice->CreateUnorderedAccessView(mBuffer,0,&mUAV);
+		if (mBindFlags & D3D11_BIND_SHADER_RESOURCE) {
+			pd3dDevice->CreateShaderResourceView(mBuffer,0,&mSRV);
+		}
+		if (mBindFlags & D3D11_BIND_UNORDERED_ACCESS) {
+			pd3dDevice->CreateUnorderedAccessView(mBuffer,0,&mUAV);
+		}
 	}
 
 	void OnD3D11DestroyDevice() {
 		SAFE_RELEASE(mBuffer);
 		SAFE_RELEASE(mSRV);
 		SAFE_RELEASE(mUAV);
+	}
+
+	T* MapDiscard(ID3D11DeviceContext* pd3dContext)
+	{
+		D3D11_MAPPED_SUBRESOURCE mappedResource;
+		pd3dContext->Map(mBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+		return static_cast<T*>(mappedResource.pData);
+	}
+
+	void Unmap(ID3D11DeviceContext* pd3dContext)
+	{
+		pd3dContext->Unmap(mBuffer, 0);
 	}
 
 	~StructuredBuffer() {
