@@ -176,18 +176,18 @@ HRESULT Renderer::OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, const DXGI_
 		desc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 		desc.Texture2D.MipSlice = 0;
 		mDSV.mDesc = desc;
-		mDSV.CreateDSV(pd3dDevice,mDepthStencil);
+		mDSV.CreateDSV(pd3dDevice,&mDepthStencil);
 
 		//Read only DSV for stencil culling
 		desc.Flags = D3D11_DSV_READ_ONLY_DEPTH | D3D11_DSV_READ_ONLY_STENCIL;
 		mDSVRO.mDesc = desc;
-		mDSVRO.CreateDSV(pd3dDevice,mDepthStencil);
+		mDSVRO.CreateDSV(pd3dDevice,&mDepthStencil);
 	}
 	{
 		//Create DS Shader Resource View
 		CD3D11_SHADER_RESOURCE_VIEW_DESC desc(D3D11_SRV_DIMENSION_TEXTURE2D, DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS, 0, 1, 0, 1);
 		mDSSRV.mDesc = desc;
-		mDSSRV.CreateSRV(pd3dDevice,mDepthStencil);
+		mDSSRV.CreateSRV(pd3dDevice,&mDepthStencil);
 	}
 
 	return S_OK;

@@ -97,9 +97,9 @@ public:
 
 	Depth2DDSV() : mDSV(NULL){}
 
-	void CreateDSV(ID3D11Device* pd3dDevice, Depth2D pDepthStencil) {
+	void CreateDSV(ID3D11Device* pd3dDevice, Depth2D* pDepthStencil) {
 		OnD3D11DestroyDevice();
-		pd3dDevice->CreateDepthStencilView(pDepthStencil.mTexture, &mDesc, &mDSV);
+		pd3dDevice->CreateDepthStencilView(pDepthStencil->mTexture, &mDesc, &mDSV);
 	}
 
 	void OnD3D11DestroyDevice() {
@@ -118,9 +118,9 @@ public:
 
 	Depth2DSRV() : mSRV(NULL){}
 
-	void CreateSRV(ID3D11Device* pd3dDevice, Depth2D pDepthStencil) {
+	void CreateSRV(ID3D11Device* pd3dDevice, Depth2D* pDepthStencil) {
 		OnD3D11DestroyDevice();
-		pd3dDevice->CreateShaderResourceView(pDepthStencil.mTexture, &mDesc, &mSRV);
+		pd3dDevice->CreateShaderResourceView(pDepthStencil->mTexture, &mDesc, &mSRV);
 	}
 
 	void OnD3D11DestroyDevice() {
