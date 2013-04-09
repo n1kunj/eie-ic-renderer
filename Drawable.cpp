@@ -6,7 +6,7 @@
 
 void BasicDrawable::Draw(ID3D11DeviceContext* pd3dContext)
 {
-	//TODO: bounds
+	//TODO: bounds of a given object
 	if (mCamera->testFrustum(mState.mPosition,mState.mCoords,10) == TRUE) {
 		mState.updateMatrices(mCamera);
 		mShader->DrawMesh(pd3dContext,mMesh,&mState,mCamera);

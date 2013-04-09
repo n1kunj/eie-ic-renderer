@@ -11,20 +11,17 @@ DrawableManager::~DrawableManager()
 	reset();
 }
 
-void DrawableManager::addDrawable( Drawable* pDrawable )
+void DrawableManager::addDrawable( boost::shared_ptr<Drawable> pDrawable )
 {
 	mDrawableVector.push_back(pDrawable);
 }
 
 //Return TRUE if successfully removed, else FALSE
-BOOLEAN DrawableManager::removeDrawable( Drawable* pDrawable, BOOLEAN pDelete)
+BOOLEAN DrawableManager::removeDrawable( boost::shared_ptr<Drawable> pDrawable)
 {
 	for (int i = 0; i < mDrawableVector.size(); i++) {
 		if (mDrawableVector[i] == pDrawable) {
-			mDrawableVector[i] = NULL;
-			if (pDelete) {
-				SAFE_DELETE(pDrawable);
-			}
+			mDrawableVector[i].reset();
 			return TRUE;
 		}
 	}
@@ -34,7 +31,7 @@ BOOLEAN DrawableManager::removeDrawable( Drawable* pDrawable, BOOLEAN pDelete)
 void DrawableManager::Draw(ID3D11DeviceContext* pd3dContext)
 {
 	for (UINT i = 0; i < mDrawableVector.size(); i++) {
-		Drawable* d = mDrawableVector[i];
+		Drawable* d = mDrawableVector[i].get();
 		if (d!=NULL) {
 			d->Draw(pd3dContext);
 		}
@@ -44,7 +41,7 @@ void DrawableManager::Draw(ID3D11DeviceContext* pd3dContext)
 void DrawableManager::reset()
 {
 	for (UINT i = 0; i < mDrawableVector.size(); i++) {
-		SAFE_DELETE(mDrawableVector[i]);
+		mDrawableVector[i].reset();
 	}
 	mDrawableVector.clear();
 }

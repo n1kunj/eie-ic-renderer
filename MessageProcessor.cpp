@@ -8,6 +8,7 @@
 #include "ShaderManager.h"
 #include <string>
 #include "DirectXMath\DirectXMath.h"
+#include <boost/shared_ptr.hpp>
 
 extern "C" {
 #include "lua.h"
@@ -58,8 +59,8 @@ RendererMessageProcessor::RendererMessageProcessor( MessageLogger* logger, Rende
 		.def_readwrite("mSpecularColour", &DrawableState::mSpecularColour)
 		.def_readwrite("mSpecularExponent", &DrawableState::mSpecularExponent),
 
-		class_<Drawable, Drawable*>("Drawable"),
-		class_<BasicDrawable,bases<Drawable>,BasicDrawable*>("BasicDrawable")
+		class_<Drawable, boost::shared_ptr<Drawable> >("Drawable"),
+		class_<BasicDrawable,bases<Drawable>,boost::shared_ptr<Drawable> >("BasicDrawable")
 		.def(constructor<DrawableMesh*,DrawableShader*,Camera*>())
 		.def_readwrite("mState", &BasicDrawable::mState),
 
@@ -98,6 +99,7 @@ void RendererMessageProcessor::processMessage(WCHAR* pInput)
 	if (luaL_dostring(mLuaState,s.c_str()) == 1) {
 		luaError();	
 	}
+	call_function<void>(mLuaState,"collectgarbage");
 }
 
 void RendererMessageProcessor::luaLog(std::string s) {

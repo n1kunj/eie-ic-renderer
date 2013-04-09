@@ -25,7 +25,7 @@ public:
 	
 	BasicDrawable(DrawableMesh* pMesh, DrawableShader* pShader, Camera* pCamera);
 	BasicDrawable(const BasicDrawable& copy);
-	~BasicDrawable();
+	virtual ~BasicDrawable();
 };
 
 #endif
