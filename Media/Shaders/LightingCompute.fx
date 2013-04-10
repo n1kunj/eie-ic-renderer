@@ -34,7 +34,9 @@ cbuffer LightingCSCB : register( b0 )
 {
 	matrix Projection;
 	uint2 bufferDim;
+	float2 zNearFar;
 	int3 coordOffset;
+	uint numLights;
 	float3 lightLoc;
 }
 
@@ -70,14 +72,94 @@ void LightingCS(uint3 groupId 			: SV_GroupID,
 	float gbSpecExp = norSpec.w;
 	float3 gbViewPos = calculateViewPos(screenPix.xy, bufferDim, rawDepth);
 	
+	//Outside of screen pixels break tiling
+	if (!all(screenPix.xy < bufferDim.xy)) {
+		gbViewPos.z = 1.0f;
+	}
 	
-	//float3 lightVec = gbViewPos - lightLoc;
+	float minZSample = zNearFar.y; //large
+	float maxZSample = zNearFar.x; //small
+	{
+		float viewSpaceZ = gbViewPos.z;
+		bool validPixel = viewSpaceZ >= maxZSample && viewSpaceZ < minZSample;
+		[flatten] if (validPixel) {
+			minZSample = min(minZSample, viewSpaceZ);
+			maxZSample = max(maxZSample, viewSpaceZ);
+		}
+	}
+	
+	// Initialize shared memory light list and Z bounds
+	if (groupIndex == 0) {
+		sTileNumLights = 0;
+		sMinZ = 0x7F7FFFFF;      // Max float
+		sMaxZ = 0;
+	}
 
+	GroupMemoryBarrierWithGroupSync();
+	
+	if (maxZSample >= minZSample) {
+		InterlockedMin(sMinZ, asuint(minZSample));
+		InterlockedMax(sMaxZ, asuint(maxZSample));
+	}
+
+	GroupMemoryBarrierWithGroupSync();
+
+	float minTileZ = asfloat(sMinZ);
+	float maxTileZ = asfloat(sMaxZ);
+	
+	float2 tileScale = float2(bufferDim.xy) * rcp(float(2 * COMPUTE_SHADER_TILE_GROUP_DIM));
+	float2 tileBias = tileScale - float2(groupId.xy);
+	
+	// Now work out composite projection matrix
+	// Relevant matrix columns for this tile frusta
+	float4 c1 = float4(Projection._11 * tileScale.x, 0.0f, tileBias.x, 0.0f);
+	float4 c2 = float4(0.0f, -Projection._22 * tileScale.y, tileBias.y, 0.0f);
+	float4 c4 = float4(0.0f, 0.0f, 1.0f, 0.0f);
+
+	// Derive frustum planes
+	float4 frustumPlanes[6];
+	// Sides
+	frustumPlanes[0] = c4 - c1;
+	frustumPlanes[1] = c4 + c1;
+	frustumPlanes[2] = c4 - c2;
+	frustumPlanes[3] = c4 + c2;
+	// Near/far
+	frustumPlanes[4] = float4(0.0f, 0.0f,  1.0f, -minTileZ);
+	frustumPlanes[5] = float4(0.0f, 0.0f, -1.0f,  maxTileZ);
+	
+	// Normalize frustum planes (near/far already normalized)
+	[unroll] for (uint i = 0; i < 4; ++i) {
+		frustumPlanes[i] *= rcp(length(frustumPlanes[i].xyz));
+	}
+	
+	// Cull lights for this tile
+	for (uint lightIndex = groupIndex; lightIndex < 1024; lightIndex += COMPUTE_SHADER_TILE_GROUP_SIZE) {
+		PointLight light = lightBuffer[lightIndex];
+				
+		// Cull: point light sphere vs tile frustum
+		bool inFrustum = true;
+		[unroll] for (uint i = 0; i < 6; ++i) {
+			float d = dot(frustumPlanes[i], float4(light.viewPos, 1.0f));
+			inFrustum = inFrustum && (d >= -light.attenEnd);
+		}
+
+		[branch] if (inFrustum) {
+			// Append light to list
+			// Compaction might be better if we expect a lot of lights
+			uint listIndex;
+			InterlockedAdd(sTileNumLights, 1, listIndex);
+			sTileLightIndices[listIndex] = lightIndex;
+		}
+	}
+	
+	GroupMemoryBarrierWithGroupSync();
+	
+	uint lightCount = sTileNumLights;
+	
 	float3 pixVal = float3(0,0,0);
 	
-	for (int i = 0; i < 10; i++) {
-		
-		PointLight pl = lightBuffer[i];
+	for (int i = 0; i < lightCount; i++) {
+		PointLight pl = lightBuffer[sTileLightIndices[i]];
 		
 		float3 lightVec = gbViewPos - pl.viewPos;
 
@@ -103,13 +185,10 @@ void LightingCS(uint3 groupId 			: SV_GroupID,
 			pixVal += ((ambient + diffuse + specular*gbSpecAmount) * lightFactor) * gbAlbedo * pl.colour;
 		}
 	}
-	//else {
-	//	pixVal += ambient * gbAlbedo;
-	//}
-	//pixVal = float3(1.0f,0.0f,0.0f);
 	
 	if (all(screenPix.xy < bufferDim.xy)) {
 		if (rawDepth != 1.0f) {
+			//WriteSample(screenPix.xy,bufferDim.xy, float4(lightCount.xxx/512.0f, 0.0f));
 			WriteSample(screenPix.xy,bufferDim.xy, float4(pixVal, 0.0f));
 		}
 	}

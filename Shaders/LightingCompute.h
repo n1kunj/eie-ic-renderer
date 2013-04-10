@@ -14,10 +14,10 @@ __declspec(align(16)) struct LightingCSCB
 	DirectX::XMMATRIX Projection;
 
 	DirectX::XMUINT2 bufferDim;
-	DirectX::XMFLOAT2 padding0;
+	DirectX::XMFLOAT2 zNearFar;
 
 	DirectX::XMINT3 coordOffset;
-	FLOAT padding1;
+	UINT numLights;
 
 	DirectX::XMFLOAT3 lightLoc;
 	FLOAT padding3;
@@ -78,6 +78,8 @@ public:
 		cscb->bufferDim = DirectX::XMUINT2(width,height);
 		cscb->coordOffset = pCamera->mCoords;
 		cscb->Projection = XMMatrixTranspose(pCamera->mProjectionMatrix);
+		cscb->zNearFar = XMFLOAT2(pCamera->mzNear,pCamera->mzFar);
+		cscb->numLights = 1024; //TODO : THIS
 
 		pd3dContext->Unmap(mCSCB,0);
 

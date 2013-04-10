@@ -26,6 +26,9 @@ public:
 	DirectX::XMMATRIX mProjectionMatrix;
 	DirectX::XMMATRIX mViewProjectionMatrix;
 	DirectX::XMINT3 mCoords;
+	FLOAT mzFar;
+	FLOAT mzNear;
+	FLOAT mYFOV;
 
 	void update(DXGI_SURFACE_DESC pSurfaceDesc);
 	void updateWindowDimensions();
@@ -51,10 +54,6 @@ private:
 
 	DirectX::XMVECTOR mLeftTopNearPoint;
 	DirectX::XMVECTOR mRightBottomFarPoint;
-
-	FLOAT mzFar;
-	FLOAT mzNear;
-	FLOAT mYFOV;
 
 	POINT mMouseStart;
 	DOUBLE mMoveDistanceX;
