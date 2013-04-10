@@ -71,11 +71,11 @@ void Renderer::init()
 
 	for (int i = 0; i < 1024; i++) {
 		LightListCSSB* ll = &mLightList[i];
-		ll->ambient = 0.01f;
-		ll->attenuationEnd = ((float)rand()/(float)RAND_MAX) * 10 + 10;
-		ll->colour.x = ((float)rand()/(float)RAND_MAX) * 1;
-		ll->colour.y = ((float)rand()/(float)RAND_MAX) * 1;
-		ll->colour.z = ((float)rand()/(float)RAND_MAX) * 1;
+		ll->ambient = 0.001f;
+		ll->attenuationEnd = ((float)rand()/(float)RAND_MAX) * 5 + 5;
+		ll->colour.x = ((float)rand()/(float)RAND_MAX) * 3;
+		ll->colour.y = ((float)rand()/(float)RAND_MAX) * 3;
+		ll->colour.z = ((float)rand()/(float)RAND_MAX) * 3;
 
 		ll->viewPos.x = ((float)rand()/(float)RAND_MAX) * 100 - 50;
 		ll->viewPos.y = ((float)rand()/(float)RAND_MAX) * 100 - 50;

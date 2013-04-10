@@ -57,7 +57,8 @@ RendererMessageProcessor::RendererMessageProcessor( MessageLogger* logger, Rende
 		.def_readwrite("mDiffuseColour", &DrawableState::mDiffuseColour)
 		.def_readwrite("mAmbientColour", &DrawableState::mAmbientColour)
 		.def_readwrite("mSpecularColour", &DrawableState::mSpecularColour)
-		.def_readwrite("mSpecularExponent", &DrawableState::mSpecularExponent),
+		.def_readwrite("mSpecularExponent", &DrawableState::mSpecularExponent)
+		.def_readwrite("mSpecularAmount", &DrawableState::mSpecularAmount),
 
 		class_<Drawable, boost::shared_ptr<Drawable> >("Drawable"),
 		class_<BasicDrawable,bases<Drawable>,boost::shared_ptr<Drawable> >("BasicDrawable")

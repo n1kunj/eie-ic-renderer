@@ -42,6 +42,10 @@ dcol.x = a
 dcol.y = b
 dcol.z = c
 
+cubeptr.mState.mSpecularExponent = 1000 * math.random()
+
+cubeptr.mState.mSpecularAmount = 3 * math.random()
+
 
 DRAWMAN:addDrawable(cubeptr)
 end
