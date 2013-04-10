@@ -9,13 +9,13 @@ public:
 
 	void Push();
 	void Release();
-	DWORD GetTicksPressedFor();
+	double GetTicksPressedFor();
 
 private:
 	BOOLEAN mPushed;
-	DWORD mDownTime;
-	DWORD mUpTime;
-	DWORD mLastProcessed;
+	double mDownTime;
+	double mUpTime;
+	double mLastProcessed;
 };
 class Camera {
 public:

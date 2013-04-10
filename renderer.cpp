@@ -215,7 +215,6 @@ HRESULT Renderer::OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, const DXGI_
 
 	return S_OK;
 }
-
 LRESULT Renderer::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool* pbNoFurtherProcessing,void* pUserContext )
 {
 	if (uMsg == WM_KEYDOWN) {
@@ -224,12 +223,12 @@ LRESULT Renderer::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, b
 		}
 	}
 	mCamera->MsgProc(hWnd,uMsg,wParam,lParam,pbNoFurtherProcessing,pUserContext);
+
 	if (*pbNoFurtherProcessing) {
 		return 0;
 	}
 	return 0;
 }
-
 void Renderer::OnFrameMove( double fTime, float fElapsedTime, void* pUserContext )
 {
 	mCamera->update(mSurfaceDescription);

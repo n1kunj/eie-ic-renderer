@@ -12,6 +12,10 @@
 
 using namespace DirectX;
 
+double getTime() {
+	return 1000 * DXUTGetTime();
+}
+
 Camera::Camera() : mHeldMouseLooking(FALSE),mMouseCentred(FALSE),
 	mForceMouseLooking(FALSE), mMouseStart(), mMoveDistanceX(0),
 	mMoveDistanceY(0),mCamMoveBackward(),mCamMoveForward(),
@@ -391,7 +395,7 @@ void CameraButton::Push()
 		return;
 	}
 
-	DWORD currentTick = GetTickCount();
+	double currentTick = getTime();
 
 	if (mLastProcessed >= mUpTime) {
 		mDownTime = currentTick;
@@ -399,7 +403,7 @@ void CameraButton::Push()
 	//If unprocessed since last key release event, it pretends
 	//that the button was pushed down earlier
 	else {
-		DWORD unprocessedTime = mUpTime - mLastProcessed;
+		double unprocessedTime = mUpTime - mLastProcessed;
 		mDownTime = currentTick - unprocessedTime;
 	}
 
@@ -408,14 +412,14 @@ void CameraButton::Push()
 
 void CameraButton::Release()
 {
-	mUpTime = GetTickCount();
+	mUpTime = getTime();
 	mPushed = FALSE;
 }
 
-DWORD CameraButton::GetTicksPressedFor()
+double CameraButton::GetTicksPressedFor()
 {
-	DWORD curTime = GetTickCount();
-	DWORD retTime;
+	double curTime = getTime();
+	double retTime;
 
 	if (mPushed) {
 		retTime =  curTime - max(mDownTime,mLastProcessed);
