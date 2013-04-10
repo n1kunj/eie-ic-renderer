@@ -21,6 +21,7 @@ Renderer::Renderer(MessageLogger* mLogger) : mLogger(mLogger), mDrawableManager(
 	mShaderManager = new ShaderManager(mLogger);
 	mShaderManager->addShader(new DefaultShader());
 	mShaderManager->addShader(new GBufferShader());
+	mLightManager = new LightManager();
 	mFXAAShader = new FXAAShader();
 	mLightingShader = new LightingShader();
 	mLightingCompute = new LightingCompute();
@@ -70,16 +71,17 @@ void Renderer::init()
 	mLogger->log(L"Renderer Initialisation");
 
 	for (int i = 0; i < 1024; i++) {
-		PointLightGPU* ll = &mLightList[i];
+		PointLight* ll = &mLightList[i];
 		ll->ambient = 0.001f;
 		ll->attenuationEnd = ((float)rand()/(float)RAND_MAX) * 5 + 5;
 		ll->colour.x = ((float)rand()/(float)RAND_MAX) * 3;
 		ll->colour.y = ((float)rand()/(float)RAND_MAX) * 3;
 		ll->colour.z = ((float)rand()/(float)RAND_MAX) * 3;
 
-		ll->viewPos.x = ((float)rand()/(float)RAND_MAX) * 100 - 50;
-		ll->viewPos.y = ((float)rand()/(float)RAND_MAX) * 100 - 50;
-		ll->viewPos.z = ((float)rand()/(float)RAND_MAX) * 100 - 50;
+		ll->x = ((double)rand()/(double)RAND_MAX) * 100 - 50;
+		ll->y = ((double)rand()/(double)RAND_MAX) * 100 - 50;
+		ll->z = ((double)rand()/(double)RAND_MAX) * 100 - 50;
+		mLightManager->addLight(ll);
 	}
 }
 
@@ -258,7 +260,9 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 	pd3dImmediateContext->OMSetRenderTargets(2,rtvs2,dsv);
 
 	//Set up lights
-	SetUpLights(pd3dImmediateContext);
+	//SetUpLights(pd3dImmediateContext);
+	UINT numLights = 0;
+	numLights = mLightManager->updateLightBuffer(pd3dImmediateContext,mCamera,&mLightListCSSB);
 
 	ID3D11ShaderResourceView* GBufferSRVs[4] = {mGBuffer[0].mSRV,mGBuffer[1].mSRV,mDSSRV.mSRV,mLightListCSSB.mSRV};
 
@@ -268,7 +272,7 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 	pd3dImmediateContext->OMSetRenderTargets(1, &mProxyTexture.mRTV, mDSVRO.mDSV);
 
 	//Lighting CS
-	mLightingCompute->Compute(pd3dImmediateContext,GBufferSRVs,&mLightingCSFBSB,mCamera);
+	mLightingCompute->Compute(pd3dImmediateContext,GBufferSRVs,&mLightingCSFBSB,mCamera,numLights);
 
 	ID3D11ShaderResourceView* SkyboxSRVs[2] = {mDSSRV.mSRV,mLightingCSFBSB.mSRV};
 
@@ -285,25 +289,4 @@ void Renderer::OnExit()
 	mLogger->log(L"Renderer OnExit");
 	//TODO: cleanup
 	mDrawableManager.reset();
-}
-
-void Renderer::SetUpLights(ID3D11DeviceContext* pd3dImmediateContext)
-{
-	using namespace DirectX;
-	const UINT numLights = 1024;
-
-	XMVECTOR offset = DirectX::XMVectorSet((float)mCamera->mCoords.x,(float)mCamera->mCoords.y,(float)mCamera->mCoords.z,0.0f);
-
-	XMVECTOR posList[numLights];
-
-	PointLightGPU* llist = mLightListCSSB.MapDiscard(pd3dImmediateContext);
-
-	for (int i = 0; i < numLights; i++) {
-		XMVECTOR pos = XMLoadFloat3(&(mLightList[i].viewPos));
-		posList[i] = XMVectorSubtract(pos,offset);
-		llist[i] = mLightList[i];
-	}
-	XMVector3TransformCoordStream(&llist->viewPos,sizeof(PointLightGPU),(XMFLOAT3*)posList,sizeof(XMVECTOR),numLights,mCamera->mViewMatrix);
-
-	mLightListCSSB.Unmap(pd3dImmediateContext);
 }

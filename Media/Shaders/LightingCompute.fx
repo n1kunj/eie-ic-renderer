@@ -133,7 +133,7 @@ void LightingCS(uint3 groupId 			: SV_GroupID,
 	}
 	
 	// Cull lights for this tile
-	for (uint lightIndex = groupIndex; lightIndex < 1024; lightIndex += COMPUTE_SHADER_TILE_GROUP_SIZE) {
+	for (uint lightIndex = groupIndex; lightIndex < numLights; lightIndex += COMPUTE_SHADER_TILE_GROUP_SIZE) {
 		PointLight light = lightBuffer[lightIndex];
 				
 		// Cull: point light sphere vs tile frustum

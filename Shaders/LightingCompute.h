@@ -46,7 +46,7 @@ public:
 		OnD3D11DestroyDevice();
 	}
 
-	void Compute(ID3D11DeviceContext* pd3dContext, ID3D11ShaderResourceView* pSRV[4], StructuredBuffer<LightingCSFB>* pSB, Camera* pCamera)
+	void Compute(ID3D11DeviceContext* pd3dContext, ID3D11ShaderResourceView* pSRV[4], StructuredBuffer<LightingCSFB>* pSB, Camera* pCamera,UINT pNumLights)
 	{
 		if (!mCompiled) {
 			return;
@@ -73,7 +73,7 @@ public:
 		cscb->coordOffset = pCamera->mCoords;
 		cscb->Projection = XMMatrixTranspose(pCamera->mProjectionMatrix);
 		cscb->zNearFar = XMFLOAT2(pCamera->mzNear,pCamera->mzFar);
-		cscb->numLights = 1024; //TODO : THIS
+		cscb->numLights = pNumLights; //TODO : THIS
 
 		pd3dContext->Unmap(mCSCB,0);
 

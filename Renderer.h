@@ -33,14 +33,13 @@ public:
 	void OnD3D11DestroyDevice();
 	void OnExit();
 
-	void SetUpLights(ID3D11DeviceContext* pd3dImmediateContext);
-
 	DXGI_SURFACE_DESC mSurfaceDescription;
 	DrawableManager mDrawableManager;
 	MessageLogger* mLogger;
 	DrawableMesh* mCubeMesh;
 	CubeMeshLoader* mCubeLoader;
 	ShaderManager* mShaderManager;
+	LightManager* mLightManager;
 	Camera* mCamera;
 	FXAAShader* mFXAAShader;
 	LightingShader* mLightingShader;
@@ -58,7 +57,7 @@ public:
 	ID3D11DepthStencilState* mDSStateStencilWrite;
 	ID3D11DepthStencilState* mDSStateStencilCull;
 
-	PointLightGPU mLightList[1024];
+	PointLight mLightList[1024];
 
 	boolean mRecompile;
 };

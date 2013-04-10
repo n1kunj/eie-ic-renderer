@@ -54,7 +54,7 @@ public:
 	}
 
 	//Returns the number of lights loaded into the buffer
-	UINT updateLightBuffer(ID3D11DeviceContext* pd3dContext, const Camera* pCamera,StructuredBuffer<PointLightGPU> pLightListSB) {
+	UINT updateLightBuffer(ID3D11DeviceContext* pd3dContext, const Camera* pCamera,StructuredBuffer<PointLightGPU>* pLightListSB) {
 
 		using namespace DirectX;
 
@@ -89,11 +89,9 @@ public:
 		//Sort by camera distance
 		std::sort(tempList.begin(),tempList.end(),LightManager::lengthCompare);
 
-		DirectX::XMINT3 coords(0,0,0);
-
-		PointLightGPU* llist = pLightListSB.MapDiscard(pd3dContext);
+		PointLightGPU* llist = pLightListSB->MapDiscard(pd3dContext);
 		UINT numLights = 0;
-		UINT maxLights = pLightListSB.mElements;
+		UINT maxLights = pLightListSB->mElements;
 
 		//Frustum test lights and put the untransformed lights into the structured buffer
 		for (int i = 0; i < tempList.size(); i++) {
@@ -102,7 +100,7 @@ public:
 			}
 
 			PointLightGPU* plgpu = &tempList[i].second;
-			BOOL passed = pCamera->testFrustum(plgpu->viewPos,coords,plgpu->attenuationEnd);
+			BOOL passed = pCamera->testFrustum(plgpu->viewPos,offset,plgpu->attenuationEnd);
 			if (passed) {
 				llist[numLights] = *plgpu;
 				numLights++;
@@ -111,7 +109,7 @@ public:
 
 		XMVector3TransformCoordStream(&llist->viewPos,sizeof(PointLightGPU),&llist->viewPos,sizeof(PointLightGPU),numLights,pCamera->mViewMatrix);
 
-		pLightListSB.Unmap(pd3dContext);
+		pLightListSB->Unmap(pd3dContext);
 
 		return numLights;
 	}
