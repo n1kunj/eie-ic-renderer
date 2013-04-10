@@ -154,6 +154,7 @@
     <ClInclude Include="Shaders\LightingCompute.h">
       <Filter>Shaders</Filter>
     </ClInclude>
+    <ClInclude Include="LightManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugText.cpp" />

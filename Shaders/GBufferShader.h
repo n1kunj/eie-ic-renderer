@@ -23,6 +23,7 @@ __declspec(align(16)) struct GBufferPSCB
 	DirectX::XMFLOAT3 Albedo;
 	FLOAT SpecPower;
 	FLOAT SpecAmount;
+	DirectX::XMFLOAT3 padding0;
 };
 
 class GBufferShader : public DrawableShader {

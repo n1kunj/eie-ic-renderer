@@ -6,6 +6,7 @@
 #include "../DirectXMath/DirectXMath.h"
 #include "../Camera.h"
 #include "../Texture2D.h"
+#include "../LightManager.h"
 
 #define COMPUTE_SHADER_TILE_GROUP_DIM 16
 
@@ -25,13 +26,6 @@ __declspec(align(16)) struct LightingCSCB
 
 struct LightingCSFB {
 	DirectX::XMUINT2 rgba;
-};
-
-struct LightListCSSB {
-	DirectX::XMFLOAT3 viewPos;
-	FLOAT attenuationEnd;
-	DirectX::XMFLOAT3 colour;
-	FLOAT ambient;
 };
 
 class LightingCompute{
@@ -69,7 +63,7 @@ public:
 
 		//5,3,2
 		DirectX::XMVECTOR ll = DirectX::XMVectorSet(5,3,2,1.0f);
-		DirectX::XMVECTOR offset = DirectX::XMVectorSet(pCamera->mCoords.x,pCamera->mCoords.y,pCamera->mCoords.z,0.0f);
+		DirectX::XMVECTOR offset = DirectX::XMVectorSet((float)pCamera->mCoords.x,(float)pCamera->mCoords.y,(float)pCamera->mCoords.z,0.0f);
 		ll = DirectX::XMVectorSubtract(ll, offset);
 
 		ll = DirectX::XMVector3TransformCoord(ll,pCamera->mViewMatrix);

@@ -434,7 +434,7 @@ DWORD CameraButton::GetTicksPressedFor()
 }
 
 //Returns TRUE if it passes
-BOOL Camera::testFrustum( XMFLOAT3 pPos, XMINT3 pCoords, FLOAT pSphereRadius )
+BOOL Camera::testFrustum( XMFLOAT3 pPos, XMINT3 pCoords, FLOAT pSphereRadius ) const
 {
 	XMVECTOR pos = XMVectorSet(pPos.x + (pCoords.x - mCoords.x),
 		pPos.y + (pCoords.y - mCoords.y),

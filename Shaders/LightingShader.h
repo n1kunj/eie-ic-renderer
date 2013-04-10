@@ -9,6 +9,7 @@
 __declspec(align(16)) struct LightingPSCB
 {
 	DirectX::XMUINT2 bufferDim;
+	DirectX::XMFLOAT2 padding0;
 };
 
 class LightingShader{

@@ -4,6 +4,7 @@
 #include "DrawableManager.h"
 #include "Texture2D.h"
 #include "Shaders/LightingCompute.h"
+#include "LightManager.h"
 
 class MessageLogger;
 class DrawableMesh;
@@ -52,12 +53,12 @@ public:
 	Depth2DDSV mDSVRO;
 	Depth2DSRV mDSSRV;
 	StructuredBuffer<LightingCSFB> mLightingCSFBSB;
-	StructuredBuffer<LightListCSSB> mLightListCSSB;
+	StructuredBuffer<PointLightGPU> mLightListCSSB;
 	ID3D11DepthStencilState* mDSStateDefault;
 	ID3D11DepthStencilState* mDSStateStencilWrite;
 	ID3D11DepthStencilState* mDSStateStencilCull;
 
-	LightListCSSB mLightList[1024];
+	PointLightGPU mLightList[1024];
 
 	boolean mRecompile;
 };

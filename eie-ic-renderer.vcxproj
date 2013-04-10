@@ -479,6 +479,7 @@
     <ClInclude Include="DrawableMesh.h" />
     <ClInclude Include="DrawableShader.h" />
     <ClInclude Include="DrawableState.h" />
+    <ClInclude Include="LightManager.h" />
     <ClInclude Include="MessageProcessor.h" />
     <ClInclude Include="Meshes\CubeMeshLoader.h" />
     <ClInclude Include="ShaderManager.h" />

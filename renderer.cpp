@@ -70,7 +70,7 @@ void Renderer::init()
 	mLogger->log(L"Renderer Initialisation");
 
 	for (int i = 0; i < 1024; i++) {
-		LightListCSSB* ll = &mLightList[i];
+		PointLightGPU* ll = &mLightList[i];
 		ll->ambient = 0.001f;
 		ll->attenuationEnd = ((float)rand()/(float)RAND_MAX) * 5 + 5;
 		ll->colour.x = ((float)rand()/(float)RAND_MAX) * 3;
@@ -292,18 +292,18 @@ void Renderer::SetUpLights(ID3D11DeviceContext* pd3dImmediateContext)
 	using namespace DirectX;
 	const UINT numLights = 1024;
 
-	XMVECTOR offset = DirectX::XMVectorSet(mCamera->mCoords.x,mCamera->mCoords.y,mCamera->mCoords.z,0.0f);
+	XMVECTOR offset = DirectX::XMVectorSet((float)mCamera->mCoords.x,(float)mCamera->mCoords.y,(float)mCamera->mCoords.z,0.0f);
 
 	XMVECTOR posList[numLights];
 
-	LightListCSSB* llist = mLightListCSSB.MapDiscard(pd3dImmediateContext);
+	PointLightGPU* llist = mLightListCSSB.MapDiscard(pd3dImmediateContext);
 
 	for (int i = 0; i < numLights; i++) {
 		XMVECTOR pos = XMLoadFloat3(&(mLightList[i].viewPos));
 		posList[i] = XMVectorSubtract(pos,offset);
 		llist[i] = mLightList[i];
 	}
-	XMVector3TransformCoordStream(&llist->viewPos,sizeof(LightListCSSB),(XMFLOAT3*)posList,sizeof(XMVECTOR),numLights,mCamera->mViewMatrix);
+	XMVector3TransformCoordStream(&llist->viewPos,sizeof(PointLightGPU),(XMFLOAT3*)posList,sizeof(XMVECTOR),numLights,mCamera->mViewMatrix);
 
 	mLightListCSSB.Unmap(pd3dImmediateContext);
 }
