@@ -7,20 +7,16 @@
 
 class Camera;
 
-struct OctreeStruct {
-	Camera* mCamera;
-};
-
 class DrawableManager {
+private:
+	std::vector<boost::shared_ptr<Drawable> > mDrawableVector;
 public:
 	DrawableManager();
 	~DrawableManager();
 	void addDrawable(boost::shared_ptr<Drawable> pDrawable);
-	void Draw(ID3D11DeviceContext* pd3dContext);
 	BOOLEAN DrawableManager::removeDrawable( boost::shared_ptr<Drawable> pDrawable);
+	void Draw(ID3D11DeviceContext* pd3dContext);
 	void reset();
-private:
-	std::vector<boost::shared_ptr<Drawable> > mDrawableVector;
 };
 
 #endif // !DRAWABLE_MANAGER_H

@@ -2,6 +2,7 @@
 RMP = 0
 CAMERA = 0
 SHADERMAN = 0
+MESHMAN = 0
 MESH = 0
 DRAWMAN = 0
 -- Set up console printer
@@ -25,8 +26,8 @@ function setShaderMan(pShaderMan)
 SHADERMAN = pShaderMan
 end
 
-function setMesh(pMesh)
-MESH = pMesh
+function setMeshMan(pMeshMan)
+MESHMAN = pMeshMan
 end
 
 function setDrawMan(pDrawMan)

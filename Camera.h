@@ -40,6 +40,16 @@ public:
 
 	void setEye(DOUBLE x, DOUBLE y, DOUBLE z);
 
+	DOUBLE getEyeX() {
+		return ((DOUBLE) DirectX::XMVectorGetX(mEye)) + mCoords.x;
+	}
+	DOUBLE getEyeY() {
+		return ((DOUBLE) DirectX::XMVectorGetY(mEye)) + mCoords.y;
+	}
+	DOUBLE getEyeZ() {
+		return ((DOUBLE) DirectX::XMVectorGetZ(mEye)) + mCoords.z;
+	}
+
 	Camera();
 	~Camera();
 

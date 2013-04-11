@@ -3,7 +3,7 @@
 
 DrawableManager::DrawableManager() : mDrawableVector()
 {
-	mDrawableVector.reserve(10000);
+	mDrawableVector.reserve(100000);
 }
 
 DrawableManager::~DrawableManager()

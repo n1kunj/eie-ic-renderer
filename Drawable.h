@@ -12,7 +12,10 @@ public:
 	Drawable(Camera* pCamera) : mCamera(pCamera) {};
 	virtual void Draw(ID3D11DeviceContext* pd3dContext) = 0;
 	virtual ~Drawable() {};
+	Drawable(const Drawable& copy);
+protected:
 	Camera* mCamera;
+private:
 };
 
 class BasicDrawable : public Drawable {
@@ -24,8 +27,8 @@ public:
 	void Draw(ID3D11DeviceContext* pd3dContext);
 	
 	BasicDrawable(DrawableMesh* pMesh, DrawableShader* pShader, Camera* pCamera);
-	BasicDrawable(const BasicDrawable& copy);
 	virtual ~BasicDrawable();
+	BasicDrawable(const BasicDrawable& copy);
 };
 
 #endif

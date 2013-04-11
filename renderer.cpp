@@ -8,6 +8,7 @@
 #include "Drawable.h"
 #include "Camera.h"
 #include "ShaderManager.h"
+#include "MeshManager.h"
 #include "Shaders/FXAAShader.h"
 #include "Shaders/LightingShader.h"
 
@@ -16,11 +17,12 @@
 Renderer::Renderer(MessageLogger* mLogger) : mLogger(mLogger), mDrawableManager()
 {
 	mCamera = new Camera();
-	mCubeLoader = new CubeMeshLoader();
-	mCubeMesh = new DrawableMesh(L"CubeMesh",mCubeLoader);
+	mMeshManager = new MeshManager();
+	mMeshManager->addMesh(new DrawableMesh(L"CubeMesh",new CubeMeshLoader()));
 	mShaderManager = new ShaderManager(mLogger);
 	mShaderManager->addShader(new DefaultShader());
 	mShaderManager->addShader(new GBufferShader());
+
 	mLightManager = new LightManager();
 	mFXAAShader = new FXAAShader();
 	mLightingShader = new LightingShader();
@@ -35,9 +37,8 @@ Renderer::Renderer(MessageLogger* mLogger) : mLogger(mLogger), mDrawableManager(
 
 Renderer::~Renderer() {
 	SAFE_DELETE(mCamera);
-	SAFE_DELETE(mCubeLoader);
-	SAFE_DELETE(mCubeMesh);
 	SAFE_DELETE(mShaderManager);
+	SAFE_DELETE(mMeshManager);
 	SAFE_DELETE(mFXAAShader);
 	SAFE_DELETE(mLightingShader);
 	SAFE_DELETE(mLightingCompute);
@@ -45,8 +46,8 @@ Renderer::~Renderer() {
 
 void Renderer::OnD3D11DestroyDevice()
 {
-	mCubeMesh->OnD3D11DestroyDevice();
 	mShaderManager->OnD3D11DestroyDevice();
+	mMeshManager->OnD3D11DestroyDevice();
 	mFXAAShader->OnD3D11DestroyDevice();
 	mLightingShader->OnD3D11DestroyDevice();
 	mLightingCompute->OnD3D11DestroyDevice();
@@ -70,7 +71,7 @@ void Renderer::init()
 {
 	mLogger->log(L"Renderer Initialisation");
 
-	for (int i = 0; i < 1024; i++) {
+	for (int i = 0; i < 1023; i++) {
 		PointLight* ll = &mLightList[i];
 		ll->ambient = 0.001f;
 		ll->attenuationEnd = ((float)rand()/(float)RAND_MAX) * 5 + 5;
@@ -83,6 +84,18 @@ void Renderer::init()
 		ll->z = ((double)rand()/(double)RAND_MAX) * 100 - 50;
 		mLightManager->addLight(ll);
 	}
+	//THE SUN
+	PointLight* ll = &mLightList[1023];
+	ll->ambient = 0.01f;
+	ll->attenuationEnd = FLT_MAX/10.0f;
+	ll->colour.x = 1.0f;
+	ll->colour.y = 1.0f;
+	ll->colour.z = 1.0f;
+	ll->y = 86371600270.0f;
+	ll->z = 86371600270.0f;
+	ll->x = 86371600270.0f;
+	mLightManager->addLight(ll);
+
 }
 
 
@@ -90,12 +103,13 @@ HRESULT Renderer::OnD3D11CreateDevice( ID3D11Device* pd3dDevice, const DXGI_SURF
 {
 	mLogger->log(L"Renderer OnD3D11CreateDevice");
 
-	mCubeMesh->OnD3D11CreateDevice(pd3dDevice);
 	mShaderManager->OnD3D11CreateDevice(pd3dDevice);
+	mMeshManager->OnD3D11CreateDevice(pd3dDevice);
+
+	//Post shaders
 	mFXAAShader->OnD3D11CreateDevice(pd3dDevice);
 	mLightingShader->OnD3D11CreateDevice(pd3dDevice);
 	mLightingCompute->OnD3D11CreateDevice(pd3dDevice);
-
 	{
 		//Default depth state
 		CD3D11_DEFAULT dsDefault;
@@ -240,6 +254,7 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 		mShaderManager->OnD3D11CreateDevice(pd3dDevice);
 		mLightingShader->OnD3D11CreateDevice(pd3dDevice);
 		mLightingCompute->OnD3D11CreateDevice(pd3dDevice);
+		mFXAAShader->OnD3D11CreateDevice(pd3dDevice);
 		mRecompile = FALSE;
 	}
 

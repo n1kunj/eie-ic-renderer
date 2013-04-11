@@ -19,7 +19,7 @@ CDXUTDialogResourceManager dxutDialogResourceManager; // manager for shared reso
 DebugText debugText = DebugText();
 DevConsole devConsole = DevConsole(&debugText);
 Gui gui = Gui(&debugText);
-Renderer renderer = Renderer(&devConsole);
+Renderer renderer(&devConsole);
 RendererMessageProcessor* rMProc;
 
 UINT focusedUI = FOCUSED_GUI;

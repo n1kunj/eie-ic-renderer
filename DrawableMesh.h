@@ -33,6 +33,7 @@ public:
 	virtual HRESULT OnD3D11CreateDevice(ID3D11Device* pd3dDevice);
 	virtual void OnD3D11DestroyDevice();
 
+	//The loader instance now belongs to me! I'll make sure it's deleted when I'm done with it
 	DrawableMesh(const WCHAR* pModelHandle, MeshLoaderInterface* pMeshLoader);
 	virtual ~DrawableMesh();
 

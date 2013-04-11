@@ -6,9 +6,11 @@
 #include "DrawableShader.h"
 #include "DrawableMesh.h"
 #include "ShaderManager.h"
+#include "MeshManager.h"
 #include <string>
 #include "DirectXMath\DirectXMath.h"
 #include <boost/shared_ptr.hpp>
+#include "Procedural/DistantDrawable.h"
 
 extern "C" {
 #include "lua.h"
@@ -61,23 +63,30 @@ RendererMessageProcessor::RendererMessageProcessor( MessageLogger* logger, Rende
 		.def_readwrite("mSpecularAmount", &DrawableState::mSpecularAmount),
 
 		class_<Drawable, boost::shared_ptr<Drawable> >("Drawable"),
+
 		class_<BasicDrawable,bases<Drawable>,boost::shared_ptr<Drawable> >("BasicDrawable")
 		.def(constructor<DrawableMesh*,DrawableShader*,Camera*>())
 		.def_readwrite("mState", &BasicDrawable::mState),
+
+		class_<DistantDrawable,bases<Drawable>,boost::shared_ptr<Drawable> > ("DistantDrawable")
+		.def(constructor<Camera*,ShaderManager*,MeshManager*>()),
 
 		class_<DrawableManager>("DrawableManager")
 		.def("addDrawable",&DrawableManager::addDrawable)
 		.def("reset",&DrawableManager::reset),
 
 		class_<ShaderManager>("ShaderManager")
-		.def("getDrawableShader",&ShaderManager::getDrawableShader)
+		.def("getDrawableShader",&ShaderManager::getDrawableShader),
+
+		class_<MeshManager>("MeshManager")
+		.def("getDrawableMesh",&MeshManager::getDrawableMesh)
 	];
 	runScript("setup.lua");
 
 	call_function<void>(mLuaState,"setRMP",this);
 	call_function<void>(mLuaState,"setCamera",boost::ref(mRenderer->mCamera));
 	call_function<void>(mLuaState,"setShaderMan",boost::ref(mRenderer->mShaderManager));
-	call_function<void>(mLuaState,"setMesh",boost::ref(mRenderer->mCubeMesh));
+	call_function<void>(mLuaState,"setMeshMan",boost::ref(mRenderer->mMeshManager));
 	call_function<void>(mLuaState,"setDrawMan",boost::ref(mRenderer->mDrawableManager));
 
 	runScript("cube.lua");

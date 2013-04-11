@@ -11,9 +11,6 @@
     <Filter Include="Utils">
       <UniqueIdentifier>{3690bdac-74a9-4988-8056-b31c3ab49f90}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Textures">
-      <UniqueIdentifier>{a06afe3e-ffef-4d5b-8c20-ec4b5bd2f822}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Meshes">
       <UniqueIdentifier>{b454b8f0-873f-483e-bda8-40c84618c5cb}</UniqueIdentifier>
     </Filter>
@@ -22,6 +19,9 @@
     </Filter>
     <Filter Include="DirectXMath">
       <UniqueIdentifier>{a724cea4-e292-4ca7-8221-e28a54f911bf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Procedural">
+      <UniqueIdentifier>{71bfbc8d-5dfe-42ac-bc31-22be47e0b837}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -118,9 +118,6 @@
     <ClInclude Include="Utils\ShaderTools.h">
       <Filter>Utils</Filter>
     </ClInclude>
-    <ClInclude Include="Textures\Textures.h">
-      <Filter>Textures</Filter>
-    </ClInclude>
     <ClInclude Include="Shaders\DefaultShader.h">
       <Filter>Shaders</Filter>
     </ClInclude>
@@ -155,6 +152,10 @@
       <Filter>Shaders</Filter>
     </ClInclude>
     <ClInclude Include="LightManager.h" />
+    <ClInclude Include="Procedural\DistantDrawable.h">
+      <Filter>Procedural</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugText.cpp" />
@@ -164,9 +165,6 @@
     <ClCompile Include="Gui.cpp" />
     <ClCompile Include="Utils\ShaderTools.cpp">
       <Filter>Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="Textures\Textures.cpp">
-      <Filter>Textures</Filter>
     </ClCompile>
     <ClCompile Include="Shaders\DefaultShader.cpp">
       <Filter>Shaders</Filter>
@@ -182,6 +180,9 @@
     <ClCompile Include="DrawableManager.cpp" />
     <ClCompile Include="Shaders\LightingShader.h">
       <Filter>Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Procedural\DistantDrawable.cpp">
+      <Filter>Procedural</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

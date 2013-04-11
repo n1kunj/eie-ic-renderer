@@ -3,16 +3,12 @@
 #define RENDERER_H
 #include "DrawableManager.h"
 #include "Texture2D.h"
-#include "Shaders/LightingCompute.h"
 #include "LightManager.h"
+#include "Shaders/LightingCompute.h"
 
 class MessageLogger;
-class DrawableMesh;
-class DrawableShader;
-class DeferredTileComputeShader;
-class CubeMeshLoader;
-class BasicDrawable;
 class ShaderManager;
+class MeshManager;
 class Camera;
 class FXAAShader;
 class LightingShader;
@@ -36,10 +32,9 @@ public:
 	DXGI_SURFACE_DESC mSurfaceDescription;
 	DrawableManager mDrawableManager;
 	MessageLogger* mLogger;
-	DrawableMesh* mCubeMesh;
-	CubeMeshLoader* mCubeLoader;
 	ShaderManager* mShaderManager;
 	LightManager* mLightManager;
+	MeshManager* mMeshManager;
 	Camera* mCamera;
 	FXAAShader* mFXAAShader;
 	LightingShader* mLightingShader;
@@ -60,6 +55,8 @@ public:
 	PointLight mLightList[1024];
 
 	boolean mRecompile;
+private:
+	Renderer(const Renderer& copy);
 };
 
 #endif

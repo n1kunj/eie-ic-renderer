@@ -1,4 +1,7 @@
 #include "DXUT.h"
+#pragma once
+#ifndef SHADER_MANAGER_H
+#define SHADER_MANAGER_H
 #include <vector>
 #include "DrawableShader.h"
 #include "MessageProcessor.h"
@@ -47,3 +50,5 @@ public:
 		}
 	}
 };
+
+#endif

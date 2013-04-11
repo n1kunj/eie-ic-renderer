@@ -13,6 +13,7 @@ DrawableMesh::~DrawableMesh()
 {
 	OnD3D11DestroyDevice();
 	SAFE_DELETE_ARRAY(mModelHandle);
+	SAFE_DELETE(mMeshLoader);
 }
 
 void DrawableMesh::OnD3D11DestroyDevice()
