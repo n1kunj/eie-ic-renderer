@@ -7,14 +7,14 @@
 #define TILE_DIMENSION_LENGTH 31
 #define NUM_TILES TILE_DIMENSION_LENGTH*TILE_DIMENSION_LENGTH
 #define TILE_SIZE 512.0
-#define MESH_SCALE TILE_SIZE/2.1
+#define MESH_SCALE TILE_SIZE/1.1
 
 DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager, MeshManager* pMeshManager ) : Drawable(pCamera)
 {
-	mShader = pShaderManager->getDrawableShader("GBufferShader");
+	mShader = pShaderManager->getDrawableShader("DistantGBufferShader");
 	mDrawables.reserve(NUM_TILES);
 
-	DrawableMesh* mesh = pMeshManager->getDrawableMesh("CubeMesh");
+	DrawableMesh* mesh = pMeshManager->getDrawableMesh("Plane32");
 
 	DOUBLE posx = mCamera->getEyeX();
 	DOUBLE posy = 0;

@@ -156,6 +156,12 @@
       <Filter>Procedural</Filter>
     </ClInclude>
     <ClInclude Include="MeshManager.h" />
+    <ClInclude Include="Meshes\PlaneLoader.h">
+      <Filter>Meshes</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\DistantGBufferShader.h">
+      <Filter>Shaders</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugText.cpp" />

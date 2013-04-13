@@ -2,8 +2,10 @@
 #include "Renderer.h"
 #include "MessageProcessor.h"
 #include "Meshes/CubeMeshLoader.h"
+#include "Meshes/PlaneLoader.h"
 #include "Shaders/DefaultShader.h"
 #include "Shaders/GBufferShader.h"
+#include "Shaders/DistantGBufferShader.h"
 #include "DrawableState.h"
 #include "Drawable.h"
 #include "Camera.h"
@@ -19,9 +21,14 @@ Renderer::Renderer(MessageLogger* mLogger) : mLogger(mLogger), mDrawableManager(
 	mCamera = new Camera();
 	mMeshManager = new MeshManager();
 	mMeshManager->addMesh(new DrawableMesh(L"CubeMesh",new CubeMeshLoader()));
+	mMeshManager->addMesh(new DrawableMesh(L"Plane2",new PlaneLoader(2)));
+	mMeshManager->addMesh(new DrawableMesh(L"Plane32",new PlaneLoader(32)));
+	mMeshManager->addMesh(new DrawableMesh(L"Plane128",new PlaneLoader(128)));
+	mMeshManager->addMesh(new DrawableMesh(L"Plane512",new PlaneLoader(512)));
 	mShaderManager = new ShaderManager(mLogger);
 	mShaderManager->addShader(new DefaultShader());
 	mShaderManager->addShader(new GBufferShader());
+	mShaderManager->addShader(new DistantGBufferShader());
 
 	mLightManager = new LightManager();
 	mFXAAShader = new FXAAShader();

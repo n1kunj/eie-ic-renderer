@@ -480,12 +480,14 @@
     <ClInclude Include="DrawableShader.h" />
     <ClInclude Include="DrawableState.h" />
     <ClInclude Include="LightManager.h" />
+    <ClInclude Include="Meshes\PlaneLoader.h" />
     <ClInclude Include="MeshManager.h" />
     <ClInclude Include="MessageProcessor.h" />
     <ClInclude Include="Meshes\CubeMeshLoader.h" />
     <ClInclude Include="Procedural\DistantDrawable.h" />
     <ClInclude Include="ShaderManager.h" />
     <ClInclude Include="Shaders\DefaultShader.h" />
+    <ClInclude Include="Shaders\DistantGBufferShader.h" />
     <ClInclude Include="Shaders\FXAAShader.h" />
     <ClInclude Include="Shaders\GBufferShader.h" />
     <ClInclude Include="Shaders\LightingCompute.h" />

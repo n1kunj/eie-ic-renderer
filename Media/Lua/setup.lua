@@ -37,3 +37,7 @@ end
 function reset()
 DRAWMAN:reset()
 end
+
+function move(x,y,z)
+CAMERA:setEye(x,y,z)
+end
