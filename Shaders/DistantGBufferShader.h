@@ -31,8 +31,10 @@ private:
 	boolean mCompiled;
 	ID3D11InputLayout* mVertexLayout;
 	ID3D11VertexShader* mVertexShader;
+	ID3D11HullShader* mHullShader;
+	ID3D11DomainShader* mDomainShader;
 	ID3D11PixelShader* mPixelShader;
-	ID3D11Buffer* mVSConstantBuffer;
+	ID3D11Buffer* mDSConstantBuffer;
 	ID3D11Buffer* mPSConstantBuffer;
 
 public:
@@ -40,13 +42,15 @@ public:
 		SAFE_RELEASE(mVertexShader);
 		SAFE_RELEASE(mPixelShader);
 		SAFE_RELEASE(mVertexLayout);
-		SAFE_RELEASE(mVSConstantBuffer);
+		SAFE_RELEASE(mHullShader);
+		SAFE_RELEASE(mDomainShader);
+		SAFE_RELEASE(mDSConstantBuffer);
 		SAFE_RELEASE(mPSConstantBuffer);
 		mCompiled = FALSE;
 	}
 
 	DistantGBufferShader() : DrawableShader(L"DistantGBufferShader"),mCompiled(FALSE),mVertexLayout(NULL),
-		mVertexShader(NULL),mPixelShader(NULL),mVSConstantBuffer(NULL),mPSConstantBuffer(NULL) {}
+		mVertexShader(NULL),mPixelShader(NULL),mDSConstantBuffer(NULL),mPSConstantBuffer(NULL), mHullShader(NULL), mDomainShader(NULL) {}
 
 	~DistantGBufferShader()
 	{
@@ -60,22 +64,41 @@ public:
 		HRESULT hr;
 
 		//Compile VS
-		ID3DBlob* pVSBlob = NULL;
-		V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\GBufferShader.fx", "VS", "vs_5_0", &pVSBlob ));
+		{
+			ID3DBlob* pVSBlob = NULL;
+			V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\DistantGBufferShader.fx", "VS", "vs_5_0", &pVSBlob ));
 
-		//Create the vertex shader
-		//If fails, releases pVSBlob.
-		V_RELEASE_IF_RETURN(pVSBlob,pd3dDevice->CreateVertexShader( pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, &mVertexShader ));
+			//Create the vertex shader
+			//If fails, releases pVSBlob.
+			V_RELEASE_IF_RETURN(pVSBlob,pd3dDevice->CreateVertexShader( pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, &mVertexShader ));
 
-		//Create the input layout
-		V_RELEASE_AND_RETURN(pVSBlob,pd3dDevice->CreateInputLayout( vertexLayout, numLayoutElements, pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), &mVertexLayout ));
+			//Create the input layout
+			V_RELEASE_AND_RETURN(pVSBlob,pd3dDevice->CreateInputLayout( vertexLayout, numLayoutElements, pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), &mVertexLayout ));
+		}
+
+		// Compile the hull shader
+		{
+			ID3DBlob* blob = NULL;
+			V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\DistantGBufferShader.fx", "HS", "hs_5_0", &blob ));
+
+			V_RELEASE_AND_RETURN(blob, pd3dDevice->CreateHullShader( blob->GetBufferPointer(), blob->GetBufferSize(), NULL, &mHullShader ));
+		}
+
+		// Compile the domain shader
+		{
+			ID3DBlob* blob = NULL;
+			V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\DistantGBufferShader.fx", "DS", "ds_5_0", &blob ));
+
+			V_RELEASE_AND_RETURN(blob, pd3dDevice->CreateDomainShader( blob->GetBufferPointer(), blob->GetBufferSize(), NULL, &mDomainShader ));
+		}
 
 		// Compile the pixel shader
-		ID3DBlob* pPSBlob = NULL;
-		V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\GBufferShader.fx", "PS", "ps_5_0", &pPSBlob ));
+		{
+			ID3DBlob* blob = NULL;
+			V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\DistantGBufferShader.fx", "PS", "ps_5_0", &blob ));
 
-		// Create the pixel shader
-		V_RELEASE_AND_RETURN(pPSBlob, pd3dDevice->CreatePixelShader( pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), NULL, &mPixelShader ));
+			V_RELEASE_AND_RETURN(blob, pd3dDevice->CreatePixelShader( blob->GetBufferPointer(), blob->GetBufferSize(), NULL, &mPixelShader ));
+		}
 
 		// Create the constant buffer
 		D3D11_BUFFER_DESC bd;
@@ -84,7 +107,7 @@ public:
 		bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 		bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 		bd.ByteWidth = sizeof(DistantGBufferVSCB);
-		V_RETURN(pd3dDevice->CreateBuffer( &bd, NULL, &mVSConstantBuffer ));
+		V_RETURN(pd3dDevice->CreateBuffer( &bd, NULL, &mDSConstantBuffer ));
 
 		bd.ByteWidth = sizeof(DistantGBufferPSCB);
 		V_RETURN(pd3dDevice->CreateBuffer( &bd, NULL, &mPSConstantBuffer ));
@@ -107,16 +130,18 @@ public:
 
 		// Update constant buffer
 		D3D11_MAPPED_SUBRESOURCE MappedResource;
-		pd3dContext->Map(mVSConstantBuffer,0,D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
+		pd3dContext->Map(mDSConstantBuffer,0,D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
 		DistantGBufferVSCB* vscb = (DistantGBufferVSCB*)MappedResource.pData;
 		vscb->Model = XMMatrixTranspose(pState->mModelMatrix);
 		vscb->View = XMMatrixTranspose(pCamera->mViewMatrix);
 		vscb->Projection = XMMatrixTranspose(pCamera->mProjectionMatrix);
 		vscb->MV = XMMatrixMultiplyTranspose(pState->mModelMatrix,pCamera->mViewMatrix);
 		vscb->MVP = XMMatrixMultiplyTranspose(pState->mModelMatrix,pCamera->mViewProjectionMatrix);
-		pd3dContext->Unmap(mVSConstantBuffer,0);
+		pd3dContext->Unmap(mDSConstantBuffer,0);
 
-		pd3dContext->VSSetConstantBuffers( 0, 1, &mVSConstantBuffer );
+		pd3dContext->DSSetConstantBuffers( 0, 1, &mDSConstantBuffer );
+
+		pd3dContext->VSSetConstantBuffers( 0, 1, &mDSConstantBuffer );
 
 		pd3dContext->Map(mPSConstantBuffer,0,D3D11_MAP_WRITE_DISCARD,0,&MappedResource);
 		DistantGBufferPSCB* pscb = (DistantGBufferPSCB*)MappedResource.pData;
@@ -125,7 +150,7 @@ public:
 		pscb->SpecAmount = pState->mSpecularAmount;
 		pd3dContext->Unmap(mPSConstantBuffer,0);
 
-		pd3dContext->PSSetConstantBuffers( 1, 1, &mPSConstantBuffer );
+		pd3dContext->PSSetConstantBuffers( 0, 1, &mPSConstantBuffer );
 
 		//Set vertex layout and bind buffers
 		pd3dContext->IASetInputLayout( mVertexLayout );
@@ -135,13 +160,18 @@ public:
 		pd3dContext->IASetVertexBuffers( 0, 1, &pMesh->mVertexBuffer, &stride, &offset );
 
 		pd3dContext->IASetIndexBuffer( pMesh->mIndexBuffer, pMesh->mIndexBufferFormat, 0 );
-		pd3dContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
+		pd3dContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST );
 
 		//Set shaders
 		pd3dContext->VSSetShader( mVertexShader, NULL, 0 );
+		pd3dContext->HSSetShader( mHullShader, NULL, 0 );
+		pd3dContext->DSSetShader( mDomainShader, NULL, 0 );
 		pd3dContext->PSSetShader( mPixelShader, NULL, 0 );
 
 		pd3dContext->DrawIndexed( pMesh->mNumIndices, 0, 0 );
+
+		pd3dContext->HSSetShader(NULL,NULL,0);
+		pd3dContext->DSSetShader(NULL,NULL,0);
 	}
 };
 

@@ -22,8 +22,13 @@ Renderer::Renderer(MessageLogger* mLogger) : mLogger(mLogger), mDrawableManager(
 	mMeshManager = new MeshManager();
 	mMeshManager->addMesh(new DrawableMesh(L"CubeMesh",new CubeMeshLoader()));
 	mMeshManager->addMesh(new DrawableMesh(L"Plane2",new PlaneLoader(2)));
+	mMeshManager->addMesh(new DrawableMesh(L"Plane4",new PlaneLoader(4)));
+	mMeshManager->addMesh(new DrawableMesh(L"Plane8",new PlaneLoader(8)));
+	mMeshManager->addMesh(new DrawableMesh(L"Plane16",new PlaneLoader(16)));
 	mMeshManager->addMesh(new DrawableMesh(L"Plane32",new PlaneLoader(32)));
+	mMeshManager->addMesh(new DrawableMesh(L"Plane64",new PlaneLoader(64)));
 	mMeshManager->addMesh(new DrawableMesh(L"Plane128",new PlaneLoader(128)));
+	mMeshManager->addMesh(new DrawableMesh(L"Plane256",new PlaneLoader(256)));
 	mMeshManager->addMesh(new DrawableMesh(L"Plane512",new PlaneLoader(512)));
 	mShaderManager = new ShaderManager(mLogger);
 	mShaderManager->addShader(new DefaultShader());
@@ -38,6 +43,9 @@ Renderer::Renderer(MessageLogger* mLogger) : mLogger(mLogger), mDrawableManager(
 	mDSStateDefault = NULL;
 	mDSStateStencilCull = NULL;
 	mDSStateStencilWrite = NULL;
+
+	mRasterizerStateDefault = NULL;
+	mRasterizerStateWireframe = NULL;
 
 	mRecompile = FALSE;
 };
@@ -72,6 +80,8 @@ void Renderer::OnD3D11DestroyDevice()
 	SAFE_RELEASE(mDSStateDefault);
 	SAFE_RELEASE(mDSStateStencilCull);
 	SAFE_RELEASE(mDSStateStencilWrite);
+	SAFE_RELEASE(mRasterizerStateDefault);
+	SAFE_RELEASE(mRasterizerStateWireframe);
 }
 
 void Renderer::init()
@@ -139,6 +149,17 @@ HRESULT Renderer::OnD3D11CreateDevice( ID3D11Device* pd3dDevice, const DXGI_SURF
 		desc.FrontFace.StencilFunc = D3D11_COMPARISON_EQUAL;
 		desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;  
 		pd3dDevice->CreateDepthStencilState(&desc,&mDSStateStencilCull);
+	}
+
+	{
+		CD3D11_RASTERIZER_DESC desc = CD3D11_RASTERIZER_DESC(CD3D11_DEFAULT());
+
+		pd3dDevice->CreateRasterizerState(&desc,&mRasterizerStateDefault);
+
+		desc.FillMode = D3D11_FILL_WIREFRAME;
+
+		pd3dDevice->CreateRasterizerState(&desc,&mRasterizerStateWireframe);
+
 	}
 
 	//Create Structured Buffer to hold the lights for the compute shader
@@ -265,6 +286,13 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 		mRecompile = FALSE;
 	}
 
+	if (mSettings.wireframe) {
+		pd3dImmediateContext->RSSetState(mRasterizerStateWireframe);
+	}
+	else {
+		pd3dImmediateContext->RSSetState(mRasterizerStateDefault);
+	}
+
 	ID3D11RenderTargetView* backBuffer = DXUTGetD3D11RenderTargetView();
 	ID3D11DepthStencilView* dsv = mDSV.mDSV;
 
@@ -279,6 +307,8 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 	//Make the runtime happy
 	ID3D11RenderTargetView* rtvs2[2] = {NULL,NULL};
 	pd3dImmediateContext->OMSetRenderTargets(2,rtvs2,dsv);
+
+	pd3dImmediateContext->RSSetState(mRasterizerStateDefault);
 
 	//Set up lights
 	//SetUpLights(pd3dImmediateContext);

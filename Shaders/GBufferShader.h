@@ -125,7 +125,7 @@ public:
 		pscb->SpecAmount = pState->mSpecularAmount;
 		pd3dContext->Unmap(mPSConstantBuffer,0);
 
-		pd3dContext->PSSetConstantBuffers( 1, 1, &mPSConstantBuffer );
+		pd3dContext->PSSetConstantBuffers( 0, 1, &mPSConstantBuffer );
 
 		//Set vertex layout and bind buffers
 		pd3dContext->IASetInputLayout( mVertexLayout );

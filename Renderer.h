@@ -13,6 +13,13 @@ class Camera;
 class FXAAShader;
 class LightingShader;
 
+struct RendererSettings {
+	BOOL wireframe;
+	RendererSettings() {
+		wireframe = FALSE;
+	}
+};
+
 class Renderer {
 public:
 	Renderer(MessageLogger* mLogger);
@@ -28,6 +35,8 @@ public:
 
 	void OnD3D11DestroyDevice();
 	void OnExit();
+
+	RendererSettings mSettings;
 
 	DXGI_SURFACE_DESC mSurfaceDescription;
 	DrawableManager mDrawableManager;
@@ -51,6 +60,8 @@ public:
 	ID3D11DepthStencilState* mDSStateDefault;
 	ID3D11DepthStencilState* mDSStateStencilWrite;
 	ID3D11DepthStencilState* mDSStateStencilCull;
+	ID3D11RasterizerState* mRasterizerStateDefault;
+	ID3D11RasterizerState* mRasterizerStateWireframe;
 
 	PointLight mLightList[1024];
 

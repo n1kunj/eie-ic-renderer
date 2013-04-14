@@ -5,6 +5,7 @@ SHADERMAN = 0
 MESHMAN = 0
 MESH = 0
 DRAWMAN = 0
+SET = 0
 -- Set up console printer
 function setRMP(pRMP)
 RMP = pRMP
@@ -32,6 +33,10 @@ end
 
 function setDrawMan(pDrawMan)
 DRAWMAN = pDrawMan
+end
+
+function setRendererSettings(pRSet)
+SET = pRSet
 end
 
 function reset()

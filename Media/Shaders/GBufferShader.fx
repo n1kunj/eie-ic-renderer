@@ -1,3 +1,5 @@
+#include "GBuffer.h"
+
 cbuffer VSConstantBuffer : register( b0 )
 {
 	matrix Model;
@@ -7,7 +9,7 @@ cbuffer VSConstantBuffer : register( b0 )
 	matrix MVP;
 }
 
-cbuffer PSConstantBuffer : register( b1 )
+cbuffer PSConstantBuffer : register( b0 )
 {
 	float3 Albedo;
 	float SpecPower;
@@ -26,19 +28,6 @@ struct PS_INPUT
 	float3 ModelPos : POSITION0;
     float3 Norm : NORMAL0;
 };
-
-struct GBuffer
-{
-    float4 normal_specular : SV_Target0;
-    float4 albedo : SV_Target1;
-};
-
-float2 EncodeSphereMap(float3 n)
-{
-    float oneMinusZ = 1.0f - n.z;
-    float p = sqrt(n.x * n.x + n.y * n.y + oneMinusZ * oneMinusZ);
-    return n.xy / p * 0.5f + 0.5f;
-}
 
 PS_INPUT VS( VS_INPUT input)
 {

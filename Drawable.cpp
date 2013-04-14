@@ -30,3 +30,10 @@ BasicDrawable::~BasicDrawable()
 {
 
 }
+
+void BasicDrawable::DrawInstanced( ID3D11DeviceContext* pd3dContext, BasicDrawable* pDrawableList, UINT pCount )
+{
+	for (UINT i = 0; i < pCount; i++) {
+		pDrawableList[i].Draw(pd3dContext);
+	}
+}

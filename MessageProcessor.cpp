@@ -52,6 +52,9 @@ RendererMessageProcessor::RendererMessageProcessor( MessageLogger* logger, Rende
 		.def_readwrite("y", &XMFLOAT3::y)
 		.def_readwrite("z", &XMFLOAT3::z),
 
+		class_<RendererSettings>("RendererSettings")
+		.def_readwrite("wireframe", &RendererSettings::wireframe),
+
 		class_<DrawableState>("DrawableState")
 		.def("setPosition", &DrawableState::setPosition)
 		.def_readwrite("mScale", &DrawableState::mScale)
@@ -88,6 +91,7 @@ RendererMessageProcessor::RendererMessageProcessor( MessageLogger* logger, Rende
 	call_function<void>(mLuaState,"setShaderMan",boost::ref(mRenderer->mShaderManager));
 	call_function<void>(mLuaState,"setMeshMan",boost::ref(mRenderer->mMeshManager));
 	call_function<void>(mLuaState,"setDrawMan",boost::ref(mRenderer->mDrawableManager));
+	call_function<void>(mLuaState,"setRendererSettings",boost::ref(mRenderer->mSettings));
 
 	runScript("cube.lua");
 
