@@ -45,4 +45,7 @@ void DistantDrawable::Draw( ID3D11DeviceContext* pd3dContext )
 	for (int i = 0; i < mDrawables.size(); i++) {
 		mDrawables[i].Draw(pd3dContext);
 	}
+	//for (int i = 0; i < 500; i++) {
+		//mDrawables[0].Draw(pd3dContext);
+	//}
 }

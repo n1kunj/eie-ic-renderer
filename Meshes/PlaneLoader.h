@@ -19,7 +19,7 @@ public:
 		mNumVertices = mSideVertCount * mSideVertCount;
 		UINT numTris = mSideVertCount - 1;
 		numTris = 2 * numTris * numTris;
-		mNumIndices = 3 * numTris;
+		mNumIndices = 2 * numTris;
 	}
 
 
@@ -64,21 +64,18 @@ private:
 			vert.NORMAL = XMFLOAT3(0,1.0f,0);
 		}
 
-		for (UINT i = 0; i < mNumIndices/6; i++) {
-			UINT *ind = &mIndices[i*6];
+		for (UINT i = 0; i < mNumIndices/4; i++) {
+			UINT *ind = &mIndices[i*4];
 
 			UINT bl = i + i/(mSideVertCount-1);
 			UINT br = bl + 1;
 			UINT tl = bl + mSideVertCount;
 			UINT tr = tl + 1;
 
-			ind[0] = br;
-			ind[1] = bl;
-			ind[2] = tl;
-			
-			ind[3] = br;
-			ind[4] = tl;
-			ind[5] = tr;
+			ind[0] = bl;
+			ind[1] = br;
+			ind[2] = tr;
+			ind[3] = tl;
 		}
 	}
 };

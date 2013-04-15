@@ -21,20 +21,22 @@ VS_OUTPUT VS( VS_INPUT input)
 
 struct ConstantOutputType
 {
-	float edges[3] : SV_TessFactor;
-	float inside : SV_InsideTessFactor;
+	float edges[4] : SV_TessFactor;
+	float inside[2] : SV_InsideTessFactor;
 };
 
-ConstantOutputType ColorPatchConstantFunction(InputPatch<VS_OUTPUT,3> inputPatch, uint patchId : SV_PrimitiveID)
+ConstantOutputType HS_CONSTANT(InputPatch<VS_OUTPUT,4> inputPatch, uint patchId : SV_PrimitiveID)
 {    
 	ConstantOutputType output;
-	float tessAmount = 2;
+	float tessAmount = 4;
 	// Set the tessellation factors for the three edges of the triangle.
 	output.edges[0] = tessAmount;
 	output.edges[1] = tessAmount;
 	output.edges[2] = tessAmount;
+	output.edges[3] = tessAmount;
 	// Set the tessellation factor for tessallating inside the triangle.
-	output.inside = tessAmount;
+	output.inside[0] = tessAmount;
+	output.inside[1] = tessAmount;
 
 	return output;
 }
@@ -44,12 +46,12 @@ struct HS_OUTPUT
 	float3 Pos : POSITION;
 };
 
-[domain("tri")]
+[domain("quad")]
 [partitioning("integer")]
 [outputtopology("triangle_cw")]
-[outputcontrolpoints(3)]
-[patchconstantfunc("ColorPatchConstantFunction")]
-HS_OUTPUT HS(InputPatch<VS_OUTPUT,3> patch, uint pointId : SV_OutputControlPointID, uint patchId : SV_PrimitiveID)
+[outputcontrolpoints(4)]
+[patchconstantfunc("HS_CONSTANT")]
+HS_OUTPUT HS(InputPatch<VS_OUTPUT,4> patch, uint pointId : SV_OutputControlPointID, uint patchId : SV_PrimitiveID)
 {
 	HS_OUTPUT output;
 	output.Pos = patch[pointId].Pos;
@@ -68,12 +70,14 @@ cbuffer DSConstantBuffer : register( b0 )
 	matrix MVP;
 }
 
-[domain("tri")]
-DS_OUTPUT DS(ConstantOutputType input, float3 uvwCoord : SV_DomainLocation, const OutputPatch<HS_OUTPUT, 3> patch)
+[domain("quad")]
+DS_OUTPUT DS(ConstantOutputType input, float2 coord : SV_DomainLocation, const OutputPatch<HS_OUTPUT, 4> patch)
 {
 	DS_OUTPUT output;
 	
-	float3 vertPos = uvwCoord.x * patch[0].Pos + uvwCoord.y * patch[1].Pos + uvwCoord.z * patch[2].Pos;
+	float3 pos1 = lerp(patch[0].Pos,patch[1].Pos,coord.y);
+	float3 pos2 = lerp(patch[3].Pos,patch[2].Pos,coord.y);
+	float3 vertPos = lerp(pos1,pos2,coord.x);	
 	
 	output.Pos = mul(float4(vertPos,1.0f),MVP);
 
