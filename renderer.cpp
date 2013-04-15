@@ -13,6 +13,7 @@
 #include "MeshManager.h"
 #include "Shaders/FXAAShader.h"
 #include "Shaders/LightingShader.h"
+#include "Procedural/Generator.h"
 
 #include <sstream>
 
@@ -21,15 +22,15 @@ Renderer::Renderer(MessageLogger* mLogger) : mLogger(mLogger), mDrawableManager(
 	mCamera = new Camera();
 	mMeshManager = new MeshManager();
 	mMeshManager->addMesh(new DrawableMesh(L"CubeMesh",new CubeMeshLoader()));
-	mMeshManager->addMesh(new DrawableMesh(L"Plane2",new PlaneLoader(2)));
-	mMeshManager->addMesh(new DrawableMesh(L"Plane4",new PlaneLoader(4)));
-	mMeshManager->addMesh(new DrawableMesh(L"Plane8",new PlaneLoader(8)));
-	mMeshManager->addMesh(new DrawableMesh(L"Plane16",new PlaneLoader(16)));
-	mMeshManager->addMesh(new DrawableMesh(L"Plane32",new PlaneLoader(32)));
-	mMeshManager->addMesh(new DrawableMesh(L"Plane64",new PlaneLoader(64)));
-	mMeshManager->addMesh(new DrawableMesh(L"Plane128",new PlaneLoader(128)));
-	mMeshManager->addMesh(new DrawableMesh(L"Plane256",new PlaneLoader(256)));
-	mMeshManager->addMesh(new DrawableMesh(L"Plane512",new PlaneLoader(512)));
+	mMeshManager->addMesh(new DrawableMesh(L"Plane1",new PlaneLoader(2)));
+	mMeshManager->addMesh(new DrawableMesh(L"Plane2",new PlaneLoader(3)));
+	mMeshManager->addMesh(new DrawableMesh(L"Plane4",new PlaneLoader(5)));
+	mMeshManager->addMesh(new DrawableMesh(L"Plane8",new PlaneLoader(9)));
+	mMeshManager->addMesh(new DrawableMesh(L"Plane16",new PlaneLoader(17)));
+	mMeshManager->addMesh(new DrawableMesh(L"Plane32",new PlaneLoader(33)));
+	mMeshManager->addMesh(new DrawableMesh(L"Plane64",new PlaneLoader(65)));
+	mMeshManager->addMesh(new DrawableMesh(L"Plane128",new PlaneLoader(129)));
+	mMeshManager->addMesh(new DrawableMesh(L"Plane256",new PlaneLoader(257)));
 	mShaderManager = new ShaderManager(mLogger);
 	mShaderManager->addShader(new DefaultShader());
 	mShaderManager->addShader(new GBufferShader());
@@ -39,6 +40,8 @@ Renderer::Renderer(MessageLogger* mLogger) : mLogger(mLogger), mDrawableManager(
 	mFXAAShader = new FXAAShader();
 	mLightingShader = new LightingShader();
 	mLightingCompute = new LightingCompute();
+
+	mGenerator = new Generator();
 
 	mDSStateDefault = NULL;
 	mDSStateStencilCull = NULL;
@@ -57,6 +60,7 @@ Renderer::~Renderer() {
 	SAFE_DELETE(mFXAAShader);
 	SAFE_DELETE(mLightingShader);
 	SAFE_DELETE(mLightingCompute);
+	SAFE_DELETE(mGenerator);
 };
 
 void Renderer::OnD3D11DestroyDevice()
@@ -292,6 +296,8 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 	else {
 		pd3dImmediateContext->RSSetState(mRasterizerStateDefault);
 	}
+
+	mGenerator->Generate(1);
 
 	ID3D11RenderTargetView* backBuffer = DXUTGetD3D11RenderTargetView();
 	ID3D11DepthStencilView* dsv = mDSV.mDSV;

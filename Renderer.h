@@ -12,6 +12,7 @@ class MeshManager;
 class Camera;
 class FXAAShader;
 class LightingShader;
+class Generator;
 
 struct RendererSettings {
 	BOOL wireframe;
@@ -48,6 +49,7 @@ public:
 	FXAAShader* mFXAAShader;
 	LightingShader* mLightingShader;
 	LightingCompute* mLightingCompute;
+	Generator* mGenerator;
 
 	Texture2D mProxyTexture;
 	Texture2D mGBuffer[2];

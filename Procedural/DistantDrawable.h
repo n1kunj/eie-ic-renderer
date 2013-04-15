@@ -7,10 +7,11 @@
 
 class ShaderManager;
 class MeshManager;
+class Generator;
 
 class DistantDrawable : public Drawable {
 public:
-	DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager, MeshManager* pMeshManager );
+	DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager, MeshManager* pMeshManager, Generator* pGenerator);
 	void Draw(ID3D11DeviceContext* pd3dContext);
 	virtual ~DistantDrawable();
 private:

@@ -9,20 +9,29 @@ public:
 	ID3D11Texture2D* mTexture;
 	ID3D11ShaderResourceView* mSRV;
 	ID3D11RenderTargetView* mRTV;
+	ID3D11UnorderedAccessView* mUAV;
 
-	Texture2D() : mTexture(NULL), mRTV(NULL), mSRV(NULL) {}
+	Texture2D() : mTexture(NULL), mRTV(NULL), mSRV(NULL), mUAV(NULL) {}
 
 	void CreateTexture(ID3D11Device* pd3dDevice) {
 		OnD3D11DestroyDevice();
 		pd3dDevice->CreateTexture2D(&mDesc,0,&mTexture);
-		pd3dDevice->CreateRenderTargetView(mTexture, 0, &mRTV);
-		pd3dDevice->CreateShaderResourceView(mTexture, 0, &mSRV);
+		if (mDesc.BindFlags & D3D11_BIND_RENDER_TARGET) {
+			pd3dDevice->CreateRenderTargetView(mTexture, 0, &mRTV);
+		}
+		if (mDesc.BindFlags & D3D11_BIND_SHADER_RESOURCE) {
+			pd3dDevice->CreateShaderResourceView(mTexture, 0, &mSRV);
+		}
+		if (mDesc.BindFlags & D3D11_BIND_UNORDERED_ACCESS) {
+			pd3dDevice->CreateUnorderedAccessView(mTexture, 0, &mUAV);
+		}
 	}
 
 	void OnD3D11DestroyDevice() {
 		SAFE_RELEASE(mTexture);
 		SAFE_RELEASE(mSRV);
 		SAFE_RELEASE(mRTV);
+		SAFE_RELEASE(mUAV);
 	}
 
 	~Texture2D() {

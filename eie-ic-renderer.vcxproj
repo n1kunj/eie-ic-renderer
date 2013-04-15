@@ -485,6 +485,7 @@
     <ClInclude Include="MessageProcessor.h" />
     <ClInclude Include="Meshes\CubeMeshLoader.h" />
     <ClInclude Include="Procedural\DistantDrawable.h" />
+    <ClInclude Include="Procedural\Generator.h" />
     <ClInclude Include="ShaderManager.h" />
     <ClInclude Include="Shaders\DefaultShader.h" />
     <ClInclude Include="Shaders\DistantGBufferShader.h" />

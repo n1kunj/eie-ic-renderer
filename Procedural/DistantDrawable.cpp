@@ -3,13 +3,14 @@
 #include "../ShaderManager.h"
 #include "../Camera.h"
 #include "../MeshManager.h"
+#include "Generator.h"
 
 #define TILE_DIMENSION_LENGTH 21
 #define NUM_TILES TILE_DIMENSION_LENGTH*TILE_DIMENSION_LENGTH
 #define TILE_SIZE 512.0
 #define MESH_SCALE TILE_SIZE
 
-DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager, MeshManager* pMeshManager ) : Drawable(pCamera)
+DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager, MeshManager* pMeshManager, Generator* pGenerator ) : Drawable(pCamera)
 {
 	mShader = pShaderManager->getDrawableShader("DistantGBufferShader");
 	mDrawables.reserve(NUM_TILES);
@@ -27,6 +28,9 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 		mDrawables.push_back(BasicDrawable(mesh,mShader,pCamera));
 		mDrawables[i].mState.setPosition(posx + TILE_SIZE * tilex, posy, posz + TILE_SIZE * tilez);
 		mDrawables[i].mState.mScale = DirectX::XMFLOAT3(MESH_SCALE,1.0f,MESH_SCALE);
+		mDrawables[i].mState.mDistantTextures = std::shared_ptr<DistantTextures>(new DistantTextures());
+
+		pGenerator->InitialiseDistantTile(mDrawables[i].mState.mDistantTextures);
 
 		tilex++;
 		if (tilex > TILE_DIMENSION_LENGTH/2) {

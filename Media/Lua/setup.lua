@@ -6,6 +6,7 @@ MESHMAN = 0
 MESH = 0
 DRAWMAN = 0
 SET = 0
+GENERATOR = 0
 -- Set up console printer
 function setRMP(pRMP)
 RMP = pRMP
@@ -37,6 +38,10 @@ end
 
 function setRendererSettings(pRSet)
 SET = pRSet
+end
+
+function setGenerator(pGen)
+GENERATOR = pGen
 end
 
 function reset()

@@ -9,7 +9,7 @@ shader = SHADERMAN:getDrawableShader("GBufferShader")
 --shader = SHADERMAN:getDrawableShader("DefaultShader")
 mesh = MESHMAN:getDrawableMesh("CubeMesh")
 
-distDr = DistantDrawable(CAMERA,SHADERMAN,MESHMAN)
+distDr = DistantDrawable(CAMERA,SHADERMAN,MESHMAN,GENERATOR)
 DRAWMAN:addDrawable(distDr)
 
 lightSrc = BasicDrawable(mesh,shader,CAMERA)

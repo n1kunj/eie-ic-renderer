@@ -162,6 +162,9 @@
     <ClInclude Include="Shaders\DistantGBufferShader.h">
       <Filter>Shaders</Filter>
     </ClInclude>
+    <ClInclude Include="Procedural\Generator.h">
+      <Filter>Procedural</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugText.cpp" />

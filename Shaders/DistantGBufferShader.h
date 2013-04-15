@@ -8,11 +8,16 @@
 #include "../DrawableState.h"
 #include "../Camera.h"
 #include "../Utils/ShaderTools.h"
+#include "../Procedural/Generator.h"
 
 __declspec(align(16)) struct DistantGBufferVSCB
 {
+	DirectX::XMMATRIX Model;
+	DirectX::XMMATRIX VP;
 	DirectX::XMMATRIX MV;
 	DirectX::XMMATRIX MVP;
+	DirectX::XMINT3 coords;
+	FLOAT padding;
 };
 
 __declspec(align(16)) struct DistantGBufferPSCB
@@ -138,15 +143,19 @@ private:
 		D3D11_MAPPED_SUBRESOURCE MappedResource;
 		pd3dContext->Map(mDSConstantBuffer,0,D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
 		DistantGBufferVSCB* vscb = (DistantGBufferVSCB*)MappedResource.pData;
+		vscb->Model = XMMatrixTranspose(pState->mModelMatrix);
+		vscb->VP = XMMatrixTranspose(pCamera->mViewProjectionMatrix);
 		vscb->MV = XMMatrixMultiplyTranspose(pState->mModelMatrix,pCamera->mViewMatrix);
 		vscb->MVP = XMMatrixMultiplyTranspose(pState->mModelMatrix,pCamera->mViewProjectionMatrix);
+		vscb->coords = pCamera->mCoords;
 		pd3dContext->Unmap(mDSConstantBuffer,0);
 
 		pd3dContext->DSSetConstantBuffers( 0, 1, &mDSConstantBuffer );
 
 		pd3dContext->Map(mPSConstantBuffer,0,D3D11_MAP_WRITE_DISCARD,0,&MappedResource);
 		DistantGBufferPSCB* pscb = (DistantGBufferPSCB*)MappedResource.pData;
-		pscb->Albedo = XMFLOAT3(pState->mDiffuseColour);
+		//pscb->Albedo = pState->mDiffuseColour;
+		pscb->Albedo = pState->mDistantTextures->mColour;
 		pscb->SpecPower = pState->mSpecularExponent;
 		pscb->SpecAmount = pState->mSpecularAmount;
 		pd3dContext->Unmap(mPSConstantBuffer,0);

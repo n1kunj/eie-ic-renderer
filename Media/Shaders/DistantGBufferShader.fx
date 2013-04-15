@@ -28,7 +28,7 @@ struct ConstantOutputType
 ConstantOutputType HS_CONSTANT(InputPatch<VS_OUTPUT,4> inputPatch, uint patchId : SV_PrimitiveID)
 {    
 	ConstantOutputType output;
-	float tessAmount = 4;
+	float tessAmount = 2;
 	// Set the tessellation factors for the three edges of the triangle.
 	output.edges[0] = tessAmount;
 	output.edges[1] = tessAmount;
@@ -66,8 +66,11 @@ struct DS_OUTPUT
 
 cbuffer DSConstantBuffer : register( b0 )
 {
+	matrix Model;
+	matrix VP;
 	matrix MV;
 	matrix MVP;
+	int3 gCoords;
 }
 
 [domain("quad")]
@@ -77,11 +80,30 @@ DS_OUTPUT DS(ConstantOutputType input, float2 coord : SV_DomainLocation, const O
 	
 	float3 pos1 = lerp(patch[0].Pos,patch[1].Pos,coord.y);
 	float3 pos2 = lerp(patch[3].Pos,patch[2].Pos,coord.y);
-	float3 vertPos = lerp(pos1,pos2,coord.x);	
+	float3 vertPos = lerp(pos1,pos2,coord.x);
 	
-	output.Pos = mul(float4(vertPos,1.0f),MVP);
+	vertPos = mul(float4(vertPos,1.0f),Model);
+	uint repeatval = 100;
+	float3 absCoords = vertPos + gCoords%1000;
+	
+		float scale = 25;
+	
+	//vertPos.y += 20 * (sin(absCoords.z/scale));
+	
+	output.Pos = mul(float4(vertPos,1.0f),VP);
 
-	output.Norm = normalize(mul(float3(0.0f,1.0f,0.0f),MV));
+	//output.Pos = mul(float4(vertPos,1.0f),MVP);
+
+
+	
+	float left = 100 * sin((absCoords.z-0.01f)/scale);
+	float right = 100 * sin((absCoords.z+0.01f)/scale);
+	float delta = left - right;
+	
+	float3 normal = float3(0,1,0);
+	//normal = (float3(delta,1-delta,0));
+
+	output.Norm = normalize(mul(normal,MV));
 	
 	return output;
 }

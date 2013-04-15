@@ -11,6 +11,7 @@
 #include "DirectXMath\DirectXMath.h"
 #include <boost/shared_ptr.hpp>
 #include "Procedural/DistantDrawable.h"
+#include "Procedural/Generator.h"
 
 extern "C" {
 #include "lua.h"
@@ -72,7 +73,7 @@ RendererMessageProcessor::RendererMessageProcessor( MessageLogger* logger, Rende
 		.def_readwrite("mState", &BasicDrawable::mState),
 
 		class_<DistantDrawable,bases<Drawable>,boost::shared_ptr<Drawable> > ("DistantDrawable")
-		.def(constructor<Camera*,ShaderManager*,MeshManager*>()),
+		.def(constructor<Camera*,ShaderManager*,MeshManager*,Generator*>()),
 
 		class_<DrawableManager>("DrawableManager")
 		.def("addDrawable",&DrawableManager::addDrawable)
@@ -82,7 +83,9 @@ RendererMessageProcessor::RendererMessageProcessor( MessageLogger* logger, Rende
 		.def("getDrawableShader",&ShaderManager::getDrawableShader),
 
 		class_<MeshManager>("MeshManager")
-		.def("getDrawableMesh",&MeshManager::getDrawableMesh)
+		.def("getDrawableMesh",&MeshManager::getDrawableMesh),
+
+		class_<Generator>("Generator")
 	];
 	runScript("setup.lua");
 
@@ -92,6 +95,7 @@ RendererMessageProcessor::RendererMessageProcessor( MessageLogger* logger, Rende
 	call_function<void>(mLuaState,"setMeshMan",boost::ref(mRenderer->mMeshManager));
 	call_function<void>(mLuaState,"setDrawMan",boost::ref(mRenderer->mDrawableManager));
 	call_function<void>(mLuaState,"setRendererSettings",boost::ref(mRenderer->mSettings));
+	call_function<void>(mLuaState,"setGenerator",boost::ref(mRenderer->mGenerator));
 
 	runScript("cube.lua");
 

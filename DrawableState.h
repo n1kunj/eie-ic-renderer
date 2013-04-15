@@ -2,8 +2,10 @@
 #ifndef DRAWABLE_STATE_H
 #define DRAWABLE_STATE_H
 #include "DirectXMath\DirectXMath.h"
+#include <memory>
 
 class Camera;
+class DistantTextures;
 
 class DrawableState {
 public:
@@ -18,6 +20,7 @@ public:
 	DirectX::XMINT3 mCamOffset;
 	FLOAT mSpecularExponent;
 	FLOAT mSpecularAmount;
+	std::shared_ptr<DistantTextures> mDistantTextures;
 
 	void updateMatrices(Camera* pCamera);
 	void setPosition(DOUBLE x, DOUBLE y, DOUBLE z);
