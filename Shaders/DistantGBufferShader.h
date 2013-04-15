@@ -11,9 +11,6 @@
 
 __declspec(align(16)) struct DistantGBufferVSCB
 {
-	DirectX::XMMATRIX Model;
-	DirectX::XMMATRIX View;
-	DirectX::XMMATRIX Projection;
 	DirectX::XMMATRIX MV;
 	DirectX::XMMATRIX MVP;
 };
@@ -126,22 +123,26 @@ public:
 			return;
 		}
 
+		setupShader(pd3dContext,pMesh,pState,pCamera);
+
+		pd3dContext->DrawIndexed( pMesh->mNumIndices, 0, 0 );
+
+		cleanupShader(pd3dContext);
+	}
+
+private:
+	void setupShader(ID3D11DeviceContext* pd3dContext, const DrawableMesh* pMesh, const DrawableState* pState, const Camera* pCamera) {
 		using namespace DirectX;
 
 		// Update constant buffer
 		D3D11_MAPPED_SUBRESOURCE MappedResource;
 		pd3dContext->Map(mDSConstantBuffer,0,D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
 		DistantGBufferVSCB* vscb = (DistantGBufferVSCB*)MappedResource.pData;
-		vscb->Model = XMMatrixTranspose(pState->mModelMatrix);
-		vscb->View = XMMatrixTranspose(pCamera->mViewMatrix);
-		vscb->Projection = XMMatrixTranspose(pCamera->mProjectionMatrix);
 		vscb->MV = XMMatrixMultiplyTranspose(pState->mModelMatrix,pCamera->mViewMatrix);
 		vscb->MVP = XMMatrixMultiplyTranspose(pState->mModelMatrix,pCamera->mViewProjectionMatrix);
 		pd3dContext->Unmap(mDSConstantBuffer,0);
 
 		pd3dContext->DSSetConstantBuffers( 0, 1, &mDSConstantBuffer );
-
-		pd3dContext->VSSetConstantBuffers( 0, 1, &mDSConstantBuffer );
 
 		pd3dContext->Map(mPSConstantBuffer,0,D3D11_MAP_WRITE_DISCARD,0,&MappedResource);
 		DistantGBufferPSCB* pscb = (DistantGBufferPSCB*)MappedResource.pData;
@@ -167,9 +168,9 @@ public:
 		pd3dContext->HSSetShader( mHullShader, NULL, 0 );
 		pd3dContext->DSSetShader( mDomainShader, NULL, 0 );
 		pd3dContext->PSSetShader( mPixelShader, NULL, 0 );
+	}
 
-		pd3dContext->DrawIndexed( pMesh->mNumIndices, 0, 0 );
-
+	void cleanupShader(ID3D11DeviceContext* pd3dContext) {
 		pd3dContext->HSSetShader(NULL,NULL,0);
 		pd3dContext->DSSetShader(NULL,NULL,0);
 	}

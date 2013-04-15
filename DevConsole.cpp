@@ -15,10 +15,13 @@ DevConsole::DevConsole(DebugText* dt): mDebugText(dt), mCurrentInputCursor(0),
 mShowStartLine(0) {
 	assert(HISTORYLENGTH > LINES_TO_DISPLAY);
 	mDebugTextArray = new DebugTextArray(HISTORYLENGTH);
+	currentInput = new WCHAR[CONSOLE_MAX_CHARACTERS];
+	SecureZeroMemory(currentInput, CONSOLE_MAX_CHARACTERS*sizeof(WCHAR));
 }
 
 DevConsole::~DevConsole() {
 	delete mDebugTextArray;
+	delete currentInput;
 }
 
 void DevConsole::OnD3D11FrameRender()
@@ -35,7 +38,8 @@ void DevConsole::OnD3D11FrameRender()
 		WCHAR* inputCopy = new WCHAR[linelen+2];
 		wcscpy_s(inputCopy,linelen+1,currentInput);
 
-		inputCopy[mCurrentInputCursor] = L'|';
+		inputCopy[linelen] = L'|';
+		inputCopy[linelen+1] = 0;
 		mDebugText->RenderSingleLine(inputCopy, 0, DEBUG_TEXT_LINE_HEIGHT * LINES_TO_DISPLAY);
 		delete[] inputCopy;
 	}

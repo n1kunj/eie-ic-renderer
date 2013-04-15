@@ -7,7 +7,7 @@
 void BasicDrawable::Draw(ID3D11DeviceContext* pd3dContext)
 {
 	//TODO: bounds of a given object
-	if (mCamera->testFrustum(mState.mPosition,mState.mCoords,2 * mState.mScale.x) == TRUE) {
+	if (mCamera->testFrustum(mState.mPosition,mState.mCoords, mState.getBoundingRadius()) == TRUE) {
 		mState.updateMatrices(mCamera);
 		mShader->DrawMesh(pd3dContext,mMesh,&mState,mCamera);
 	}
@@ -33,7 +33,21 @@ BasicDrawable::~BasicDrawable()
 
 void BasicDrawable::DrawInstanced( ID3D11DeviceContext* pd3dContext, BasicDrawable* pDrawableList, UINT pCount )
 {
+	Camera* camera = pDrawableList[0].mCamera;
+	DrawableMesh* mesh = pDrawableList[0].mMesh;
+	DrawableShader* shader = pDrawableList[0].mShader;
+
+	UINT count = 0;
+	DrawableState** drawers = new DrawableState*[pCount];
+
 	for (UINT i = 0; i < pCount; i++) {
-		pDrawableList[i].Draw(pd3dContext);
+		DrawableState& state = pDrawableList[i].mState;
+		if (camera->testFrustum(state.mPosition, state.mCoords, state.getBoundingRadius())) {
+			state.updateMatrices(camera);
+			drawers[count] = &state;
+			count++;
+		}
 	}
+
+	shader->DrawInstanced(pd3dContext,mesh,drawers,camera,count);
 }

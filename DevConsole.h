@@ -33,7 +33,7 @@ private:
 	INT mCurrentInputCursor;
 	INT mShowStartLine;
 	void processConsoleInput(WCHAR* input);
-	WCHAR currentInput[CONSOLE_MAX_CHARACTERS];
+	WCHAR* currentInput;
 	FLOAT mInputColourR;
 	FLOAT mInputColourG;
 	FLOAT mInputColourB;

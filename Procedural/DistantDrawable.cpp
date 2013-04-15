@@ -14,7 +14,7 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 	mShader = pShaderManager->getDrawableShader("DistantGBufferShader");
 	mDrawables.reserve(NUM_TILES);
 
-	DrawableMesh* mesh = pMeshManager->getDrawableMesh("Plane2");
+	DrawableMesh* mesh = pMeshManager->getDrawableMesh("Plane16");
 
 	DOUBLE posx = mCamera->getEyeX();
 	DOUBLE posy = 0;
@@ -42,8 +42,7 @@ DistantDrawable::~DistantDrawable()
 
 void DistantDrawable::Draw( ID3D11DeviceContext* pd3dContext )
 {
-	BasicDrawable::DrawInstanced(pd3dContext,&mDrawables[0],mDrawables.size());
-	//for (int i = 0; i < mDrawables.size(); i++) {
-	//	mDrawables[i].Draw(pd3dContext);
-	//}
+	for (int i = 0; i < mDrawables.size(); i++) {
+		mDrawables[i].Draw(pd3dContext);
+	}
 }

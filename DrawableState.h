@@ -21,6 +21,10 @@ public:
 
 	void updateMatrices(Camera* pCamera);
 	void setPosition(DOUBLE x, DOUBLE y, DOUBLE z);
+	FLOAT getBoundingRadius() {
+		//TODO: better bounds calculations
+		return 2 * mScale.x;
+	}
 
 	DrawableState();
 	~DrawableState();
