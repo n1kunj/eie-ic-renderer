@@ -70,6 +70,7 @@ void Renderer::OnD3D11DestroyDevice()
 	mFXAAShader->OnD3D11DestroyDevice();
 	mLightingShader->OnD3D11DestroyDevice();
 	mLightingCompute->OnD3D11DestroyDevice();
+	mGenerator->OnD3D11DestroyDevice();
 
 	mProxyTexture.OnD3D11DestroyDevice();
 	mGBuffer[0].OnD3D11DestroyDevice();
@@ -131,6 +132,8 @@ HRESULT Renderer::OnD3D11CreateDevice( ID3D11Device* pd3dDevice, const DXGI_SURF
 	mFXAAShader->OnD3D11CreateDevice(pd3dDevice);
 	mLightingShader->OnD3D11CreateDevice(pd3dDevice);
 	mLightingCompute->OnD3D11CreateDevice(pd3dDevice);
+
+	mGenerator->OnD3D11CreateDevice(pd3dDevice);
 	{
 		//Default depth state
 		CD3D11_DEFAULT dsDefault;
@@ -286,7 +289,8 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 		mShaderManager->OnD3D11CreateDevice(pd3dDevice);
 		mLightingShader->OnD3D11CreateDevice(pd3dDevice);
 		mLightingCompute->OnD3D11CreateDevice(pd3dDevice);
-		mFXAAShader->OnD3D11CreateDevice(pd3dDevice);
+		mGenerator->OnD3D11CreateDevice(pd3dDevice);
+		//mFXAAShader->OnD3D11CreateDevice(pd3dDevice);
 		mRecompile = FALSE;
 	}
 
@@ -297,7 +301,7 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 		pd3dImmediateContext->RSSetState(mRasterizerStateDefault);
 	}
 
-	mGenerator->Generate(1);
+	mGenerator->Generate(pd3dDevice, pd3dImmediateContext, 1);
 
 	ID3D11RenderTargetView* backBuffer = DXUTGetD3D11RenderTargetView();
 	ID3D11DepthStencilView* dsv = mDSV.mDSV;

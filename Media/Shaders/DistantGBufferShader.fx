@@ -62,6 +62,7 @@ struct DS_OUTPUT
 {
 	float4 Pos : SV_POSITION;
 	float3 Norm : NORMAL;
+	float2 UV : TEXCOORDS;
 };
 
 cbuffer DSConstantBuffer : register( b0 )
@@ -73,6 +74,14 @@ cbuffer DSConstantBuffer : register( b0 )
 	int3 gCoords;
 }
 
+Texture2D<float4> heightMapTex : register(t0);
+SamplerState defaultSampler
+{
+	Filter = MIN_MAG_MIP_LINEAR;
+    AddressU = Wrap;
+    AddressV = Wrap;
+};
+
 [domain("quad")]
 DS_OUTPUT DS(ConstantOutputType input, float2 coord : SV_DomainLocation, const OutputPatch<HS_OUTPUT, 4> patch)
 {
@@ -82,28 +91,25 @@ DS_OUTPUT DS(ConstantOutputType input, float2 coord : SV_DomainLocation, const O
 	float3 pos2 = lerp(patch[3].Pos,patch[2].Pos,coord.y);
 	float3 vertPos = lerp(pos1,pos2,coord.x);
 	
+	float2 uvs = vertPos.xz + float2(0.5f,0.5f);
+	//float height = heightMapTex.Gather(defaultSampler,uvs);
+	float height = 1000 * heightMapTex.Load(uint3(0,0,0));
+	//float height = 0;
+	
 	vertPos = mul(float4(vertPos,1.0f),Model);
 	uint repeatval = 100;
-	float3 absCoords = vertPos + gCoords%1000;
 	
-		float scale = 25;
-	
-	//vertPos.y += 20 * (sin(absCoords.z/scale));
+	vertPos.y += height;
 	
 	output.Pos = mul(float4(vertPos,1.0f),VP);
 
 	//output.Pos = mul(float4(vertPos,1.0f),MVP);
-
-
-	
-	float left = 100 * sin((absCoords.z-0.01f)/scale);
-	float right = 100 * sin((absCoords.z+0.01f)/scale);
-	float delta = left - right;
 	
 	float3 normal = float3(0,1,0);
-	//normal = (float3(delta,1-delta,0));
 
 	output.Norm = normalize(mul(normal,MV));
+	
+	output.UV = uvs;
 	
 	return output;
 }
@@ -119,7 +125,9 @@ GBuffer PS( DS_OUTPUT input )
 {
 	GBuffer output;
 	output.normal_specular = float4(EncodeSphereMap(input.Norm),SpecAmount,SpecPower);
-	output.albedo = float4(Albedo,1.0f);
+	output.albedo = heightMapTex.Load(uint3(0,0,0));
+	output.albedo = heightMapTex.Sample(defaultSampler,float2(0.5f,0.5f));
+	//output.albedo = float4(Albedo,1.0f);
 	
 	return output;
 }

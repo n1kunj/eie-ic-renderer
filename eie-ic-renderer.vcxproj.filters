@@ -193,6 +193,9 @@
     <ClCompile Include="Procedural\DistantDrawable.cpp">
       <Filter>Procedural</Filter>
     </ClCompile>
+    <ClCompile Include="Procedural\Generator.cpp">
+      <Filter>Procedural</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="eie-ic-renderer.rc">

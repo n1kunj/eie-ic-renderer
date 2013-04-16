@@ -466,6 +466,7 @@
     <ClCompile Include="MessageProcessor.cpp" />
     <ClCompile Include="Meshes\CubeMeshLoader.cpp" />
     <ClCompile Include="Procedural\DistantDrawable.cpp" />
+    <ClCompile Include="Procedural\Generator.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Shaders\DefaultShader.cpp" />
     <ClCompile Include="Shaders\LightingShader.h" />

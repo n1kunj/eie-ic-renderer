@@ -172,6 +172,7 @@ private:
 		pd3dContext->IASetIndexBuffer( pMesh->mIndexBuffer, pMesh->mIndexBufferFormat, 0 );
 		pd3dContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST );
 
+		pd3dContext->PSSetShaderResources(0,1,&pState->mDistantTextures->mHeightMap.mSRV);
 		//Set shaders
 		pd3dContext->VSSetShader( mVertexShader, NULL, 0 );
 		pd3dContext->HSSetShader( mHullShader, NULL, 0 );
@@ -182,6 +183,8 @@ private:
 	void cleanupShader(ID3D11DeviceContext* pd3dContext) {
 		pd3dContext->HSSetShader(NULL,NULL,0);
 		pd3dContext->DSSetShader(NULL,NULL,0);
+		ID3D11ShaderResourceView* srvs[1] = {NULL};
+		pd3dContext->PSSetShaderResources(0,1,srvs);
 	}
 };
 

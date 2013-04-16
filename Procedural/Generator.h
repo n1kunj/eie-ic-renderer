@@ -4,14 +4,21 @@
 #define GENERATOR_H
 #include <deque>
 #include <memory>
+#include "../Texture2D.h"
+#include "../DirectXMath/DirectXMath.h"
 
 class DistantTextures {
 public:
+	DOUBLE mPosX;
+	DOUBLE mPosY;
+	DOUBLE mPosZ;
+	DOUBLE mSize;
 	DirectX::XMFLOAT3 mColour;
 
-	DistantTextures() {
-		mColour = DirectX::XMFLOAT3(1.0f,0.0f,0.0f);
-	}
+	Texture2D mHeightMap;
+
+	DistantTextures(DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize);
+	~DistantTextures() {}
 };
 
 typedef std::shared_ptr<DistantTextures> DTPTR;
@@ -19,32 +26,28 @@ typedef std::shared_ptr<DistantTextures> DTPTR;
 class Generator {
 private:
 	std::deque<DTPTR> mTextureQueue;
+	void Generator::ComputeTextures(ID3D11DeviceContext* pd3dContext, DistantTextures &pDT );
+	boolean mCompiled;
+	ID3D11ComputeShader* mCS;
+	ID3D11Buffer* mCSCB;
 public:
-
-	Generator() {
-
+	HRESULT OnD3D11CreateDevice( ID3D11Device* pd3dDevice );
+	void OnD3D11DestroyDevice() {
+		SAFE_RELEASE(mCS);
+		SAFE_RELEASE(mCSCB);
+		mCompiled = FALSE;
 	}
+
+	Generator() : mCompiled(FALSE),mCS(NULL),mCSCB(NULL) {}
 	~Generator() {
-
+		OnD3D11DestroyDevice();
 	}
 
-	void InitialiseDistantTile(DTPTR pDistantTexture) {
+	void InitialiseDistantTile(DTPTR const& pDistantTexture) {
 		mTextureQueue.push_back(pDistantTexture);
 	}
-	void Generate(UINT pMaxRuntimeMillis) {
-		if (mTextureQueue.size() == 0) {
-			return;
-		}
-		DTPTR first = mTextureQueue.front();
-		mTextureQueue.pop_front();
 
-		if (first.unique()) {
-			first.reset();
-		}
-		else {
-			first->mColour = DirectX::XMFLOAT3(0.0f,1.0f,0.0f);
-		}
-	}
+	void Generate(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, UINT pMaxRuntimeMillis);
 };
 
 #endif
