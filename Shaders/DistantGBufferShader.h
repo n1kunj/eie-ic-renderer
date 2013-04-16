@@ -38,6 +38,7 @@ private:
 	ID3D11PixelShader* mPixelShader;
 	ID3D11Buffer* mDSConstantBuffer;
 	ID3D11Buffer* mPSConstantBuffer;
+	ID3D11SamplerState* mPSSampler;
 
 public:
 	void OnD3D11DestroyDevice() {
@@ -48,11 +49,12 @@ public:
 		SAFE_RELEASE(mDomainShader);
 		SAFE_RELEASE(mDSConstantBuffer);
 		SAFE_RELEASE(mPSConstantBuffer);
+		SAFE_RELEASE(mPSSampler);
 		mCompiled = FALSE;
 	}
 
 	DistantGBufferShader() : DrawableShader(L"DistantGBufferShader"),mCompiled(FALSE),mVertexLayout(NULL),
-		mVertexShader(NULL),mPixelShader(NULL),mDSConstantBuffer(NULL),mPSConstantBuffer(NULL), mHullShader(NULL), mDomainShader(NULL) {}
+		mVertexShader(NULL),mPixelShader(NULL),mDSConstantBuffer(NULL),mPSConstantBuffer(NULL), mHullShader(NULL), mDomainShader(NULL), mPSSampler(NULL) {}
 
 	~DistantGBufferShader()
 	{
@@ -103,16 +105,24 @@ public:
 		}
 
 		// Create the constant buffer
-		D3D11_BUFFER_DESC bd;
-		ZeroMemory( &bd, sizeof(bd) );
-		bd.Usage = D3D11_USAGE_DYNAMIC;
-		bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-		bd.ByteWidth = sizeof(DistantGBufferVSCB);
-		V_RETURN(pd3dDevice->CreateBuffer( &bd, NULL, &mDSConstantBuffer ));
+		{
+			D3D11_BUFFER_DESC bd;
+			ZeroMemory( &bd, sizeof(bd) );
+			bd.Usage = D3D11_USAGE_DYNAMIC;
+			bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+			bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+			bd.ByteWidth = sizeof(DistantGBufferVSCB);
+			V_RETURN(pd3dDevice->CreateBuffer( &bd, NULL, &mDSConstantBuffer ));
 
-		bd.ByteWidth = sizeof(DistantGBufferPSCB);
-		V_RETURN(pd3dDevice->CreateBuffer( &bd, NULL, &mPSConstantBuffer ));
+			bd.ByteWidth = sizeof(DistantGBufferPSCB);
+			V_RETURN(pd3dDevice->CreateBuffer( &bd, NULL, &mPSConstantBuffer ));
+		}
+
+		//Create the sampler state
+		{
+			CD3D11_SAMPLER_DESC desc = CD3D11_SAMPLER_DESC(CD3D11_DEFAULT());
+			pd3dDevice->CreateSamplerState(&desc,&mPSSampler);
+		}
 
 		mCompiled = TRUE;
 		return S_OK;
@@ -151,6 +161,8 @@ private:
 		pd3dContext->Unmap(mDSConstantBuffer,0);
 
 		pd3dContext->DSSetConstantBuffers( 0, 1, &mDSConstantBuffer );
+		pd3dContext->PSSetConstantBuffers( 0, 1, &mDSConstantBuffer );
+		pd3dContext->PSSetSamplers(0,1,&mPSSampler);
 
 		pd3dContext->Map(mPSConstantBuffer,0,D3D11_MAP_WRITE_DISCARD,0,&MappedResource);
 		DistantGBufferPSCB* pscb = (DistantGBufferPSCB*)MappedResource.pData;
@@ -160,7 +172,7 @@ private:
 		pscb->SpecAmount = pState->mSpecularAmount;
 		pd3dContext->Unmap(mPSConstantBuffer,0);
 
-		pd3dContext->PSSetConstantBuffers( 0, 1, &mPSConstantBuffer );
+		pd3dContext->PSSetConstantBuffers( 1, 1, &mPSConstantBuffer );
 
 		//Set vertex layout and bind buffers
 		pd3dContext->IASetInputLayout( mVertexLayout );
@@ -172,7 +184,7 @@ private:
 		pd3dContext->IASetIndexBuffer( pMesh->mIndexBuffer, pMesh->mIndexBufferFormat, 0 );
 		pd3dContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST );
 
-		pd3dContext->PSSetShaderResources(0,1,&pState->mDistantTextures->mHeightMap.mSRV);
+		pd3dContext->PSSetShaderResources(0,1,&pState->mDistantTextures->mAlbedoMap.mSRV);
 		//Set shaders
 		pd3dContext->VSSetShader( mVertexShader, NULL, 0 );
 		pd3dContext->HSSetShader( mHullShader, NULL, 0 );

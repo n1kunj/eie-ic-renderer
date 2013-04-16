@@ -15,7 +15,7 @@ public:
 	DOUBLE mSize;
 	DirectX::XMFLOAT3 mColour;
 
-	Texture2D mHeightMap;
+	Texture2D mAlbedoMap;
 
 	DistantTextures(DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize);
 	~DistantTextures() {}

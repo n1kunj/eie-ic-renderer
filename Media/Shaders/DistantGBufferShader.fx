@@ -74,7 +74,7 @@ cbuffer DSConstantBuffer : register( b0 )
 	int3 gCoords;
 }
 
-Texture2D<float4> heightMapTex : register(t0);
+Texture2D<float4> albedoTex : register(t0);
 SamplerState defaultSampler
 {
 	Filter = MIN_MAG_MIP_LINEAR;
@@ -92,14 +92,14 @@ DS_OUTPUT DS(ConstantOutputType input, float2 coord : SV_DomainLocation, const O
 	float3 vertPos = lerp(pos1,pos2,coord.x);
 	
 	float2 uvs = vertPos.xz + float2(0.5f,0.5f);
-	//float height = heightMapTex.Gather(defaultSampler,uvs);
-	float height = 1000 * heightMapTex.Load(uint3(0,0,0));
+	//float height = albedoTex.Gather(defaultSampler,uvs);
+	//float height = 1000 * albedoTex.Load(uint3(0,0,0));
 	//float height = 0;
 	
 	vertPos = mul(float4(vertPos,1.0f),Model);
 	uint repeatval = 100;
 	
-	vertPos.y += height;
+	//vertPos.y += height;
 	
 	output.Pos = mul(float4(vertPos,1.0f),VP);
 
@@ -107,14 +107,15 @@ DS_OUTPUT DS(ConstantOutputType input, float2 coord : SV_DomainLocation, const O
 	
 	float3 normal = float3(0,1,0);
 
-	output.Norm = normalize(mul(normal,MV));
+	//output.Norm = normalize(mul(normal,MV));
+	output.Norm = normal;
 	
 	output.UV = uvs;
 	
 	return output;
 }
 
-cbuffer PSConstantBuffer : register( b0 )
+cbuffer PSConstantBuffer : register( b1 )
 {
 	float3 Albedo;
 	float SpecPower;
@@ -124,10 +125,17 @@ cbuffer PSConstantBuffer : register( b0 )
 GBuffer PS( DS_OUTPUT input )
 {
 	GBuffer output;
-	output.normal_specular = float4(EncodeSphereMap(input.Norm),SpecAmount,SpecPower);
-	output.albedo = heightMapTex.Load(uint3(0,0,0));
-	output.albedo = heightMapTex.Sample(defaultSampler,float2(0.5f,0.5f));
+	float4 texmap = albedoTex.Sample(defaultSampler,float2(input.UV));
+	output.albedo = texmap;
 	//output.albedo = float4(Albedo,1.0f);
+	float3 normal = input.Norm;
+	//normal = float3(0,1,0);
+	//normal = texmap;
+
+	normal = normalize(mul(normal,MV));
+	
+	output.normal_specular = float4(EncodeSphereMap(normal),SpecAmount,SpecPower);
+
 	
 	return output;
 }
