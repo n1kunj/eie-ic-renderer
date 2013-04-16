@@ -38,7 +38,7 @@ private:
 	ID3D11PixelShader* mPixelShader;
 	ID3D11Buffer* mDSConstantBuffer;
 	ID3D11Buffer* mPSConstantBuffer;
-	ID3D11SamplerState* mPSSampler;
+	ID3D11SamplerState* mDefaultSampler;
 
 public:
 	void OnD3D11DestroyDevice() {
@@ -49,12 +49,12 @@ public:
 		SAFE_RELEASE(mDomainShader);
 		SAFE_RELEASE(mDSConstantBuffer);
 		SAFE_RELEASE(mPSConstantBuffer);
-		SAFE_RELEASE(mPSSampler);
+		SAFE_RELEASE(mDefaultSampler);
 		mCompiled = FALSE;
 	}
 
 	DistantGBufferShader() : DrawableShader(L"DistantGBufferShader"),mCompiled(FALSE),mVertexLayout(NULL),
-		mVertexShader(NULL),mPixelShader(NULL),mDSConstantBuffer(NULL),mPSConstantBuffer(NULL), mHullShader(NULL), mDomainShader(NULL), mPSSampler(NULL) {}
+		mVertexShader(NULL),mPixelShader(NULL),mDSConstantBuffer(NULL),mPSConstantBuffer(NULL), mHullShader(NULL), mDomainShader(NULL), mDefaultSampler(NULL) {}
 
 	~DistantGBufferShader()
 	{
@@ -121,7 +121,7 @@ public:
 		//Create the sampler state
 		{
 			CD3D11_SAMPLER_DESC desc = CD3D11_SAMPLER_DESC(CD3D11_DEFAULT());
-			pd3dDevice->CreateSamplerState(&desc,&mPSSampler);
+			pd3dDevice->CreateSamplerState(&desc,&mDefaultSampler);
 		}
 
 		mCompiled = TRUE;
@@ -162,12 +162,12 @@ private:
 
 		pd3dContext->DSSetConstantBuffers( 0, 1, &mDSConstantBuffer );
 		pd3dContext->PSSetConstantBuffers( 0, 1, &mDSConstantBuffer );
-		pd3dContext->PSSetSamplers(0,1,&mPSSampler);
+		pd3dContext->PSSetSamplers(0,1,&mDefaultSampler);
+		pd3dContext->DSSetSamplers(0,1,&mDefaultSampler);
 
 		pd3dContext->Map(mPSConstantBuffer,0,D3D11_MAP_WRITE_DISCARD,0,&MappedResource);
 		DistantGBufferPSCB* pscb = (DistantGBufferPSCB*)MappedResource.pData;
-		//pscb->Albedo = pState->mDiffuseColour;
-		pscb->Albedo = pState->mDistantTextures->mColour;
+		pscb->Albedo = pState->mDiffuseColour;
 		pscb->SpecPower = pState->mSpecularExponent;
 		pscb->SpecAmount = pState->mSpecularAmount;
 		pd3dContext->Unmap(mPSConstantBuffer,0);
@@ -184,7 +184,11 @@ private:
 		pd3dContext->IASetIndexBuffer( pMesh->mIndexBuffer, pMesh->mIndexBufferFormat, 0 );
 		pd3dContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST );
 
-		pd3dContext->PSSetShaderResources(0,1,&pState->mDistantTextures->mAlbedoMap.mSRV);
+		pd3dContext->DSSetShaderResources(0,1,&pState->mDistantTextures->mHeightMap.mSRV);
+
+		ID3D11ShaderResourceView* pssrvs[2] = {pState->mDistantTextures->mAlbedoMap.mSRV,pState->mDistantTextures->mNormalMap.mSRV};
+
+		pd3dContext->PSSetShaderResources(0,2,pssrvs);
 		//Set shaders
 		pd3dContext->VSSetShader( mVertexShader, NULL, 0 );
 		pd3dContext->HSSetShader( mHullShader, NULL, 0 );
@@ -195,8 +199,9 @@ private:
 	void cleanupShader(ID3D11DeviceContext* pd3dContext) {
 		pd3dContext->HSSetShader(NULL,NULL,0);
 		pd3dContext->DSSetShader(NULL,NULL,0);
-		ID3D11ShaderResourceView* srvs[1] = {NULL};
-		pd3dContext->PSSetShaderResources(0,1,srvs);
+		ID3D11ShaderResourceView* nullsrvs[2] = {NULL,NULL};
+		pd3dContext->PSSetShaderResources(0,2,nullsrvs);
+		pd3dContext->DSSetShaderResources(0,1,nullsrvs);
 	}
 };
 

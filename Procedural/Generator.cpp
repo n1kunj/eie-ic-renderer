@@ -2,9 +2,10 @@
 #include "Generator.h"
 #include "../Utils/ShaderTools.h"
 
-#define HEIGHT_MAP_RESOLUTION 512
+#define ALBNORM_MAP_RESOLUTION 256
+#define HEIGHT_MAP_RESOLUTION 256
 #define CS_GROUP_DIM 16
-#define DISPATCH_DIM HEIGHT_MAP_RESOLUTION/CS_GROUP_DIM
+#define DISPATCH_DIM ALBNORM_MAP_RESOLUTION/CS_GROUP_DIM
 
 __declspec(align(16)) struct HeightMapCSCB {
 	DirectX::XMUINT2 bufferDim;
@@ -17,18 +18,23 @@ DistantTextures::DistantTextures(DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBL
 	mPosZ = pPosZ;
 	mSize = pSize;
 
-	mColour = DirectX::XMFLOAT3(1.0f,0.0f,0.0f);
-
-	D3D11_TEXTURE2D_DESC& desc = mAlbedoMap.mDesc;
+	D3D11_TEXTURE2D_DESC desc;
 	::ZeroMemory (&desc, sizeof (desc));
 	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
-	desc.Height = HEIGHT_MAP_RESOLUTION;
-	desc.Width = HEIGHT_MAP_RESOLUTION;
+	desc.Height = ALBNORM_MAP_RESOLUTION;
+	desc.Width = ALBNORM_MAP_RESOLUTION;
 	desc.MipLevels = 1;
 	desc.ArraySize = 1;
 	desc.SampleDesc.Count = 1;
 	desc.SampleDesc.Quality = 0;
+	mAlbedoMap.mDesc = desc;
+
+	desc.Format = DXGI_FORMAT_R8G8B8A8_SNORM;
+	mNormalMap.mDesc = desc;
+
+	desc.Format = DXGI_FORMAT_R16_FLOAT;
+	mHeightMap.mDesc = desc;
 }
 
 void Generator::Generate(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, UINT pMaxRuntimeMillis) {
@@ -43,8 +49,9 @@ void Generator::Generate(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dCont
 		first.reset();
 	}
 	else {
-		first->mColour = DirectX::XMFLOAT3(0.0f,1.0f,0.0f);
 		first->mAlbedoMap.CreateTexture(pd3dDevice);
+		first->mNormalMap.CreateTexture(pd3dDevice);
+		first->mHeightMap.CreateTexture(pd3dDevice);
 		ComputeTextures(pd3dContext, *first);
 	}
 	mTextureQueue.pop_front();
@@ -58,20 +65,23 @@ void Generator::ComputeTextures(ID3D11DeviceContext* pd3dContext, DistantTexture
 	D3D11_MAPPED_SUBRESOURCE MappedResource;
 	pd3dContext->Map(mCSCB,0,D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
 	HeightMapCSCB* cscb = (HeightMapCSCB*)MappedResource.pData;
-	cscb->bufferDim = DirectX::XMUINT2(HEIGHT_MAP_RESOLUTION, HEIGHT_MAP_RESOLUTION);
+	cscb->bufferDim = DirectX::XMUINT2(ALBNORM_MAP_RESOLUTION, ALBNORM_MAP_RESOLUTION);
 	cscb->coords = DirectX::XMINT2((INT)pDT.mPosX,(INT)pDT.mPosZ);
 
 	pd3dContext->Unmap(mCSCB,0);
 
 	pd3dContext->CSSetConstantBuffers(0,1,&mCSCB);
 
+	ID3D11UnorderedAccessView* uavs[3] = {pDT.mAlbedoMap.mUAV,
+		pDT.mNormalMap.mUAV,pDT.mHeightMap.mUAV};
 
-	pd3dContext->CSSetUnorderedAccessViews(0,1,&pDT.mAlbedoMap.mUAV,0);
+	pd3dContext->CSSetUnorderedAccessViews(0,3,uavs,0);
+
 	pd3dContext->CSSetShader(mCS,0,0);
 	pd3dContext->Dispatch(DISPATCH_DIM,DISPATCH_DIM,1);
 
-	ID3D11UnorderedAccessView* uavs[1] = {NULL};
-	pd3dContext->CSSetUnorderedAccessViews(0,1,uavs,0);
+	ID3D11UnorderedAccessView* nulluavs[3] = {NULL,NULL,NULL};
+	pd3dContext->CSSetUnorderedAccessViews(0,3,nulluavs,0);
 }
 
 HRESULT Generator::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
