@@ -28,7 +28,7 @@ struct ConstantOutputType
 ConstantOutputType HS_CONSTANT(InputPatch<VS_OUTPUT,4> inputPatch, uint patchId : SV_PrimitiveID)
 {    
 	ConstantOutputType output;
-	float tessAmount = 3;
+	float tessAmount = 4;
 	// Set the tessellation factors for the three edges of the triangle.
 	output.edges[0] = tessAmount;
 	output.edges[1] = tessAmount;
@@ -68,6 +68,7 @@ struct DS_OUTPUT
 cbuffer DSConstantBuffer : register( b0 )
 {
 	matrix Model;
+	matrix View;
 	matrix VP;
 	matrix MV;
 	matrix MVP;
@@ -119,21 +120,35 @@ cbuffer PSConstantBuffer : register( b1 )
 }
 
 Texture2D<float4> albedoTex : register(t0);
-Texture2D<float4> normalTex : register(t1);
+Texture2D<float2> normalTex : register(t1);
 
 GBuffer PS( DS_OUTPUT input )
 {
 	GBuffer output;
 	float4 texmap = albedoTex.Sample(defaultSampler,float2(input.UV));
-	float4 normalmap = normalTex.Sample(defaultSampler,float2(input.UV));
-	output.albedo = texmap;
-	//output.albedo = float4(Albedo,1.0f);
-	float3 normal = normalmap.xyz;
-	//normal = float3(0,1,0);
-	//normal = texmap;
+	//float4 normalmap = normalTex.Sample(defaultSampler,float2(input.UV));
+	float2 normalmap = normalTex.Sample(defaultSampler,float2(input.UV));
 
-	normal = normalize(mul(normal,MV));
+	output.albedo = texmap;
+	float3 normal = DecodeSphereMap(normalmap);
+	//normal = float3(0,1,0);
+
+
+	//output.albedo = float4((normal/2)+0.5f,1.0f);
+
+	//normal = normalize(mul(normal,(float3x3)Model));
+	normal = normalize(mul(normal,(float3x3)MV));
+
+
+	//normal = float3(0,1,0);
+
 	
+	//normal = normalize(mul(normal,MV));
+	
+
+
+	//normal = float3(0,1,0);
+
 	output.normal_specular = float4(EncodeSphereMap(normal),SpecAmount,SpecPower);
 
 	

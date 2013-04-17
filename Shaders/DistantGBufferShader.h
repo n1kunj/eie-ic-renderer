@@ -13,6 +13,7 @@
 __declspec(align(16)) struct DistantGBufferVSCB
 {
 	DirectX::XMMATRIX Model;
+	DirectX::XMMATRIX View;
 	DirectX::XMMATRIX VP;
 	DirectX::XMMATRIX MV;
 	DirectX::XMMATRIX MVP;
@@ -154,6 +155,7 @@ private:
 		pd3dContext->Map(mDSConstantBuffer,0,D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
 		DistantGBufferVSCB* vscb = (DistantGBufferVSCB*)MappedResource.pData;
 		vscb->Model = XMMatrixTranspose(pState->mModelMatrix);
+		vscb->View = XMMatrixTranspose(pCamera->mViewMatrix);
 		vscb->VP = XMMatrixTranspose(pCamera->mViewProjectionMatrix);
 		vscb->MV = XMMatrixMultiplyTranspose(pState->mModelMatrix,pCamera->mViewMatrix);
 		vscb->MVP = XMMatrixMultiplyTranspose(pState->mModelMatrix,pCamera->mViewProjectionMatrix);

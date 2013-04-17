@@ -30,7 +30,7 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 		DOUBLE yLoc = posy;
 		DOUBLE zLoc = posz + TILE_SIZE * tilez;
 		mDrawables[i].mState.setPosition(xLoc, yLoc, zLoc);
-		mDrawables[i].mState.mScale = DirectX::XMFLOAT3(MESH_SCALE,1.0f,MESH_SCALE);
+		mDrawables[i].mState.mScale = DirectX::XMFLOAT3(MESH_SCALE,MESH_SCALE,MESH_SCALE);
 		mDrawables[i].mState.mDistantTextures = std::shared_ptr<DistantTextures>(new DistantTextures(xLoc,yLoc,zLoc, TILE_SIZE));
 
 		pGenerator->InitialiseDistantTile(mDrawables[i].mState.mDistantTextures);

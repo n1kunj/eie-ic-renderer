@@ -30,7 +30,7 @@ DistantTextures::DistantTextures(DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBL
 	desc.SampleDesc.Quality = 0;
 	mAlbedoMap.mDesc = desc;
 
-	desc.Format = DXGI_FORMAT_R8G8B8A8_SNORM;
+	desc.Format = DXGI_FORMAT_R32G32_FLOAT;
 	mNormalMap.mDesc = desc;
 
 	desc.Format = DXGI_FORMAT_R16_FLOAT;
