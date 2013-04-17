@@ -175,14 +175,16 @@ void LightingCS(uint3 groupId 			: SV_GroupID,
 		if (attenEnd > lightDist) {
 			lightFactor = 1 - sqrt(lightDist/attenEnd);
 		}
-
+		float3 lightColour = gbAlbedo * pl.colour;
+		
+		pixVal+=ambient * lightFactor * lightColour;
 		if (diffuse > 0 && lightFactor > 0.0f) {
 			float3 cameraVec = normalize(-gbViewPos);
 
 			float3 reflected = reflect(lightVec, gbNormal);
 			float rdotv = max(0.0f, dot(reflected,cameraVec));
 			float specular = pow(rdotv, gbSpecExp);
-			pixVal += ((ambient + diffuse + specular*gbSpecAmount) * lightFactor) * gbAlbedo * pl.colour;
+			pixVal += ((diffuse + specular*gbSpecAmount) * lightFactor) * lightColour;
 		}
 	}
 	

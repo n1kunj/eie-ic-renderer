@@ -8,7 +8,7 @@
 
 #define CAMERALOOKSCALE 0.005
 
-#define CAMERAMOVESPEED (2.0/1000.0)
+#define CAMERAMOVESPEED ((2.0/1000.0)*100.0)
 
 using namespace DirectX;
 

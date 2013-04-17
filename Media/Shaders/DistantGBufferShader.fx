@@ -90,22 +90,12 @@ DS_OUTPUT DS(ConstantOutputType input, float2 coord : SV_DomainLocation, const O
 	
 	float2 uvs = vertPos.xz + float2(0.5f,0.5f);
 	float height = heightTex.SampleLevel(defaultSampler,uvs,0);
-	//float height = 1000 * albedoTex.Load(uint3(0,0,0));
-	//float height = 0;
 	
 	vertPos = mul(float4(vertPos,1.0f),Model).xyz;
-	uint repeatval = 100;
 	
 	vertPos.y += height;
 	
 	output.Pos = mul(float4(vertPos,1.0f),VP);
-
-	//output.Pos = mul(float4(vertPos,1.0f),MVP);
-	
-	//float3 normal = float3(0,1,0);
-
-	//output.Norm = normalize(mul(normal,MV));
-	//output.Norm = normal;
 	
 	output.UV = uvs;
 	
@@ -114,42 +104,31 @@ DS_OUTPUT DS(ConstantOutputType input, float2 coord : SV_DomainLocation, const O
 
 cbuffer PSConstantBuffer : register( b1 )
 {
-	float3 Albedo;
-	float SpecPower;
-	float SpecAmount;
+	//float3 Albedo;
+	//float SpecPower;
+	//float SpecAmount;
 }
 
 Texture2D<float4> albedoTex : register(t0);
-Texture2D<float2> normalTex : register(t1);
+Texture2D<float4> normalTex : register(t1);
 
 GBuffer PS( DS_OUTPUT input )
 {
 	GBuffer output;
 	float4 texmap = albedoTex.Sample(defaultSampler,float2(input.UV));
-	//float4 normalmap = normalTex.Sample(defaultSampler,float2(input.UV));
-	float2 normalmap = normalTex.Sample(defaultSampler,float2(input.UV));
+	float4 normalmap = normalTex.Sample(defaultSampler,float2(input.UV));
+	
+	float3 albedo = texmap.xyz;
 
-	output.albedo = texmap;
-	float3 normal = DecodeSphereMap(normalmap);
+	float3 normal = normalmap.xyz;
 	//normal = float3(0,1,0);
+	float specAmount = 2 * texmap.w;
+	float specPower = 128 * normalmap.w;
 
-
-	//output.albedo = float4((normal/2)+0.5f,1.0f);
-
-	//normal = normalize(mul(normal,(float3x3)Model));
 	normal = normalize(mul(normal,(float3x3)MV));
 
-
-	//normal = float3(0,1,0);
-
-	
-	//normal = normalize(mul(normal,MV));
-	
-
-
-	//normal = float3(0,1,0);
-
-	output.normal_specular = float4(EncodeSphereMap(normal),SpecAmount,SpecPower);
+	output.albedo = float4(albedo,1.0f);
+	output.normal_specular = float4(EncodeSphereMap(normal),specAmount,specPower);
 
 	
 	return output;
