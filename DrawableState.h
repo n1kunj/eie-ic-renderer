@@ -26,7 +26,16 @@ public:
 	void setPosition(DOUBLE x, DOUBLE y, DOUBLE z);
 	FLOAT getBoundingRadius() {
 		//TODO: better bounds calculations
-		return 2 * mScale.x;
+		return 5 * mScale.x;
+	}
+	DOUBLE getPosX() {
+		return ((DOUBLE) mPosition.x) + mCoords.x;
+	}
+	DOUBLE getPosY() {
+		return ((DOUBLE) mPosition.y) + mCoords.y;
+	}
+	DOUBLE getPosZ() {
+		return ((DOUBLE) mPosition.z) + mCoords.z;
 	}
 
 	DrawableState();

@@ -10,6 +10,8 @@
 __declspec(align(16)) struct HeightMapCSCB {
 	DirectX::XMUINT2 bufferDim;
 	DirectX::XMINT2 coords;
+	UINT tileSize;
+	DirectX::XMUINT3 padding;
 };
 
 DistantTextures::DistantTextures(DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize) {
@@ -67,6 +69,7 @@ void Generator::ComputeTextures(ID3D11DeviceContext* pd3dContext, DistantTexture
 	HeightMapCSCB* cscb = (HeightMapCSCB*)MappedResource.pData;
 	cscb->bufferDim = DirectX::XMUINT2(ALBNORM_MAP_RESOLUTION, ALBNORM_MAP_RESOLUTION);
 	cscb->coords = DirectX::XMINT2((INT)pDT.mPosX,(INT)pDT.mPosZ);
+	cscb->tileSize = (UINT)pDT.mSize;
 
 	pd3dContext->Unmap(mCSCB,0);
 

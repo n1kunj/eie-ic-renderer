@@ -2,18 +2,38 @@ function runcube()
 run("cube.lua")
 end
 
-CAMERA:setEye(0,830,0)
+--CAMERA:setEye(0,2000,0)
 
 reset()
+
+distDr = DistantDrawable(CAMERA,SHADERMAN,MESHMAN,GENERATOR,12,128,0,640)
+DRAWMAN:addDrawable(distDr)
+
+distDr = DistantDrawable(CAMERA,SHADERMAN,MESHMAN,GENERATOR,12,256,512,1280)
+DRAWMAN:addDrawable(distDr)
+
+distDr = DistantDrawable(CAMERA,SHADERMAN,MESHMAN,GENERATOR,12,512,1024,2560)
+DRAWMAN:addDrawable(distDr)
+
+distDr = DistantDrawable(CAMERA,SHADERMAN,MESHMAN,GENERATOR,12,1024,2048,5120)
+DRAWMAN:addDrawable(distDr)
+
+distDr = DistantDrawable(CAMERA,SHADERMAN,MESHMAN,GENERATOR,12,2048,4096,10240)
+DRAWMAN:addDrawable(distDr)
+
+distDr = DistantDrawable(CAMERA,SHADERMAN,MESHMAN,GENERATOR,12,4096,8192,20480)
+DRAWMAN:addDrawable(distDr)
+
+distDr = DistantDrawable(CAMERA,SHADERMAN,MESHMAN,GENERATOR,12,8192,16384,49152)
+DRAWMAN:addDrawable(distDr)
+
+
+
 shader = SHADERMAN:getDrawableShader("GBufferShader")
 --shader = SHADERMAN:getDrawableShader("DefaultShader")
 mesh = MESHMAN:getDrawableMesh("CubeMesh")
 
-distDr = DistantDrawable(CAMERA,SHADERMAN,MESHMAN,GENERATOR)
-DRAWMAN:addDrawable(distDr)
-
 lightSrc = BasicDrawable(mesh,shader,CAMERA)
-
 
 state = lightSrc.mState
 

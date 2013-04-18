@@ -17,18 +17,18 @@ cbuffer CSPass1CSCB : register( b0 )
 	uint tileSize;
 }
 
-static const float scales[10] = {3000,1500,750,
+static const float scales[11] = {3000,1500,750,
 	375,187.5,93.75,46.875,23.4375,
-	11.71875,5.859375};
+	11.71875,5.859375,12000};
 
-static const float bases[10] = {500,250,125,
+static const float bases[11] = {500,250,125,
 	62.5,31.25,15.625,
-	7.8125,3.90625,1.953125,0.9765625};
+	7.8125,3.90625,1.953125,0.9765625,2000};
 
 float heightFunc(float2 pos) {
 //return 0;
 	float height = 0;
-	for (int i = 0; i < 10; i++) {
+	for (int i = 0; i < 11; i++) {
 		height+=bases[i] * noise2D(pos.x/scales[i],pos.y/scales[i]);
 	}
 
@@ -44,8 +44,8 @@ void CSPass1(uint3 groupId 			: SV_GroupID,
 
 	float r = (float)dispatchThreadId.x/(bufferDim.x-1) - 0.5f;
 	float g = (float)dispatchThreadId.y/(bufferDim.y-1) - 0.5f;
-	r = r * 512 + coords.x;
-	g = g * 512 + coords.y;
+	r = r * tileSize + coords.x;
+	g = g * tileSize + coords.y;
 	
 	float2 hpos = float2(r,g);
 	float height = heightFunc(hpos);
@@ -76,11 +76,6 @@ void CSPass1(uint3 groupId 			: SV_GroupID,
 	float3 rock1 = float3(0.63f,0.59f,0.70f);
 	float3 rock2 = float3(0.70f,0.611f,0.588f);
 	
-	//float3 rock1 = float3(0.55f,0.55f,0.55f);
-	//float3 rock2 = float3(0.70f,0.70f,0.70f);
-	
-	//float3 colour = float3(0.63f,0.59f,0.70f);
-	//colour = float3(1,0,0);
 	float2 colPos = hpos/20.0f;
 	float3 colNoise;
 	colNoise.x = noise2D(colPos.x,colPos.y);
@@ -94,9 +89,9 @@ void CSPass1(uint3 groupId 			: SV_GroupID,
 		normal = lerp(vertical,normal,0.5f);
 		
 		//Remove the high frequency noises
-		for (int i = 8; i < 10; i++) {
-				height -= bases[8] * noise2D(hpos.x/scales[8],hpos.y/scales[8]);
-		}
+		// for (int i = 8; i < 10; i++) {
+				// height -= bases[i] * noise2D(hpos.x/scales[i],hpos.y/scales[i]);
+		// }
 		//normal = float3(0,1,0);
 		SpecPower = 20;
 		SpecAmount = 0.75f;

@@ -42,6 +42,7 @@ public:
 	Generator() : mCompiled(FALSE),mCS(NULL),mCSCB(NULL) {}
 	~Generator() {
 		OnD3D11DestroyDevice();
+		mTextureQueue.clear();
 	}
 
 	void InitialiseDistantTile(DTPTR const& pDistantTexture) {
