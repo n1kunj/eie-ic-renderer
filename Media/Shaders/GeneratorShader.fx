@@ -1,10 +1,6 @@
 #include "SimplexNoise.fx"
 #include "GBuffer.h"
 #define CS_GROUP_DIM 18
-//mother fucker
-#define normalise normalize
-
-#define EPSILON 0.1f
 
 RWTexture2D<float4> albedoTex : register(t0);
 RWTexture2D<float4> normalTex : register(t1);
@@ -36,7 +32,6 @@ float heightFunc(float2 pos) {
 }
 
 groupshared float sGroupHeights[CS_GROUP_DIM][CS_GROUP_DIM];
-
 
 [numthreads(CS_GROUP_DIM, CS_GROUP_DIM, 1)]
 void CSPass1(uint3 groupID 			: SV_GroupID,
@@ -93,7 +88,7 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 
 	float3 colour;
 	
-	if (dotprod > 0.65f) {
+	if (dotprod > 0.50f) {
 		colour = float3(1.0f,1.0f,1.0f);
 		normal = lerp(vertical,normal,0.5f);
 		
@@ -109,6 +104,13 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 		//colour = rock1;
 		colour = lerp(rock1,rock2,colNoise);
 	}
+	
+	// [flatten] if (all(groupThreadID.xy%2==0)) {
+		// colour = float3(1,0,0);
+	// }
+	// else {
+		// colour = float3(0,1,0);
+	// }
 	
 	if (all(groupThreadID.xy > 0) && all(groupThreadID.xy < CS_GROUP_DIM-1)) {
 		albedoTex[pixLoc.xy] = float4(colour,SpecAmount/2);

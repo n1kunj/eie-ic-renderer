@@ -107,7 +107,7 @@ HRESULT Generator::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 	V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\GeneratorShader.fx", "CSPass1", "cs_5_0", &pCSBlob ));
 
 	//Create the compute shader
-	//If fails, releases pVSBlob.
+	//If fails, releases pCSBlob.
 	V_RELEASE_IF_RETURN(pCSBlob,pd3dDevice->CreateComputeShader( pCSBlob->GetBufferPointer(), pCSBlob->GetBufferSize(), NULL, &mCS ));
 
 	D3D11_BUFFER_DESC bd;

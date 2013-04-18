@@ -37,7 +37,7 @@ float dot2( const int index, const float x, const float y ) {
 	return grad3[index][0]*x + grad3[index][1]*y; 
 }
 
-float noise2D( float x, float y) {
+[call] float noise2D( float x, float y) {
 	
 	    // Noise contributions from the three corners
     float n0, n1, n2;
