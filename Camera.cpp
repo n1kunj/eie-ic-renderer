@@ -23,7 +23,7 @@ Camera::Camera() : mHeldMouseLooking(FALSE),mMouseCentred(FALSE),
 	mzFar(75000.0f),mzNear(1.0f),mYFOV(XM_PIDIV2), mCoords(0,0,0)
 {
 	// Initialize the view matrix
-	mEye = XMVectorSet( 0.0f, 0.0f, 0.0f, 0.0f );
+	mEye = XMVectorSet( 0.0f, 5000.0f, 0.0f, 0.0f );
 	mLookVector = XMVectorSet( 0.0f, 0.0f, -1.0f, 0.0f );
 	mUp = XMVectorSet( 0.0f, 1.0f, 0.0f, 0.0f );
 	mActualUp = XMVectorSet(0.0f,1.0f,0.0f,0.0f);

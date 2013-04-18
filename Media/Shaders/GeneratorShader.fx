@@ -1,6 +1,6 @@
 #include "SimplexNoise.fx"
 #include "GBuffer.h"
-#define CS_GROUP_DIM 16
+#define CS_GROUP_DIM 18
 //mother fucker
 #define normalise normalize
 
@@ -35,29 +35,39 @@ float heightFunc(float2 pos) {
 	return height;
 }
 
-[numthreads(CS_GROUP_DIM, CS_GROUP_DIM, 1)]
-void CSPass1(uint3 groupId 			: SV_GroupID,
-				uint3 dispatchThreadId 	: SV_DispatchThreadID,
-				uint3 groupThreadId    	: SV_GroupThreadID,
-				uint groupIndex 		: SV_GroupIndex)
-{
+groupshared float sGroupHeights[CS_GROUP_DIM][CS_GROUP_DIM];
 
-	float r = (float)dispatchThreadId.x/(bufferDim.x-1) - 0.5f;
-	float g = (float)dispatchThreadId.y/(bufferDim.y-1) - 0.5f;
+
+[numthreads(CS_GROUP_DIM, CS_GROUP_DIM, 1)]
+void CSPass1(uint3 groupID 			: SV_GroupID,
+			uint3 groupThreadID    	: SV_GroupThreadID,
+			uint groupIndex 		: SV_GroupIndex)
+{
+	//Takes into account extra values around the edges
+	int2 pixLoc = groupThreadID.xy - 1 + (CS_GROUP_DIM-2) * groupID;
+
+	float r = (float)pixLoc.x/(bufferDim.x-1) - 0.5f;
+	float g = (float)pixLoc.y/(bufferDim.y-1) - 0.5f;
 	r = r * tileSize + coords.x;
 	g = g * tileSize + coords.y;
 	
 	float2 hpos = float2(r,g);
 	float height = heightFunc(hpos);
 	
- 	float hp[4];
-	hp[0] = heightFunc(hpos+float2(-EPSILON,0));
-	hp[1] = heightFunc(hpos+float2(EPSILON,0));
-	hp[2] = heightFunc(hpos+float2(0,-EPSILON));
-	hp[3] = heightFunc(hpos+float2(-EPSILON,0));
+	sGroupHeights[groupThreadID.x][groupThreadID.y] = height;
 	
-	float3 va = normalize(float3(2*EPSILON,hp[1]-hp[0],0));
-	float3 vb = normalize(float3(0,hp[3]-hp[2],2*EPSILON));
+	GroupMemoryBarrierWithGroupSync();
+	
+ 	float hp[4];
+	hp[0] = sGroupHeights[groupThreadID.x-1][groupThreadID.y];
+	hp[1] = sGroupHeights[groupThreadID.x+1][groupThreadID.y];
+	hp[2] = sGroupHeights[groupThreadID.x][groupThreadID.y-1];
+	hp[3] = sGroupHeights[groupThreadID.x][groupThreadID.y+1];
+	
+	float epsilon = (float)tileSize/(bufferDim.x-1);
+	float3 va = normalize(float3(2*epsilon,hp[1]-hp[0],0));
+	float3 vb = normalize(float3(0,hp[3]-hp[2],2*epsilon));	
+
 	float3 normal = normalize(cross(vb,va));
 	
 	//SpecPower is normalised between -1 and 1
@@ -70,9 +80,7 @@ void CSPass1(uint3 groupId 			: SV_GroupID,
 	
 	const float3 vertical = float3(0,1,0);
 	float dotprod = dot(vertical,normal);
-	
-	float3 colour;
-	
+		
 	float3 rock1 = float3(0.63f,0.59f,0.70f);
 	float3 rock2 = float3(0.70f,0.611f,0.588f);
 	
@@ -83,6 +91,7 @@ void CSPass1(uint3 groupId 			: SV_GroupID,
 	colNoise.z = noise2D(colPos.x+10000,colPos.y-10000);
 	colNoise = (colNoise / 2) + 0.5f;
 
+	float3 colour;
 	
 	if (dotprod > 0.65f) {
 		colour = float3(1.0f,1.0f,1.0f);
@@ -101,8 +110,9 @@ void CSPass1(uint3 groupId 			: SV_GroupID,
 		colour = lerp(rock1,rock2,colNoise);
 	}
 	
-
-	albedoTex[dispatchThreadId.xy] = float4(colour,SpecAmount/2);
-	normalTex[dispatchThreadId.xy] =  float4(normal,SpecPower/128.0f);
-	heightTex[dispatchThreadId.xy] = height;
+	if (all(groupThreadID.xy > 0) && all(groupThreadID.xy < CS_GROUP_DIM-1)) {
+		albedoTex[pixLoc.xy] = float4(colour,SpecAmount/2);
+		normalTex[pixLoc.xy] =  float4(normal,SpecPower/128.0f);
+		heightTex[pixLoc.xy] = height;
+	}
 }

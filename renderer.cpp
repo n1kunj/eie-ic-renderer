@@ -41,7 +41,7 @@ Renderer::Renderer(MessageLogger* mLogger) : mLogger(mLogger), mDrawableManager(
 	mLightingShader = new LightingShader();
 	mLightingCompute = new LightingCompute();
 
-	mGenerator = new Generator();
+	mGenerator = new Generator(mLogger);
 
 	mDSStateDefault = NULL;
 	mDSStateStencilCull = NULL;

@@ -40,6 +40,7 @@ private:
 	ID3D11Buffer* mDSConstantBuffer;
 	ID3D11Buffer* mPSConstantBuffer;
 	ID3D11SamplerState* mDefaultSampler;
+	ID3D11SamplerState* mAnisotropicSampler;
 
 public:
 	void OnD3D11DestroyDevice() {
@@ -51,11 +52,12 @@ public:
 		SAFE_RELEASE(mDSConstantBuffer);
 		SAFE_RELEASE(mPSConstantBuffer);
 		SAFE_RELEASE(mDefaultSampler);
+		SAFE_RELEASE(mAnisotropicSampler);
 		mCompiled = FALSE;
 	}
 
 	DistantGBufferShader() : DrawableShader(L"DistantGBufferShader"),mCompiled(FALSE),mVertexLayout(NULL),
-		mVertexShader(NULL),mPixelShader(NULL),mDSConstantBuffer(NULL),mPSConstantBuffer(NULL), mHullShader(NULL), mDomainShader(NULL), mDefaultSampler(NULL) {}
+		mVertexShader(NULL),mPixelShader(NULL),mDSConstantBuffer(NULL),mPSConstantBuffer(NULL), mHullShader(NULL), mDomainShader(NULL), mDefaultSampler(NULL), mAnisotropicSampler(NULL) {}
 
 	~DistantGBufferShader()
 	{
@@ -123,6 +125,10 @@ public:
 		{
 			CD3D11_SAMPLER_DESC desc = CD3D11_SAMPLER_DESC(CD3D11_DEFAULT());
 			pd3dDevice->CreateSamplerState(&desc,&mDefaultSampler);
+
+			desc.Filter = D3D11_FILTER_ANISOTROPIC;
+			desc.MaxAnisotropy = 8;
+			pd3dDevice->CreateSamplerState(&desc,&mAnisotropicSampler);
 		}
 
 		mCompiled = TRUE;
@@ -165,6 +171,7 @@ private:
 		pd3dContext->DSSetConstantBuffers( 0, 1, &mDSConstantBuffer );
 		pd3dContext->PSSetConstantBuffers( 0, 1, &mDSConstantBuffer );
 		pd3dContext->PSSetSamplers(0,1,&mDefaultSampler);
+		pd3dContext->PSSetSamplers(1,1,&mAnisotropicSampler);
 		pd3dContext->DSSetSamplers(0,1,&mDefaultSampler);
 
 		pd3dContext->Map(mPSConstantBuffer,0,D3D11_MAP_WRITE_DISCARD,0,&MappedResource);

@@ -26,7 +26,6 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 	DOUBLE posx = 0 + mTileSize/2;
 	DOUBLE posy = 0;
 	DOUBLE posz = 0 + mTileSize/2;
-	//TODO pos should always start around 0,0,0 then be shifted around in update
 
 	//Prevents lots of casting later
 	INT tdl = mTileDimensionLength;

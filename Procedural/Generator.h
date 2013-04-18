@@ -6,6 +6,7 @@
 #include <memory>
 #include "../Texture2D.h"
 #include "../DirectXMath/DirectXMath.h"
+#include "../MessageProcessor.h"
 
 class DistantTextures {
 public:
@@ -31,6 +32,7 @@ private:
 	boolean mCompiled;
 	ID3D11ComputeShader* mCS;
 	ID3D11Buffer* mCSCB;
+	MessageLogger* mLogger;
 public:
 	HRESULT OnD3D11CreateDevice( ID3D11Device* pd3dDevice );
 	void OnD3D11DestroyDevice() {
@@ -39,7 +41,7 @@ public:
 		mCompiled = FALSE;
 	}
 
-	Generator() : mCompiled(FALSE),mCS(NULL),mCSCB(NULL) {}
+	Generator(MessageLogger* pLogger) : mCompiled(FALSE),mCS(NULL),mCSCB(NULL), mLogger(pLogger) {}
 	~Generator() {
 		OnD3D11DestroyDevice();
 		mTextureQueue.clear();

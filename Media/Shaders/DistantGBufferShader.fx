@@ -76,6 +76,7 @@ cbuffer DSConstantBuffer : register( b0 )
 }
 
 SamplerState defaultSampler : register(s0);
+SamplerState anisotropicSampler : register(s1);
 
 Texture2D<float> heightTex : register(t0);
 
@@ -115,8 +116,8 @@ Texture2D<float4> normalTex : register(t1);
 GBuffer PS( DS_OUTPUT input )
 {
 	GBuffer output;
-	float4 texmap = albedoTex.Sample(defaultSampler,float2(input.UV));
-	float4 normalmap = normalTex.Sample(defaultSampler,float2(input.UV));
+	float4 texmap = albedoTex.Sample(anisotropicSampler,float2(input.UV));
+	float4 normalmap = normalTex.Sample(anisotropicSampler,float2(input.UV));
 	
 	float3 albedo = texmap.xyz;
 

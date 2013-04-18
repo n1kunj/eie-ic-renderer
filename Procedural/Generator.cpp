@@ -23,18 +23,22 @@ DistantTextures::DistantTextures(DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBL
 	D3D11_TEXTURE2D_DESC desc;
 	::ZeroMemory (&desc, sizeof (desc));
 	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET | D3D11_BIND_UNORDERED_ACCESS;
 	desc.Height = ALBNORM_MAP_RESOLUTION;
 	desc.Width = ALBNORM_MAP_RESOLUTION;
-	desc.MipLevels = 1;
+	desc.MipLevels = 0;
 	desc.ArraySize = 1;
 	desc.SampleDesc.Count = 1;
 	desc.SampleDesc.Quality = 0;
+	desc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
 	mAlbedoMap.mDesc = desc;
 
 	desc.Format = DXGI_FORMAT_R8G8B8A8_SNORM;
 	mNormalMap.mDesc = desc;
 
+	desc.MipLevels = 1;
+	desc.MiscFlags = 0;
+	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
 	desc.Format = DXGI_FORMAT_R16_FLOAT;
 	mHeightMap.mDesc = desc;
 }
@@ -44,7 +48,6 @@ void Generator::Generate(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dCont
 	if (mTextureQueue.size() == 0) {
 		return;
 	}
-
 	for (int i = 0; i < 1; i++) {
 		DTPTR &first = mTextureQueue.front();
 
@@ -52,10 +55,15 @@ void Generator::Generate(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dCont
 			first.reset();
 		}
 		else {
-			first->mAlbedoMap.CreateTexture(pd3dDevice);
-			first->mNormalMap.CreateTexture(pd3dDevice);
-			first->mHeightMap.CreateTexture(pd3dDevice);
+			//Check if the texture already exists
+			if (first->mAlbedoMap.mTexture == NULL) {
+				first->mAlbedoMap.CreateTexture(pd3dDevice);
+				first->mNormalMap.CreateTexture(pd3dDevice);
+				first->mHeightMap.CreateTexture(pd3dDevice);
+			}
 			ComputeTextures(pd3dContext, *first);
+			pd3dContext->GenerateMips(first->mAlbedoMap.mSRV);
+			pd3dContext->GenerateMips(first->mNormalMap.mSRV);
 		}
 		mTextureQueue.pop_front();
 	}
