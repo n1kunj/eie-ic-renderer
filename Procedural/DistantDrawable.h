@@ -11,7 +11,7 @@ class Generator;
 
 class DistantDrawable : public Drawable {
 public:
-	DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager, MeshManager* pMeshManager, Generator* pGenerator, UINT pTileDimensionLength, UINT pTileSize, UINT pMinDrawDistance, UINT pMaxDrawDistance);
+	DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager, MeshManager* pMeshManager, Generator* pGenerator, UINT pTileDimensionLength, DOUBLE pTileSize, DOUBLE pMinDrawDistance, DOUBLE pMaxDrawDistance);
 	void Draw(ID3D11DeviceContext* pd3dContext);
 	virtual ~DistantDrawable();
 private:
@@ -22,10 +22,10 @@ private:
 	Generator* mGenerator;
 	UINT mTileDimensionLength;
 	UINT mNumTiles;
-	UINT mTileSize;
-	UINT mMeshScale;
-	UINT mMinDrawDistance;
-	UINT mMaxDrawDistance;
+	DOUBLE mTileSize;
+	DOUBLE mMeshScale;
+	DOUBLE mMinDrawDistance;
+	DOUBLE mMaxDrawDistance;
 	DOUBLE mStickyCamX;
 	DOUBLE mStickyCamY;
 	DOUBLE mStickyCamZ;

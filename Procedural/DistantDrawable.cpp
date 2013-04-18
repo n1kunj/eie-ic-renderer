@@ -7,7 +7,7 @@
 
 #define SIGNUM(X) ((X > 0) ? 1 : ((X < 0) ? -1 : 0))
 
-DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager, MeshManager* pMeshManager, Generator* pGenerator, UINT pTileDimensionLength, UINT pTileSize, UINT pMinDrawDistance, UINT pMaxDrawDistance) : Drawable(pCamera)
+DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager, MeshManager* pMeshManager, Generator* pGenerator, UINT pTileDimensionLength, DOUBLE pTileSize, DOUBLE pMinDrawDistance, DOUBLE pMaxDrawDistance) : Drawable(pCamera)
 {
 	mGenerator = pGenerator;
 
@@ -30,18 +30,17 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 
 	//Prevents lots of casting later
 	INT tdl = mTileDimensionLength;
-	INT ts = mTileSize;
 
 	INT tilex = 0;
 	INT tilez = 0;
 
 	for (UINT i = 0; i < mNumTiles; i++) {
 		mDrawables.push_back(BasicDrawable(mesh,mShader,pCamera));
-		DOUBLE xLoc = posx + (tilex - tdl/2) * ts;
+		DOUBLE xLoc = posx + (tilex - tdl/2) * mTileSize;
 		DOUBLE yLoc = posy;
-		DOUBLE zLoc = posz + (tilez - tdl/2) * ts;
+		DOUBLE zLoc = posz + (tilez - tdl/2) * mTileSize;
 		mDrawables[i].mState.setPosition(xLoc, yLoc, zLoc);
-		mDrawables[i].mState.mScale = DirectX::XMFLOAT3(mMeshScale,mMeshScale,mMeshScale);
+		mDrawables[i].mState.mScale = DirectX::XMFLOAT3((FLOAT)mMeshScale, (FLOAT)mMeshScale, (FLOAT)mMeshScale);
 		mDrawables[i].mState.mDistantTextures = std::shared_ptr<DistantTextures>(new DistantTextures(xLoc,yLoc,zLoc, mTileSize));
 
 		mGenerator->InitialiseDistantTile(mDrawables[i].mState.mDistantTextures);
@@ -61,8 +60,6 @@ DistantDrawable::~DistantDrawable()
 }
 
 void DistantDrawable::Update() {
-	//TODO: move tiles around properly
-
 	DOUBLE oldX = mStickyCamX;
 	DOUBLE oldY = mStickyCamY;
 	DOUBLE oldZ = mStickyCamZ;
@@ -101,11 +98,6 @@ void DistantDrawable::Update() {
 
 	DOUBLE maxDist = shiftDist/2;
 
-	//DOUBLE dX = mStickyCamX - oldX;
-	//DOUBLE dZ = mStickyCamZ - oldZ;
-
-	//DOUBLE shiftX = shiftDist * SIGNUM(dX) * (INT)(1 + floor(abs(dX)/shiftDist));
-	//DOUBLE shiftZ = shiftDist * SIGNUM(dZ) * (INT)(1 + floor(abs(dZ)/shiftDist));
 
 	for (int i = 0; i < mDrawables.size(); i++) {
 
@@ -118,7 +110,6 @@ void DistantDrawable::Update() {
 		DOUBLE posZ = state.getPosZ();
 
 		DOUBLE distX = mStickyCamX - posX;
-		//DOUBLE distY = abs(posY - mStickyCamY);
 		DOUBLE distZ = mStickyCamZ - posZ;
 
 		INT rollX = SIGNUM(distX) * (INT) floor( (abs(distX) + maxDist) / shiftDist );
@@ -143,10 +134,9 @@ void DistantDrawable::Update() {
 
 			//If unique, add to the generator. Else, it's already in there pending!
 			if (dt.unique()) {
-				mGenerator->InitialiseDistantTile(mDrawables[i].mState.mDistantTextures);
+				mGenerator->InitialiseDistantTile(dt);
 			}
 		}
-
 	}
 }
 
@@ -156,24 +146,15 @@ void DistantDrawable::Draw( ID3D11DeviceContext* pd3dContext )
 
 	Update();
 
-	//DOUBLE mindd = MIN_DRAW_DISTANCE - TILE_SIZE;
 	DOUBLE mindd = mMinDrawDistance;
 	DOUBLE maxdd = mMaxDrawDistance;
-
-	INT ts = mTileSize;
-
-	DOUBLE camX = mCamera->getEyeX();
-	DOUBLE camY = mCamera->getEyeY();
-	DOUBLE camZ = mCamera->getEyeZ();
-
-	DOUBLE maxDist = mTileSize * mTileDimensionLength/2;
 
 	for (int i = 0; i < mDrawables.size(); i++) {
 
 		DrawableState& state = mDrawables[i].mState;
 
 		DOUBLE posX = state.getPosX();
-		DOUBLE posY = state.getPosY();
+		//DOUBLE posY = state.getPosY();
 		DOUBLE posZ = state.getPosZ();
 
 		//if ( (posX > 0 && ((INT)posX/ts)%2 == 1) || 
@@ -186,12 +167,8 @@ void DistantDrawable::Draw( ID3D11DeviceContext* pd3dContext )
 		//		posZ = posZ - ts;
 		//}
 
-		//DOUBLE distX = abs(posX - camX);
-		//DOUBLE distY = abs(posY - camY);
-		//DOUBLE distZ = abs(posZ - camZ);
-
 		DOUBLE distX = abs(posX - mStickyCamX);
-		DOUBLE distY = abs(posY - mStickyCamY);
+		//DOUBLE distY = abs(posY - mStickyCamY);
 		DOUBLE distZ = abs(posZ - mStickyCamZ);
 
 		//If the texture hasn't been created yet, don't draw

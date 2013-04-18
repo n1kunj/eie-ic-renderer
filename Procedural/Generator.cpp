@@ -45,18 +45,20 @@ void Generator::Generate(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dCont
 		return;
 	}
 
-	DTPTR &first = mTextureQueue.front();
+	for (int i = 0; i < 1; i++) {
+		DTPTR &first = mTextureQueue.front();
 
-	if (first.unique()) {
-		first.reset();
+		if (first.unique()) {
+			first.reset();
+		}
+		else {
+			first->mAlbedoMap.CreateTexture(pd3dDevice);
+			first->mNormalMap.CreateTexture(pd3dDevice);
+			first->mHeightMap.CreateTexture(pd3dDevice);
+			ComputeTextures(pd3dContext, *first);
+		}
+		mTextureQueue.pop_front();
 	}
-	else {
-		first->mAlbedoMap.CreateTexture(pd3dDevice);
-		first->mNormalMap.CreateTexture(pd3dDevice);
-		first->mHeightMap.CreateTexture(pd3dDevice);
-		ComputeTextures(pd3dContext, *first);
-	}
-	mTextureQueue.pop_front();
 }
 
 void Generator::ComputeTextures(ID3D11DeviceContext* pd3dContext, DistantTextures &pDT )

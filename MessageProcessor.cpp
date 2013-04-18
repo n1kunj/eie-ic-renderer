@@ -73,7 +73,7 @@ RendererMessageProcessor::RendererMessageProcessor( MessageLogger* logger, Rende
 		.def_readwrite("mState", &BasicDrawable::mState),
 
 		class_<DistantDrawable,bases<Drawable>,boost::shared_ptr<Drawable> > ("DistantDrawable")
-		.def(constructor<Camera*,ShaderManager*,MeshManager*,Generator*,UINT,UINT,UINT,UINT>()),
+		.def(constructor<Camera*,ShaderManager*,MeshManager*,Generator*,UINT,DOUBLE, DOUBLE,DOUBLE>()),
 
 		class_<DrawableManager>("DrawableManager")
 		.def("addDrawable",&DrawableManager::addDrawable)
