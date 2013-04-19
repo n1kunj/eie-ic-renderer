@@ -165,6 +165,9 @@
     <ClInclude Include="Procedural\Generator.h">
       <Filter>Procedural</Filter>
     </ClInclude>
+    <ClInclude Include="Procedural\simplexnoise.h">
+      <Filter>Procedural</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugText.cpp" />
@@ -194,6 +197,9 @@
       <Filter>Procedural</Filter>
     </ClCompile>
     <ClCompile Include="Procedural\Generator.cpp">
+      <Filter>Procedural</Filter>
+    </ClCompile>
+    <ClCompile Include="Procedural\simplexnoise.cpp">
       <Filter>Procedural</Filter>
     </ClCompile>
   </ItemGroup>

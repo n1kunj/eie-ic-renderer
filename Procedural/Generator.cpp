@@ -1,6 +1,7 @@
 #include "DXUT.h"
 #include "Generator.h"
 #include "../Utils/ShaderTools.h"
+#include "simplexnoise.h"
 
 #define ALBNORM_MAP_RESOLUTION 256
 #define HEIGHT_MAP_RESOLUTION 256
@@ -74,6 +75,20 @@ void Generator::ComputeTextures(ID3D11DeviceContext* pd3dContext, DistantTexture
 	if (!mCompiled) {
 		return;
 	}
+
+	if (!mSimplexInit) {
+		UINT* simpl = mSimplexBuffer.MapDiscard(pd3dContext);
+		UINT index = 0;
+		for (int i = 0; i < 256; i++) {
+			for (int j = 0; j < 256; j++) {
+				simpl[index] = mSimplex2DLUT[i][j];
+				index++;
+			}
+		}
+		mSimplexBuffer.Unmap(pd3dContext);
+		mSimplexInit = TRUE;
+	}
+
 	D3D11_MAPPED_SUBRESOURCE MappedResource;
 	pd3dContext->Map(mCSCB,0,D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
 	HeightMapCSCB* cscb = (HeightMapCSCB*)MappedResource.pData;
@@ -89,12 +104,15 @@ void Generator::ComputeTextures(ID3D11DeviceContext* pd3dContext, DistantTexture
 		pDT.mNormalMap.mUAV,pDT.mHeightMap.mUAV};
 
 	pd3dContext->CSSetUnorderedAccessViews(0,3,uavs,0);
+	pd3dContext->CSSetShaderResources(0,1,&mSimplexBuffer.mSRV);
 
 	pd3dContext->CSSetShader(mCS,0,0);
 	pd3dContext->Dispatch(DISPATCH_DIM,DISPATCH_DIM,1);
 
 	ID3D11UnorderedAccessView* nulluavs[3] = {NULL,NULL,NULL};
 	pd3dContext->CSSetUnorderedAccessViews(0,3,nulluavs,0);
+	ID3D11ShaderResourceView* nullsrv[1] = {NULL};
+	pd3dContext->CSSetShaderResources(0,1,nullsrv);
 }
 
 HRESULT Generator::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
@@ -118,6 +136,53 @@ HRESULT Generator::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 	bd.ByteWidth = sizeof(HeightMapCSCB);
 	V_RETURN(pd3dDevice->CreateBuffer( &bd, NULL, &mCSCB ));
 
+	mSimplexBuffer.CreateBuffer(pd3dDevice);
+
 	mCompiled = TRUE;
 	return S_OK;
+}
+
+Generator::Generator( MessageLogger* pLogger ) : mCompiled(FALSE),mCS(NULL),mCSCB(NULL), mLogger(pLogger), mSimplexInit(FALSE)
+{
+
+	//if x0 > y0, use right 16 bits, else use left 16 bits
+	UINT i1 = 0;
+	UINT j1 = 1;
+
+
+
+	for (int ii = 0; ii < 256; ii++) {
+		for (int jj = 0; jj < 256; jj++) {
+			mSimplex2DLUT[ii][jj]=0;
+
+			for (int its = 0; its < 2; its++) {
+				i1 = !i1;
+				j1 = !j1;
+
+				UINT gi0 = perm[ii+perm[jj]] % 12;
+				UINT gi1 = perm[ii+i1+perm[jj+j1]] % 12;
+				UINT gi2 = perm[ii+1+perm[jj+1]] % 12;
+
+				UINT x0 = grad3[gi0][0]+1;
+				UINT y0 = grad3[gi0][1]+1;
+				UINT x1 = grad3[gi1][0]+1;
+				UINT y1 = grad3[gi1][1]+1;
+				UINT x2 = grad3[gi2][0]+1;
+				UINT y2 = grad3[gi2][1]+1;
+
+				UINT outval = 0;
+				outval|=x0;
+				outval|=y0<<2;
+				outval|=x1<<4;
+				outval|=y1<<6;
+				outval|=x2<<8;
+				outval|=y2<<10;
+				mSimplex2DLUT[ii][jj]|= (outval << (16*its));
+			}
+		}
+	}
+	mSimplexBuffer.mBindFlags = D3D11_BIND_SHADER_RESOURCE;
+	mSimplexBuffer.mCPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	mSimplexBuffer.mUsage = D3D11_USAGE_DYNAMIC;
+	mSimplexBuffer.mElements = 256*256;
 }

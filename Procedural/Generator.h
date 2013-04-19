@@ -33,15 +33,20 @@ private:
 	ID3D11ComputeShader* mCS;
 	ID3D11Buffer* mCSCB;
 	MessageLogger* mLogger;
+	UINT mSimplex2DLUT[256][256];
+	StructuredBuffer<UINT> mSimplexBuffer;
+	BOOL mSimplexInit;
 public:
 	HRESULT OnD3D11CreateDevice( ID3D11Device* pd3dDevice );
 	void OnD3D11DestroyDevice() {
 		SAFE_RELEASE(mCS);
 		SAFE_RELEASE(mCSCB);
 		mCompiled = FALSE;
+		mSimplexInit = FALSE;
+		mSimplexBuffer.OnD3D11DestroyDevice();
 	}
 
-	Generator(MessageLogger* pLogger) : mCompiled(FALSE),mCS(NULL),mCSCB(NULL), mLogger(pLogger) {}
+	Generator(MessageLogger* pLogger);
 	~Generator() {
 		OnD3D11DestroyDevice();
 		mTextureQueue.clear();
@@ -52,6 +57,7 @@ public:
 	}
 
 	void Generate(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, UINT pMaxRuntimeMillis);
+
 };
 
 #endif

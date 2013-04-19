@@ -47,13 +47,25 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	g = g * tileSize + coords.y;
 	
 	float2 hpos = float2(r,g);
-	float height = heightFunc(hpos);
+	
+	
+	float noises[11];
+	[loop] for (int i = 0; i < 11; i++) {
+		[call] noises[i] =  noise2D(hpos.x/scales[i],hpos.y/scales[i]);
+	}
+	
+	float height = 0;
+	for (int i = 0; i < 11; i++) {
+		height+=noises[i] * bases[i];
+	}
+	
+	//float height = heightFunc(hpos);
 	
 	sGroupHeights[groupThreadID.x][groupThreadID.y] = height;
 	
 	GroupMemoryBarrierWithGroupSync();
 	
- 	float hp[4];
+	float hp[4];
 	hp[0] = sGroupHeights[groupThreadID.x-1][groupThreadID.y];
 	hp[1] = sGroupHeights[groupThreadID.x+1][groupThreadID.y];
 	hp[2] = sGroupHeights[groupThreadID.x][groupThreadID.y-1];
@@ -91,21 +103,14 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	if (dotprod > 0.50f) {
 		colour = float3(1.0f,1.0f,1.0f);
 		normal = lerp(vertical,normal,0.5f);
-		
-		//Remove the high frequency noises
-		// for (int i = 8; i < 10; i++) {
-				// height -= bases[i] * noise2D(hpos.x/scales[i],hpos.y/scales[i]);
-		// }
-		//normal = float3(0,1,0);
 		SpecPower = 20;
 		SpecAmount = 0.75f;
 	}
 	else {
-		//colour = rock1;
 		colour = lerp(rock1,rock2,colNoise);
 	}
 	
-	// [flatten] if (all(groupThreadID.xy%2==0)) {
+	// [flatten] if ((groupThreadID.x + groupThreadID.y)%2==0) {
 		// colour = float3(1,0,0);
 	// }
 	// else {
