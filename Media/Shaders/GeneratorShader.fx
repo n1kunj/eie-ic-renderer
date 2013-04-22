@@ -13,23 +13,13 @@ cbuffer CSPass1CSCB : register( b0 )
 	uint tileSize;
 }
 
-static const float scales[11] = {3000,1500,750,
-	375,187.5,93.75,46.875,23.4375,
-	11.71875,5.859375,12000};
+#define NOISE_ITERATIONS 12
 
-static const float bases[11] = {500,250,125,
-	62.5,31.25,15.625,
-	7.8125,3.90625,1.953125,0.9765625,2000};
+static const float scales[NOISE_ITERATIONS] = {5120,2560,1280,640,320,
+	160,80,40,20,
+	10,5,2.5};
 
-float heightFunc(float2 pos) {
-//return 0;
-	float height = 0;
-	for (int i = 0; i < 11; i++) {
-		height+=bases[i] * noise2D(pos.x/scales[i],pos.y/scales[i]);
-	}
-
-	return height;
-}
+static const float bases[NOISE_ITERATIONS] = {512,256,128,64,32,16,8,4,2,1,0.5f,0.25f};
 
 groupshared float sGroupHeights[CS_GROUP_DIM][CS_GROUP_DIM];
 
@@ -49,17 +39,21 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	float2 hpos = float2(r,g);
 	
 	
-	float noises[11];
-	[loop] for (int i = 0; i < 11; i++) {
-		[call] noises[i] =  noise2D(hpos.x/scales[i],hpos.y/scales[i]);
-	}
-	
+	float noises[NOISE_ITERATIONS];
 	float height = 0;
-	for (int i = 0; i < 11; i++) {
+	[loop] for (int i = 0; i < 12; i++) {
+		//noises[i] =  noise2D(2 * hpos.x,2 * hpos.y);
+		noises[i] =  noise2D(hpos.x/(0.25*scales[i]),hpos.y/(0.25*scales[i]));
 		height+=noises[i] * bases[i];
+		//height+=(((int)(noises[i] * bases[i]))/4)*4;
 	}
+	height/=2.0f;
+	//height = (((int)height)/10)*10;
+	//height*=20.0f;
 	
-	//float height = heightFunc(hpos);
+	for (int i = 0; i < NOISE_ITERATIONS; i++) {
+		//height+=noises[i] * bases[i];
+	}
 	
 	sGroupHeights[groupThreadID.x][groupThreadID.y] = height;
 	
@@ -84,6 +78,7 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	//Then unpacked between 0 and 2
 	float SpecAmount = 0.1f;
 
+	//normal = float3(0,1,0);
 	
 	const float3 vertical = float3(0,1,0);
 	float dotprod = dot(vertical,normal);
@@ -100,9 +95,9 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 
 	float3 colour;
 	
-	if (dotprod > 0.50f) {
+	if (dotprod > 0.50f && height > 0) {
 		colour = float3(1.0f,1.0f,1.0f);
-		normal = lerp(vertical,normal,0.5f);
+		//normal = lerp(vertical,normal,0.5f);
 		SpecPower = 20;
 		SpecAmount = 0.75f;
 	}

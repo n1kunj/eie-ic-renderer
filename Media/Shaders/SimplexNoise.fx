@@ -41,9 +41,10 @@ StructuredBuffer<uint> simplexBuffer : register(t0);
 
     // For the 2D case, the simplex shape is an equilateral triangle.
     // Determine which simplex we are in.
-    int i1, j1; // Offsets for second (middle) corner of simplex in (i,j) coords
-    if(x0>y0) {i1=1; j1=0;} // lower triangle, XY order: (0,0)->(1,0)->(1,1)
-    else {i1=0; j1=1;} // upper triangle, YX order: (0,0)->(0,1)->(1,1)
+	
+    // Offsets for second (middle) corner of simplex in (i,j) coords
+	int i1 = x0>y0; // lower triangle, XY order: (0,0)->(1,0)->(1,1)
+	int j1 = !(i1); // upper triangle, YX order: (0,0)->(0,1)->(1,1)
 
     // A step of (1,0) in (i,j) means a step of (1-c,-c) in (x,y), and
     // a step of (0,1) in (i,j) means a step of (-c,1-c) in (x,y), where
@@ -58,7 +59,7 @@ StructuredBuffer<uint> simplexBuffer : register(t0);
     uint jj = j & 255;
 	
 	uint simpData = simplexBuffer[256*ii+jj];
-	simpData = x0>y0 ? simpData : simpData >> 16;
+	simpData = simpData >> (16*j1);
 
     // Calculate the contribution from the three corners
     float t0 = 0.5 - x0*x0-y0*y0;

@@ -28,13 +28,13 @@ struct ConstantOutputType
 ConstantOutputType HS_CONSTANT(InputPatch<VS_OUTPUT,4> inputPatch, uint patchId : SV_PrimitiveID)
 {    
 	ConstantOutputType output;
-	float tessAmount = 2;
-	// Set the tessellation factors for the three edges of the triangle.
+	float tessAmount = 4;
+	
 	output.edges[0] = tessAmount;
 	output.edges[1] = tessAmount;
 	output.edges[2] = tessAmount;
 	output.edges[3] = tessAmount;
-	// Set the tessellation factor for tessallating inside the triangle.
+	
 	output.inside[0] = tessAmount;
 	output.inside[1] = tessAmount;
 
