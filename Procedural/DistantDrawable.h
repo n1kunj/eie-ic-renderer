@@ -12,14 +12,16 @@ class LodLevel;
 
 class DistantDrawable : public Drawable {
 public:
-	DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager, MeshManager* pMeshManager, Generator* pGenerator, UINT pTileDimensionLength, DOUBLE pTileSize, DOUBLE pMinDrawDistance, DOUBLE pMaxDrawDistance);
+	DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager, MeshManager* pMeshManager, Generator* pGenerator, UINT pTileDimensionLength, UINT pNumLods, DOUBLE pMinTileSize);
 	void Draw(ID3D11DeviceContext* pd3dContext);
 	virtual ~DistantDrawable();
 private:
 	DistantDrawable(const DistantDrawable& copy);
 	std::vector<LodLevel*> mLods;
+	//MUST BE EVEN ELSE UNDEFINED RESULTS
 	UINT mTileDimensionLength;
-	UINT mNumTiles;
+	UINT mNumLods;
+	DOUBLE mMinTileSize;
 };
 
 

@@ -6,12 +6,6 @@
 #include "Generator.h"
 #include <algorithm>
 
-#define NUM_LODS 9
-#define MIN_TILE_SIZE 64
-
-//MUST BE EVEN ELSE UNDEFINED RESULTS!
-#define TILES_PER_LOD_DIMENSION 8
-
 #define SIGNUM(X) ((X > 0) ? 1 : ((X < 0) ? -1 : 0))
 
 class LodLevel {
@@ -229,17 +223,21 @@ private:
 	}
 };
 
-DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager, MeshManager* pMeshManager, Generator* pGenerator, UINT pTileDimensionLength, DOUBLE pTileSize, DOUBLE pMinDrawDistance, DOUBLE pMaxDrawDistance) : Drawable(pCamera)
+DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager, MeshManager* pMeshManager, Generator* pGenerator, UINT pTileDimensionLength, UINT pNumLods, DOUBLE pMinTileSize) : Drawable(pCamera)
 {
 	DrawableShader* shader = pShaderManager->getDrawableShader("DistantGBufferShader");
 	DrawableMesh* mesh = pMeshManager->getDrawableMesh("Plane16");
-	DOUBLE tileSize = MIN_TILE_SIZE;
 
-	mLods.reserve(NUM_LODS);
+	mTileDimensionLength = pTileDimensionLength;
+	mNumLods = pNumLods;
+	mMinTileSize = pMinTileSize;
 
+	mLods.reserve(mNumLods);
+
+	DOUBLE tileSize = pMinTileSize;
 	LodLevel* prevLod = NULL;
-	for (int i = 0; i < NUM_LODS; i++) {
-		LodLevel* ll = new LodLevel(tileSize,TILES_PER_LOD_DIMENSION,mesh,shader,pCamera,pGenerator,prevLod);
+	for (UINT i = 0; i < mNumLods; i++) {
+		LodLevel* ll = new LodLevel(tileSize,mTileDimensionLength,mesh,shader,pCamera,pGenerator,prevLod);
 
 		mLods.push_back(ll);
 
