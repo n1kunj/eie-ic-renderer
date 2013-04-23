@@ -6,11 +6,11 @@
 #include "Generator.h"
 #include <algorithm>
 
-#define NUM_LODS 2
-#define MIN_TILE_SIZE 256
+#define NUM_LODS 9
+#define MIN_TILE_SIZE 64
 
 //MUST BE EVEN ELSE UNDEFINED RESULTS!
-#define TILES_PER_LOD_DIMENSION 4
+#define TILES_PER_LOD_DIMENSION 8
 
 #define SIGNUM(X) ((X > 0) ? 1 : ((X < 0) ? -1 : 0))
 
@@ -56,7 +56,7 @@ public:
 
 				state.mDistantTextures = std::shared_ptr<DistantTextures>(new DistantTextures(posX,posY,posZ,mTileSize));
 
-				pGenerator->InitialiseDistantTile(state.mDistantTextures);
+				pGenerator->InitialiseDistantTileHighPriority(state.mDistantTextures);
 
 				mTiles.push_back(d);
 			}
@@ -140,13 +140,6 @@ public:
 
 		std::sort(mSortedTiles.begin(),mSortedTiles.end(),distCompare);
 
-		//INT td = mTileDim;
-
-		INT minOffX = 2*mStickyOffsetX - mHTD;
-		INT maxOffX = 2*mStickyOffsetX + mHTD-1;
-		INT minOffZ = 2*mStickyOffsetZ - mHTD;
-		INT maxOffZ = 2*mStickyOffsetZ + mHTD-1;
-
 		//Draw recursively
 		for (UINT n = 0; n < mSortedTiles.size(); n++) {
 			UINT index = mSortedTiles[n].second;
@@ -161,40 +154,8 @@ public:
 			INT offsetX = shiftx * mTileDim + j - mHTD;
 			INT offsetZ = shiftz * mTileDim + i - mHTD;
 
-			//If the texture hasn't been created yet, don't draw anything
-			if (!d.mState.mDistantTextures.unique()) {
-				continue;
-			}
-			if (mHigherLevel == NULL) {
-				d.Draw(pd3dContext);
-			}
-			else {
-				INT x0 = 2*offsetX;
-				INT z0 = 2*offsetZ;
-				INT x1 = x0+1;
-				INT z1 = z0+1;
-
-				if (x0 < minOffX || z0 < minOffZ
-					|| x1 > maxOffX || z1 > maxOffZ)
-				{
-					d.Draw(pd3dContext);
-					continue;
-				}
-
-				BOOL bl = mHigherLevel->DrawableAtPos(x0,z0);
-				BOOL br = mHigherLevel->DrawableAtPos(x1,z0);
-				BOOL tl = mHigherLevel->DrawableAtPos(x0,z1);
-				BOOL tr = mHigherLevel->DrawableAtPos(x1,z1);
-
-				if (bl && br && tl && tr) {
-					DrawRecursiveAtPos(x0,z0,pd3dContext);
-					DrawRecursiveAtPos(x1,z0,pd3dContext);
-					DrawRecursiveAtPos(x0,z1,pd3dContext);
-					DrawRecursiveAtPos(x1,z1,pd3dContext);
-				}
-				else {
-					d.Draw(pd3dContext);
-				}
+			if (d.mState.mDistantTextures.unique()) {
+				DrawRecursiveAtPos(offsetX,offsetZ,pd3dContext);
 			}
 		}
 	}
@@ -203,12 +164,11 @@ private:
 	BOOL DrawableAtPos(INT offsetX, INT offsetZ) {
 		//Get indexes i and j from offsets
 		//Double modulo because for some reason % actually calculates the remainder! Which can be negative!
+
 		INT j = (((offsetX + mHTD)%mTileDim)+mTileDim)%mTileDim;
 		INT i = (((offsetZ + mHTD)%mTileDim)+mTileDim)%mTileDim;
 
 		UINT index = i*mTileDim + j;
-		return FALSE;
-		//return TRUE;
 		return mTiles[index].mState.mDistantTextures.unique();
 	}
 
@@ -221,7 +181,46 @@ private:
 
 		UINT index = i*mTileDim + j;
 
-		mTiles[index].Draw(pd3dContext);
+		BasicDrawable& d = mTiles[index];
+
+		if (mHigherLevel == NULL) {
+			d.Draw(pd3dContext);
+		}
+		else {
+			INT x0 = 2*offsetX;
+			INT z0 = 2*offsetZ;
+			INT x1 = x0+1;
+			INT z1 = z0+1;
+
+			INT hlhtd = mHigherLevel->mHTD;
+			INT sox = mHigherLevel->mStickyOffsetX;
+			INT soz = mHigherLevel->mStickyOffsetZ;
+
+			INT minX = sox - hlhtd;
+			INT maxX = sox + hlhtd - 1;
+			INT minZ = soz - hlhtd;
+			INT maxZ = soz + hlhtd - 1;
+
+			if (x0 < minX || x1 > maxX || z0 < minZ || z1 > maxZ) {
+				d.Draw(pd3dContext);
+				return;
+			}
+
+			BOOL bl = mHigherLevel->DrawableAtPos(x0,z0);
+			BOOL br = mHigherLevel->DrawableAtPos(x1,z0);
+			BOOL tl = mHigherLevel->DrawableAtPos(x0,z1);
+			BOOL tr = mHigherLevel->DrawableAtPos(x1,z1);
+
+			if (bl && br && tl && tr) {
+				mHigherLevel->DrawRecursiveAtPos(x0,z0,pd3dContext);
+				mHigherLevel->DrawRecursiveAtPos(x1,z0,pd3dContext);
+				mHigherLevel->DrawRecursiveAtPos(x0,z1,pd3dContext);
+				mHigherLevel->DrawRecursiveAtPos(x1,z1,pd3dContext);
+			}
+			else {
+				d.Draw(pd3dContext);
+			}
+		}
 	}
 
 	static BOOL distCompare(std::pair<FLOAT,UINT> a, std::pair<FLOAT,UINT> b)
@@ -232,12 +231,13 @@ private:
 
 DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager, MeshManager* pMeshManager, Generator* pGenerator, UINT pTileDimensionLength, DOUBLE pTileSize, DOUBLE pMinDrawDistance, DOUBLE pMaxDrawDistance) : Drawable(pCamera)
 {
-	//mGenerator = pGenerator;
 	DrawableShader* shader = pShaderManager->getDrawableShader("DistantGBufferShader");
 	DrawableMesh* mesh = pMeshManager->getDrawableMesh("Plane16");
 	DOUBLE tileSize = MIN_TILE_SIZE;
-	LodLevel* prevLod = NULL;
+
 	mLods.reserve(NUM_LODS);
+
+	LodLevel* prevLod = NULL;
 	for (int i = 0; i < NUM_LODS; i++) {
 		LodLevel* ll = new LodLevel(tileSize,TILES_PER_LOD_DIMENSION,mesh,shader,pCamera,pGenerator,prevLod);
 
@@ -258,12 +258,12 @@ DistantDrawable::~DistantDrawable()
 
 void DistantDrawable::Draw( ID3D11DeviceContext* pd3dContext )
 {
-	for (int i = 0; i < NUM_LODS; i++) {
+	size_t num_lods = mLods.size();
+
+	for (int i = 0; i < num_lods; i++) {
 		mLods[i]->Update();
 	}
 
 	//Draw from the bottom up
-	LodLevel& ll = *mLods[NUM_LODS-1];
-
-	ll.Draw(pd3dContext);
+	mLods[num_lods-1]->Draw(pd3dContext);
 }

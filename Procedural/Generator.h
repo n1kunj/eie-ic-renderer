@@ -55,6 +55,9 @@ public:
 	void InitialiseDistantTile(DTPTR const& pDistantTexture) {
 		mTextureQueue.push_back(pDistantTexture);
 	}
+	void InitialiseDistantTileHighPriority(DTPTR const& pDistantTexture) {
+		mTextureQueue.push_front(pDistantTexture);
+	}
 
 	void Generate(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, UINT pMaxRuntimeMillis);
 
