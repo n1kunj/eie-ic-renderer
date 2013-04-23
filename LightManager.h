@@ -55,7 +55,7 @@ public:
 
 	//Returns the number of lights loaded into the buffer
 	UINT updateLightBuffer(ID3D11DeviceContext* pd3dContext, const Camera* pCamera,StructuredBuffer<PointLightGPU>* pLightListSB) {
-
+		//TODO: This is the most inefficient thing ever.
 		using namespace DirectX;
 
 		std::vector<std::pair<FLOAT,PointLightGPU> > tempList;

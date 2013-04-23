@@ -4,180 +4,254 @@
 #include "../Camera.h"
 #include "../MeshManager.h"
 #include "Generator.h"
+#include <algorithm>
+
+#define NUM_LODS 2
+#define MIN_TILE_SIZE 256
+
+//MUST BE EVEN ELSE UNDEFINED RESULTS!
+#define TILES_PER_LOD_DIMENSION 2
 
 #define SIGNUM(X) ((X > 0) ? 1 : ((X < 0) ? -1 : 0))
 
-DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager, MeshManager* pMeshManager, Generator* pGenerator, UINT pTileDimensionLength, DOUBLE pTileSize, DOUBLE pMinDrawDistance, DOUBLE pMaxDrawDistance) : Drawable(pCamera)
-{
-	mGenerator = pGenerator;
+class LodLevel {
+	DOUBLE mTileSize;
+	UINT mTileDimension;
+	std::vector<BasicDrawable> mTiles;
+	std::vector<std::pair<FLOAT,UINT> > mSortedTiles;
+	LodLevel* mHigherLevel;
+	Camera* mCamera;
+	Generator* mGenerator;
+	DOUBLE mMaxDist;
+public:
+	INT mStickyOffsetX;
+	INT mStickyOffsetZ;
 
-	mTileDimensionLength = pTileDimensionLength;
-	mNumTiles = pTileDimensionLength*pTileDimensionLength;
-	mTileSize = pTileSize;
-	mMeshScale = pTileSize;
-	mMinDrawDistance = pMinDrawDistance;
-	mMaxDrawDistance = pMaxDrawDistance;
+	LodLevel(DOUBLE pTileSize, UINT pTileDimension, DrawableMesh* pMesh, DrawableShader* pShader, Camera* pCamera, Generator* pGenerator, LodLevel* pHigherLevel)
+		: mTileSize(pTileSize), mTileDimension(pTileDimension), mCamera(pCamera), mHigherLevel(pHigherLevel), mGenerator(pGenerator)
+	{
+		mStickyOffsetX = 0;
+		mStickyOffsetZ = 0;
 
-	mShader = pShaderManager->getDrawableShader("DistantGBufferShader");
-	mDrawables.reserve(mNumTiles);
+		mMaxDist = mTileSize * mTileDimension / 2;
 
-	DrawableMesh* mesh = pMeshManager->getDrawableMesh("Plane16");
+		mTiles.reserve(mTileDimension * mTileDimension);
 
-	DOUBLE posx = 0 + mTileSize/2;
-	DOUBLE posy = 0;
-	DOUBLE posz = 0 + mTileSize/2;
+		INT halfTD = mTileDimension/2;
+		//Create and add all the tiles to the list, centre of our LOD is at 0,0,0 for simplicity
+		for (INT i = -halfTD; i < halfTD; i++) {
+			for (INT j = -halfTD; j < halfTD; j++) {
+				BasicDrawable d = BasicDrawable(pMesh,pShader,pCamera);
 
-	//Prevents lots of casting later
-	INT tdl = mTileDimensionLength;
+				DrawableState& state = d.mState;
 
-	INT tilex = 0;
-	INT tilez = 0;
+				state.mScale = DirectX::XMFLOAT3((FLOAT)mTileSize, (FLOAT)mTileSize, (FLOAT)mTileSize);
 
-	for (UINT i = 0; i < mNumTiles; i++) {
-		mDrawables.push_back(BasicDrawable(mesh,mShader,pCamera));
-		DOUBLE xLoc = posx + (tilex - tdl/2) * mTileSize;
-		DOUBLE yLoc = posy;
-		DOUBLE zLoc = posz + (tilez - tdl/2) * mTileSize;
-		mDrawables[i].mState.setPosition(xLoc, yLoc, zLoc);
-		mDrawables[i].mState.mScale = DirectX::XMFLOAT3((FLOAT)mMeshScale, (FLOAT)mMeshScale, (FLOAT)mMeshScale);
-		mDrawables[i].mState.mDistantTextures = std::shared_ptr<DistantTextures>(new DistantTextures(xLoc,yLoc,zLoc, mTileSize));
+				DOUBLE posX = j * mTileSize;
+				DOUBLE posY = 0;
+				DOUBLE posZ = i * mTileSize;
+				posX += mTileSize/2;
+				posZ += mTileSize/2;
+				state.setPosition(posX,posY,posZ);
 
-		mGenerator->InitialiseDistantTile(mDrawables[i].mState.mDistantTextures);
+				state.mDistantTextures = std::shared_ptr<DistantTextures>(new DistantTextures(posX,posY,posZ,mTileSize));
 
-		tilex++;
-		if (tilex == tdl) {
-			tilez++;
-			tilex = 0;
+				pGenerator->InitialiseDistantTile(state.mDistantTextures);
+
+				mTiles.push_back(d);
+			}
+		}
+
+		//Update all tiles to where they need to be
+		Update();
+
+		for (int i = 0; i < mTiles.size(); i++) {
+			mSortedTiles.push_back(std::pair<FLOAT,UINT>(0.0f,i));
 		}
 	}
 
-	Update();
+	~LodLevel() {
+	}
+
+	void Update() {
+		INT oldX = mStickyOffsetX;
+		INT oldZ = mStickyOffsetZ;
+
+		DOUBLE camX = mCamera->getEyeX();
+		DOUBLE camZ = mCamera->getEyeZ();
+
+		DOUBLE hts = mTileSize/2;
+
+		mStickyOffsetX = (INT)((camX+SIGNUM(camX)*hts)/mTileSize);
+		mStickyOffsetZ = (INT)((camZ+SIGNUM(camZ)*hts)/mTileSize);
+
+		//Early return if we haven't moved
+		if (mStickyOffsetX == oldX && mStickyOffsetZ == oldZ) {
+			return;
+		}
+
+		for (INT i = 0; i < mTileDimension; i++) {
+			for (INT j = 0; j < mTileDimension; j++) {
+
+				BasicDrawable& d = mTiles[i * mTileDimension + j];
+				DrawableState& s = d.mState;
+
+				DOUBLE posX = s.getPosX();
+				DOUBLE posY = s.getPosY();
+				DOUBLE posZ = s.getPosZ();
+
+				INT shiftx = (INT)((mStickyOffsetX + (mTileDimension-1) - j)/mTileDimension);
+				INT shiftz = (INT)((mStickyOffsetZ + (mTileDimension-1) - i)/mTileDimension);
+
+				INT td = mTileDimension;
+				INT htd = mTileDimension/2;
+
+				DOUBLE newPosX = (shiftx * td + j - htd) * mTileSize + hts;
+
+				DOUBLE newPosZ = (shiftz * td + i - htd) * mTileSize + hts;
+
+				if (newPosX != posX || newPosZ != posZ) {
+					s.setPosition(newPosX,posY,newPosZ);
+
+					auto& dt = s.mDistantTextures;
+					dt->mPosX = newPosX;
+					dt->mPosZ = newPosZ;
+
+					//If unique, add to the generator. Else, it's already in there pending!
+					if (dt.unique()) {
+						mGenerator->InitialiseDistantTile(dt);
+					}
+				}
+			}
+		}
+	}
+
+	void Draw(ID3D11DeviceContext* pd3dContext) {
+
+		//Sort by distance to avoid overdraw
+		DOUBLE camX = mCamera->getEyeX();
+		DOUBLE camZ = mCamera->getEyeZ();
+
+		for (int n = 0; n < mSortedTiles.size(); n++) {
+			DrawableState &s = mTiles[mSortedTiles[n].second].mState;
+
+			DOUBLE distX = s.getPosX() - camX;
+			DOUBLE distZ = s.getPosZ() - camZ;
+			FLOAT distsq = (FLOAT)(distX * distX + distZ * distZ);
+
+			mSortedTiles[n].first = distsq;
+		}
+
+		std::sort(mSortedTiles.begin(),mSortedTiles.end(),distCompare);
+
+		DOUBLE halfTileSize = mTileSize/2;
+
+		//Draw recursively
+		for (UINT n = 0; n < mSortedTiles.size(); n++) {
+			UINT index = mSortedTiles[n].second;
+			BasicDrawable& d = mTiles[mSortedTiles[n].second];
+
+			INT i = index / mTileDimension;
+			INT j = index % mTileDimension;
+			INT shiftx = (INT)((mStickyOffsetX + (mTileDimension-1) - j)/mTileDimension);
+			INT shiftz = (INT)((mStickyOffsetZ + (mTileDimension-1) - i)/mTileDimension);
+
+			INT td = mTileDimension;
+			INT htd = mTileDimension/2;
+
+			INT offsetX = shiftx * td + j - htd;
+			INT offsetZ = shiftz * td + i - htd;
+
+			//If the texture hasn't been created yet, don't draw anything
+			if (!d.mState.mDistantTextures.unique()) {
+				continue;
+			}
+			if (mHigherLevel == NULL) {
+				d.Draw(pd3dContext);
+			}
+			else {
+				DOUBLE x1 = d.mState.getPosX();
+				DOUBLE z1 = d.mState.getPosZ();
+				DOUBLE x0 = x1 - halfTileSize;
+				DOUBLE z0 = z1 - halfTileSize;
+
+				BOOL bl = mHigherLevel->DrawableAtPos(x0,z0);
+				BOOL br = mHigherLevel->DrawableAtPos(x1,z0);
+				BOOL tl = mHigherLevel->DrawableAtPos(x0,z1);
+				BOOL tr = mHigherLevel->DrawableAtPos(x1,z1);
+
+				if (bl && br && tl && tr) {
+					DrawRecursiveAtPos(x0,z0,pd3dContext);
+					DrawRecursiveAtPos(x1,z0,pd3dContext);
+					DrawRecursiveAtPos(x0,z1,pd3dContext);
+					DrawRecursiveAtPos(x1,z1,pd3dContext);
+				}
+				else {
+					d.Draw(pd3dContext);
+				}
+			}
+		}
+	}
+private:
+
+	BOOL DrawableAtPos(DOUBLE x, DOUBLE z) {
+		//First bounds check
+		//if ( abs(x - mStickyCamX) > mMaxDist || abs(z - mStickyCamZ) > mMaxDist) {
+		//	return FALSE;
+		//}
+
+		//First find the drawable with a bottom left corner at x and z
+
+		return FALSE;
+	}
+
+	//If draw success, returns true. Else, returns false
+	//YOU MUST CALL DRAWABLEATPOS FIRST TO CHECK IF IT CAN BE DRAWN
+	//RESULTS ARE UNDEFINED IF YOU DRAW SOMETHING THAT CANNOT BE DRAWN
+	void DrawRecursiveAtPos(DOUBLE x, DOUBLE z, ID3D11DeviceContext* pd3dContext) {
+
+	}
+
+	static BOOL distCompare(std::pair<FLOAT,UINT> a, std::pair<FLOAT,UINT> b)
+	{
+		return a.first < b.first;
+	}
+};
+
+DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager, MeshManager* pMeshManager, Generator* pGenerator, UINT pTileDimensionLength, DOUBLE pTileSize, DOUBLE pMinDrawDistance, DOUBLE pMaxDrawDistance) : Drawable(pCamera)
+{
+	//mGenerator = pGenerator;
+	DrawableShader* shader = pShaderManager->getDrawableShader("DistantGBufferShader");
+	DrawableMesh* mesh = pMeshManager->getDrawableMesh("Plane16");
+	DOUBLE tileSize = MIN_TILE_SIZE;
+	LodLevel* prevLod = NULL;
+	mLods.reserve(NUM_LODS);
+	for (int i = 0; i < NUM_LODS; i++) {
+		LodLevel* ll = new LodLevel(tileSize,TILES_PER_LOD_DIMENSION,mesh,shader,pCamera,pGenerator,prevLod);
+
+		mLods.push_back(ll);
+
+		prevLod = ll;
+		tileSize*=2;
+	}
+
 }
 
 DistantDrawable::~DistantDrawable()
 {
-}
-
-void DistantDrawable::Update() {
-	DOUBLE oldX = mStickyCamX;
-	DOUBLE oldY = mStickyCamY;
-	DOUBLE oldZ = mStickyCamZ;
-
-	DOUBLE camX = mCamera->getEyeX();
-	DOUBLE camY = mCamera->getEyeY();
-	DOUBLE camZ = mCamera->getEyeZ();
-
-	if (camX >= 0) {
-		mStickyCamX = mTileSize * floor(camX/mTileSize);
-	}
-	else {
-		mStickyCamX = mTileSize * ceil(camX/mTileSize);
-	}
-
-	if (camY >= 0) {
-		mStickyCamY = mTileSize * floor(camY/mTileSize);
-	}
-	else {
-		mStickyCamY = mTileSize * ceil(camY/mTileSize);
-	}
-
-	if (camZ >= 0) {
-		mStickyCamZ = mTileSize * floor(camZ/mTileSize);
-	}
-	else {
-		mStickyCamZ = mTileSize * ceil(camZ/mTileSize);
-	}
-
-	//No need to be moving stuff around if the sticky cam hasn't moved.
-	if (oldX == mStickyCamX && oldY == mStickyCamY && oldZ == mStickyCamZ) {
-		return;
-	}
-
-	DOUBLE shiftDist = mTileSize * mTileDimensionLength;
-
-	DOUBLE maxDist = shiftDist/2;
-
-
-	for (int i = 0; i < mDrawables.size(); i++) {
-
-		DrawableState& state = mDrawables[i].mState;
-
-		BOOL changed = FALSE;
-
-		DOUBLE posX = state.getPosX();
-		DOUBLE posY = state.getPosY();
-		DOUBLE posZ = state.getPosZ();
-
-		DOUBLE distX = mStickyCamX - posX;
-		DOUBLE distZ = mStickyCamZ - posZ;
-
-		INT rollX = SIGNUM(distX) * (INT) floor( (abs(distX) + maxDist) / shiftDist );
-		if (rollX!=0) {
-			posX += rollX * shiftDist;
-			state.setPosition(posX,posY,posZ);
-			changed = TRUE;
-		}
-
-		INT rollZ = SIGNUM(distZ) * (INT) floor( (abs(distZ) + maxDist) / shiftDist );
-		if (rollZ!=0) {
-			posZ += rollZ * shiftDist;
-			state.setPosition(posX,posY,posZ);
-			changed = TRUE;
-		}
-		
-		if (changed) {
-			auto& dt = state.mDistantTextures;
-			dt->mPosX = posX;
-			dt->mPosY = posY;
-			dt->mPosZ = posZ;
-
-			//If unique, add to the generator. Else, it's already in there pending!
-			if (dt.unique()) {
-				mGenerator->InitialiseDistantTile(dt);
-			}
-		}
+	for (int i = 0; i < mLods.size(); i++ ) {
+		delete mLods[i];
 	}
 }
-
 
 void DistantDrawable::Draw( ID3D11DeviceContext* pd3dContext )
 {
-
-	Update();
-
-	DOUBLE mindd = mMinDrawDistance;
-	DOUBLE maxdd = mMaxDrawDistance;
-
-	for (int i = 0; i < mDrawables.size(); i++) {
-
-		DrawableState& state = mDrawables[i].mState;
-
-		DOUBLE posX = state.getPosX();
-		//DOUBLE posY = state.getPosY();
-		DOUBLE posZ = state.getPosZ();
-
-		//if ( (posX > 0 && ((INT)posX/ts)%2 == 1) || 
-		//	(posX < 0 && ((INT)posX/ts)%2 == 0) ) {
-		//		posX = posX - ts;
-		//}
-
-		//if ( (posZ > 0 && ((INT)posZ/ts)%2 == 1) || 
-		//	(posZ < 0 && ((INT)posZ/ts)%2 == 0) ) {
-		//		posZ = posZ - ts;
-		//}
-
-		DOUBLE distX = abs(posX - mStickyCamX);
-		//DOUBLE distY = abs(posY - mStickyCamY);
-		DOUBLE distZ = abs(posZ - mStickyCamZ);
-
-		//If the texture hasn't been created yet, don't draw
-		if (!mDrawables[i].mState.mDistantTextures.unique()) {
-			continue;
-		}
-
-		//TODO: deal with y height
-		if ((distX < maxdd && distZ < maxdd) && (distX >= mindd || distZ >= mindd)) {
-			mDrawables[i].Draw(pd3dContext);
-		}
+	for (int i = 0; i < NUM_LODS; i++) {
+		mLods[i]->Update();
 	}
+
+	//Draw from the bottom up
+	LodLevel& ll = *mLods[NUM_LODS-1];
+
+	ll.Draw(pd3dContext);
 }

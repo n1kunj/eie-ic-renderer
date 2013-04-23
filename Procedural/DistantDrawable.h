@@ -8,6 +8,7 @@
 class ShaderManager;
 class MeshManager;
 class Generator;
+class LodLevel;
 
 class DistantDrawable : public Drawable {
 public:
@@ -15,20 +16,10 @@ public:
 	void Draw(ID3D11DeviceContext* pd3dContext);
 	virtual ~DistantDrawable();
 private:
-	void Update();
 	DistantDrawable(const DistantDrawable& copy);
-	DrawableShader* mShader;
-	std::vector<BasicDrawable> mDrawables;
-	Generator* mGenerator;
+	std::vector<LodLevel*> mLods;
 	UINT mTileDimensionLength;
 	UINT mNumTiles;
-	DOUBLE mTileSize;
-	DOUBLE mMeshScale;
-	DOUBLE mMinDrawDistance;
-	DOUBLE mMaxDrawDistance;
-	DOUBLE mStickyCamX;
-	DOUBLE mStickyCamY;
-	DOUBLE mStickyCamZ;
 };
 
 
