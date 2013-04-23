@@ -10,13 +10,14 @@
 #define MIN_TILE_SIZE 256
 
 //MUST BE EVEN ELSE UNDEFINED RESULTS!
-#define TILES_PER_LOD_DIMENSION 2
+#define TILES_PER_LOD_DIMENSION 4
 
 #define SIGNUM(X) ((X > 0) ? 1 : ((X < 0) ? -1 : 0))
 
 class LodLevel {
 	DOUBLE mTileSize;
-	UINT mTileDimension;
+	INT mTileDim;
+	INT mHTD;
 	std::vector<BasicDrawable> mTiles;
 	std::vector<std::pair<FLOAT,UINT> > mSortedTiles;
 	LodLevel* mHigherLevel;
@@ -28,19 +29,18 @@ public:
 	INT mStickyOffsetZ;
 
 	LodLevel(DOUBLE pTileSize, UINT pTileDimension, DrawableMesh* pMesh, DrawableShader* pShader, Camera* pCamera, Generator* pGenerator, LodLevel* pHigherLevel)
-		: mTileSize(pTileSize), mTileDimension(pTileDimension), mCamera(pCamera), mHigherLevel(pHigherLevel), mGenerator(pGenerator)
+		: mTileSize(pTileSize), mTileDim(pTileDimension), mHTD(pTileDimension/2), mCamera(pCamera), mHigherLevel(pHigherLevel), mGenerator(pGenerator)
 	{
 		mStickyOffsetX = 0;
 		mStickyOffsetZ = 0;
 
-		mMaxDist = mTileSize * mTileDimension / 2;
+		mMaxDist = mTileSize * mTileDim / 2;
 
-		mTiles.reserve(mTileDimension * mTileDimension);
+		mTiles.reserve(mTileDim * mTileDim);
 
-		INT halfTD = mTileDimension/2;
 		//Create and add all the tiles to the list, centre of our LOD is at 0,0,0 for simplicity
-		for (INT i = -halfTD; i < halfTD; i++) {
-			for (INT j = -halfTD; j < halfTD; j++) {
+		for (INT i = -mHTD; i < mHTD; i++) {
+			for (INT j = -mHTD; j < mHTD; j++) {
 				BasicDrawable d = BasicDrawable(pMesh,pShader,pCamera);
 
 				DrawableState& state = d.mState;
@@ -90,25 +90,21 @@ public:
 			return;
 		}
 
-		for (INT i = 0; i < mTileDimension; i++) {
-			for (INT j = 0; j < mTileDimension; j++) {
+		for (INT i = 0; i < mTileDim; i++) {
+			for (INT j = 0; j < mTileDim; j++) {
 
-				BasicDrawable& d = mTiles[i * mTileDimension + j];
+				BasicDrawable& d = mTiles[i * mTileDim + j];
 				DrawableState& s = d.mState;
 
 				DOUBLE posX = s.getPosX();
 				DOUBLE posY = s.getPosY();
 				DOUBLE posZ = s.getPosZ();
 
-				INT shiftx = (INT)((mStickyOffsetX + (mTileDimension-1) - j)/mTileDimension);
-				INT shiftz = (INT)((mStickyOffsetZ + (mTileDimension-1) - i)/mTileDimension);
+				INT shiftx = (INT)floor((DOUBLE)(mStickyOffsetX + mTileDim-1 - j)/mTileDim);
+				INT shiftz = (INT)floor((DOUBLE)(mStickyOffsetZ + mTileDim-1 - i)/mTileDim);
 
-				INT td = mTileDimension;
-				INT htd = mTileDimension/2;
-
-				DOUBLE newPosX = (shiftx * td + j - htd) * mTileSize + hts;
-
-				DOUBLE newPosZ = (shiftz * td + i - htd) * mTileSize + hts;
+				DOUBLE newPosX = (shiftx * mTileDim + j - mHTD) * mTileSize + hts;
+				DOUBLE newPosZ = (shiftz * mTileDim + i - mHTD) * mTileSize + hts;
 
 				if (newPosX != posX || newPosZ != posZ) {
 					s.setPosition(newPosX,posY,newPosZ);
@@ -144,23 +140,26 @@ public:
 
 		std::sort(mSortedTiles.begin(),mSortedTiles.end(),distCompare);
 
-		DOUBLE halfTileSize = mTileSize/2;
+		//INT td = mTileDim;
+
+		INT minOffX = 2*mStickyOffsetX - mHTD;
+		INT maxOffX = 2*mStickyOffsetX + mHTD-1;
+		INT minOffZ = 2*mStickyOffsetZ - mHTD;
+		INT maxOffZ = 2*mStickyOffsetZ + mHTD-1;
 
 		//Draw recursively
 		for (UINT n = 0; n < mSortedTiles.size(); n++) {
 			UINT index = mSortedTiles[n].second;
 			BasicDrawable& d = mTiles[mSortedTiles[n].second];
 
-			INT i = index / mTileDimension;
-			INT j = index % mTileDimension;
-			INT shiftx = (INT)((mStickyOffsetX + (mTileDimension-1) - j)/mTileDimension);
-			INT shiftz = (INT)((mStickyOffsetZ + (mTileDimension-1) - i)/mTileDimension);
+			INT i = index / mTileDim;
+			INT j = index % mTileDim;
 
-			INT td = mTileDimension;
-			INT htd = mTileDimension/2;
+			INT shiftx = (INT)floor((DOUBLE)(mStickyOffsetX + mTileDim-1 - j)/mTileDim);
+			INT shiftz = (INT)floor((DOUBLE)(mStickyOffsetZ + mTileDim-1 - i)/mTileDim);
 
-			INT offsetX = shiftx * td + j - htd;
-			INT offsetZ = shiftz * td + i - htd;
+			INT offsetX = shiftx * mTileDim + j - mHTD;
+			INT offsetZ = shiftz * mTileDim + i - mHTD;
 
 			//If the texture hasn't been created yet, don't draw anything
 			if (!d.mState.mDistantTextures.unique()) {
@@ -170,10 +169,17 @@ public:
 				d.Draw(pd3dContext);
 			}
 			else {
-				DOUBLE x1 = d.mState.getPosX();
-				DOUBLE z1 = d.mState.getPosZ();
-				DOUBLE x0 = x1 - halfTileSize;
-				DOUBLE z0 = z1 - halfTileSize;
+				INT x0 = 2*offsetX;
+				INT z0 = 2*offsetZ;
+				INT x1 = x0+1;
+				INT z1 = z0+1;
+
+				if (x0 < minOffX || z0 < minOffZ
+					|| x1 > maxOffX || z1 > maxOffZ)
+				{
+					d.Draw(pd3dContext);
+					continue;
+				}
 
 				BOOL bl = mHigherLevel->DrawableAtPos(x0,z0);
 				BOOL br = mHigherLevel->DrawableAtPos(x1,z0);
@@ -194,22 +200,28 @@ public:
 	}
 private:
 
-	BOOL DrawableAtPos(DOUBLE x, DOUBLE z) {
-		//First bounds check
-		//if ( abs(x - mStickyCamX) > mMaxDist || abs(z - mStickyCamZ) > mMaxDist) {
-		//	return FALSE;
-		//}
+	BOOL DrawableAtPos(INT offsetX, INT offsetZ) {
+		//Get indexes i and j from offsets
+		//Double modulo because for some reason % actually calculates the remainder! Which can be negative!
+		INT j = (((offsetX + mHTD)%mTileDim)+mTileDim)%mTileDim;
+		INT i = (((offsetZ + mHTD)%mTileDim)+mTileDim)%mTileDim;
 
-		//First find the drawable with a bottom left corner at x and z
-
+		UINT index = i*mTileDim + j;
 		return FALSE;
+		//return TRUE;
+		return mTiles[index].mState.mDistantTextures.unique();
 	}
 
 	//If draw success, returns true. Else, returns false
 	//YOU MUST CALL DRAWABLEATPOS FIRST TO CHECK IF IT CAN BE DRAWN
 	//RESULTS ARE UNDEFINED IF YOU DRAW SOMETHING THAT CANNOT BE DRAWN
-	void DrawRecursiveAtPos(DOUBLE x, DOUBLE z, ID3D11DeviceContext* pd3dContext) {
+	void DrawRecursiveAtPos(INT offsetX, INT offsetZ, ID3D11DeviceContext* pd3dContext) {
+		INT j = (((offsetX + mHTD)%mTileDim)+mTileDim)%mTileDim;
+		INT i = (((offsetZ + mHTD)%mTileDim)+mTileDim)%mTileDim;
 
+		UINT index = i*mTileDim + j;
+
+		mTiles[index].Draw(pd3dContext);
 	}
 
 	static BOOL distCompare(std::pair<FLOAT,UINT> a, std::pair<FLOAT,UINT> b)

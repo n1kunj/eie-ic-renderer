@@ -50,7 +50,6 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	height/=2.0f;
 	//height = (((int)height)/10)*10;
 	//height*=20.0f;
-	height = 0;
 	
 	for (int i = 0; i < NOISE_ITERATIONS; i++) {
 		//height+=noises[i] * bases[i];
