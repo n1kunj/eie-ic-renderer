@@ -2,7 +2,7 @@ function runcube()
 run("cube.lua")
 end
 
-CAMERA:setEye(0,500,0)
+--CAMERA:setEye(0,500,0)
 
 reset()
 
