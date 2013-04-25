@@ -2,11 +2,18 @@
 #include "GBuffer.h"
 #define CS_GROUP_DIM 18
 
+#define TILE_SIZE 64
+
 RWTexture2D<float4> albedoTex : register(t0);
 RWTexture2D<float4> normalTex : register(t1);
 RWTexture2D<float> heightTex : register(t2);
 
 uint2 poorRNG(float2 xy);
+
+float minDist(float2 l1, float2 l2, float2 p);
+bool isLeftOf(float2 a, float2 b, float2 p);
+
+float2 getShiftedCoords(float2 p);
 
 cbuffer CSPass1CSCB : register( b0 )
 {
@@ -65,7 +72,63 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	
 	float2 pos = (hpos);
 	
-	int TILE_SIZE = 128;
+	//Find the bottom left value of the quadrant we're assumed to be in
+	float2 bl = TILE_SIZE * floor(pos/TILE_SIZE);
+	
+	float2 centre = getShiftedCoords(bl);
+	float2 top = getShiftedCoords(bl + float2(0,TILE_SIZE));
+	float2 right = getShiftedCoords(bl + float2(TILE_SIZE,0));
+	float2 bottom = getShiftedCoords(bl + float2(0,-TILE_SIZE));
+	float2 left = getShiftedCoords(bl + float2(-TILE_SIZE,0));
+	
+	bool lct = isLeftOf(centre,top,pos);
+	bool lcr = isLeftOf(centre,right,pos);
+	bool lcb = isLeftOf(centre,bottom,pos);
+	bool lcl = isLeftOf(centre,left,pos);
+	
+	if (!lcl && lct) {
+		bl = bl + float2(-TILE_SIZE,0);
+	}
+	else if (!lcb && lcl) {
+		bl = bl + float2(-TILE_SIZE,-TILE_SIZE);
+	}
+	else if (!lcr && lcb) {
+		bl = bl + float2(0,-TILE_SIZE);
+	}
+	else {
+		bl = bl;
+	}
+
+	float2 bounds[4];
+	
+	bounds[0] = getShiftedCoords(bl);
+	bounds[1] = getShiftedCoords(bl + float2(TILE_SIZE,0));
+	bounds[2] = getShiftedCoords(bl + float2(TILE_SIZE,TILE_SIZE));
+	bounds[3] = getShiftedCoords(bl + float2(0,TILE_SIZE));
+	
+	int hasRoad = 0;
+	
+	for (int i = 0; i < 4; i++) {
+		float dist = minDist(bounds[i%4],bounds[(i+1)%4],pos);
+		hasRoad = (dist < 5.0f) ? 1 : hasRoad;
+	}
+	
+	float2 noisepos = bounds[0]/10.0f;
+	
+	float hval = pow((noise2D(noisepos.x,noisepos.y)+1)/2,2);
+	
+	if (hasRoad) {
+		height = 0;
+	}
+	else {
+		height = 10 + 120 * hval;
+	}
+	
+	float3 colour;
+	//colour = float3(height,height,height);
+	colour = height;
+
+/* 	int TILE_SIZE = 128;
 	
 	float2 loc = TILE_SIZE*floor(hpos/TILE_SIZE);
 	
@@ -123,11 +186,12 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	v2 = (v2 > 0.10f) ? 1 : 0;
 
 	//height = (v1 + v2)/2;
-	height = v1;*/
-	height = (height > 0.05f) ? 1 : 0; 
-
-
+	height = v1;
 	
+	height = (height > 0.05f) ? 1 : 0;
+
+	*/
+		
 	sGroupHeights[groupThreadID.x][groupThreadID.y] = height;
 
 	GroupMemoryBarrierWithGroupSync();
@@ -165,10 +229,8 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	colNoise.y = noise2D(colPos.x+1000,colPos.y-1000);
 	colNoise.z = noise2D(colPos.x+10000,colPos.y-10000);
 	colNoise = (colNoise / 2) + 0.5f;
-
-	float3 colour;
 	
-	if (dotprod > 0.50f && height > 500) {
+/* 	if (dotprod > 0.50f && height > 500) {
 		colour = float3(1.0f,1.0f,1.0f);
 		//normal = lerp(vertical,normal,0.5f);
 		SpecPower = 20;
@@ -176,7 +238,7 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	}
 	else {
 		colour = lerp(rock1,rock2,colNoise);
-	}
+	} */
 	
 	// [flatten] if ((groupThreadID.x + groupThreadID.y)%2==0) {
 		// colour = float3(1,0,0);
@@ -185,7 +247,7 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 		// colour = float3(0,1,0);
 	// }
 	
-	colour = float3(height,height,height);
+
 
 	
 	if (all(groupThreadID.xy > 0) && all(groupThreadID.xy < CS_GROUP_DIM-1)) {
@@ -223,4 +285,37 @@ uint2 poorRNG(float2 xy)
 	uint r2 = (m_z << 16) + m_w;
 	
 	return uint2(r1,r2);
+}
+
+float minDist( float2 l1, float2 l2, float2 p) {
+	float2 vec = l2-l1;
+	float lensq = vec.x*vec.x + vec.y*vec.y;
+	
+	float t = dot(p-l1,vec)/lensq;
+	
+	float2 proj;
+	
+	[flatten] if (t < 0.0f) {
+		proj = l1;
+	}
+	else if (t >1.0f) {
+		proj = l2;
+	}
+	else {
+		proj = l1 + t * vec;
+	}
+	return length(p-proj);
+}
+
+//Return +1 if left of, 0 if on or to the right of
+//Results assume a is "below" b
+bool isLeftOf(float2 a, float2 b, float2 p) {
+	float2 AB = b-a;
+	float2 AP = p-b;
+	return clamp(sign(AB.x*AP.y-AB.y*AP.x),0,1);
+	
+}
+
+float2 getShiftedCoords(float2 p) {
+	return p + poorRNG(p)%(TILE_SIZE/2);
 }
