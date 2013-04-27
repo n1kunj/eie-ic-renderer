@@ -74,7 +74,8 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	float2 pos = (hpos);
 	
 	//Find the bottom left value of the quadrant we're assumed to be in
-	float2 bl = TILE_SIZE * floor(pos/TILE_SIZE);
+	int2 tile_id = floor(pos/TILE_SIZE);
+	float2 bl = TILE_SIZE * tile_id;
 	
 	float2 centre = getShiftedCoords(bl);
 	float2 top = getShiftedCoords(bl + float2(0,TILE_SIZE));
@@ -88,17 +89,15 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	bool lcl = isLeftOf(centre,left,pos);
 	
 	if (!lcl && lct) {
-		bl = bl + float2(-TILE_SIZE,0);
+		tile_id += int2(-1,0);
 	}
 	else if (!lcb && lcl) {
-		bl = bl + float2(-TILE_SIZE,-TILE_SIZE);
+		tile_id += int2(-1,-1);
 	}
 	else if (!lcr && lcb) {
-		bl = bl + float2(0,-TILE_SIZE);
+		tile_id += int2(0,-1);
 	}
-	else {
-		bl = bl;
-	}
+	bl = TILE_SIZE * tile_id;
 
 	float2 bounds[4];
 	
@@ -117,6 +116,8 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	uint numRoads = 0;
 	uint diag = 0;
 	
+	float roadWidth = 20;
+
 	for (int i = 0; i < 4; i++) {
 	
 		int ind1 = i%4;
@@ -126,24 +127,19 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	
 		if (accept[ind1]) {
 			if (accept[ind2]) {
-				//float testDist = (diag) ? 5 : 10;
-				// if (diag || i > 1) {
-					// hasRoad = (dist < testDist) ? 1 : hasRoad;
-				// }
 				float testDist = 5;
 				if (diag) {
-					hasRoad = (dist < testDist) ? 1 : hasRoad;
-					//hasRoad = (dist < testDist && isLeftOf(bounds[ind1],bounds[ind2],pos)) ? 1 : hasRoad;
+					hasRoad = (dist < roadWidth) ? 1 : hasRoad;
 				}
-				else {
-					testDist = 5;
-				//else if (i == 2) {
-					hasRoad = (dist < testDist) ? 1 : hasRoad;
+				else if (i>-1) {
+					hasRoad = (dist < roadWidth) ? 1 : hasRoad;
 				}
 				numRoads++;
 				diag = 0;
 			}
 			else {
+				hasRoad = (length(bounds[ind1] - pos) < roadWidth) ? 1 : hasRoad;
+				numRoads++;
 				if (!diag) {
 					bounds[ind2] = bounds[ind1];
 					accept[ind2] = accept[ind1];
@@ -159,7 +155,9 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 		}
 	}
 	
-	float2 noisepos = bounds[0]/10.0f;
+	//float2 noisepos = bounds[0]/10.0f;
+	float2 noisepos = bounds[0]/7350.2f;
+
 	
 	float hval = pow((noise2D(noisepos.x,noisepos.y)+1)/2,2);
 	
@@ -174,15 +172,13 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 		else {
 			height = 0.2f;
 			colour = 1;
-		//height = 10 + 120 * hval;
+			height = 10 + 500 * hval;
 		}
 	}
 	else {
 		height = 1;
 		colour = float3(0,1,0);
 	}
-	
-	colour = bl.xyx/1000;
 
 	
 	//colour = float3(height,height,height);
@@ -377,7 +373,7 @@ bool isLeftOf(float2 a, float2 b, float2 p) {
 }
 
 float2 getShiftedCoords(float2 p) {
-	return p;
+	//return p;
 	float rn = (float)(poorRNG(p)%100)/100.0f;
 	return p + TILE_SIZE * pow(rn*0.70f,2);
 }
