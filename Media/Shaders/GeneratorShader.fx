@@ -2,7 +2,7 @@
 #include "GBuffer.h"
 #define CS_GROUP_DIM 18
 
-#define TILE_SIZE 64
+#define TILE_SIZE 100
 
 RWTexture2D<float4> albedoTex : register(t0);
 RWTexture2D<float4> normalTex : register(t1);
@@ -12,6 +12,7 @@ uint2 poorRNG(float2 xy);
 
 float minDist(float2 l1, float2 l2, float2 p);
 bool isLeftOf(float2 a, float2 b, float2 p);
+bool isAccepted(float2 pos);
 
 float2 getShiftedCoords(float2 p);
 
@@ -106,27 +107,86 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	bounds[2] = getShiftedCoords(bl + float2(TILE_SIZE,TILE_SIZE));
 	bounds[3] = getShiftedCoords(bl + float2(0,TILE_SIZE));
 	
-	int hasRoad = 0;
+	bool accept[4];
+	accept[0] = isAccepted(bounds[0]);
+	accept[1] = isAccepted(bounds[1]);
+	accept[2] = isAccepted(bounds[2]);
+	accept[3] = isAccepted(bounds[3]);
+	
+	uint hasRoad = 0;
+	uint numRoads = 0;
+	uint diag = 0;
 	
 	for (int i = 0; i < 4; i++) {
-		float dist = minDist(bounds[i%4],bounds[(i+1)%4],pos);
-		hasRoad = (dist < 5.0f) ? 1 : hasRoad;
+	
+		int ind1 = i%4;
+		int ind2 = (i+1)%4;
+	
+		float dist = minDist(bounds[ind1],bounds[ind2],pos);
+	
+		if (accept[ind1]) {
+			if (accept[ind2]) {
+				//float testDist = (diag) ? 5 : 10;
+				// if (diag || i > 1) {
+					// hasRoad = (dist < testDist) ? 1 : hasRoad;
+				// }
+				float testDist = 5;
+				if (diag) {
+					hasRoad = (dist < testDist) ? 1 : hasRoad;
+					//hasRoad = (dist < testDist && isLeftOf(bounds[ind1],bounds[ind2],pos)) ? 1 : hasRoad;
+				}
+				else {
+					testDist = 5;
+				//else if (i == 2) {
+					hasRoad = (dist < testDist) ? 1 : hasRoad;
+				}
+				numRoads++;
+				diag = 0;
+			}
+			else {
+				if (!diag) {
+					bounds[ind2] = bounds[ind1];
+					accept[ind2] = accept[ind1];
+					diag = 1;
+				}
+				else {
+					diag = 0;
+				}
+			}
+		}
+		else {
+			diag = 0;
+		}
 	}
 	
 	float2 noisepos = bounds[0]/10.0f;
 	
 	float hval = pow((noise2D(noisepos.x,noisepos.y)+1)/2,2);
 	
-	if (hasRoad) {
-		height = 0;
+	float3 colour;
+
+	
+	if (numRoads) {
+		if (hasRoad) {
+			height = 0;
+			colour = 0;
+		}
+		else {
+			height = 0.2f;
+			colour = 1;
+		//height = 10 + 120 * hval;
+		}
 	}
 	else {
-		height = 10 + 120 * hval;
+		height = 1;
+		colour = float3(0,1,0);
 	}
 	
-	float3 colour;
+	colour = bl.xyx/1000;
+
+	
 	//colour = float3(height,height,height);
-	colour = height;
+	//colour = 5*height;
 
 /* 	int TILE_SIZE = 128;
 	
@@ -317,5 +377,22 @@ bool isLeftOf(float2 a, float2 b, float2 p) {
 }
 
 float2 getShiftedCoords(float2 p) {
-	return p + poorRNG(p)%(TILE_SIZE/2);
+	return p;
+	float rn = (float)(poorRNG(p)%100)/100.0f;
+	return p + TILE_SIZE * pow(rn*0.70f,2);
+}
+
+bool isAccepted(float2 pos) {
+		float2 pos1 = pos/1000;
+		float2 pos2 = pos/500;
+		float acc = 0;
+		acc += noise2D(pos1.x,pos1.y) + 0.7f*noise2D(pos2.x,pos2.y);
+//		+ sin(pos2.x+pos2.y);
+		//float acc = sin(avg2.x) + sin(avg2.y) + 0.2f;
+		//float acc = sin(sqrt(pos1.x*pos1.x+pos1.y*pos1.y));
+		//acc+=clamp(sin(pos2.x+pos2.y),0,1.0f);
+		acc+=(poorRNG(pos).x%128)/256.0f - 0.2f;
+		//acc-=0.7f*pow(noise2D(avg1.x,avg1.y),2) + 0.8f*pow(noise2D(avg2.x,avg2.y),2);
+		bool accept = (acc>-0.2f) ? 1 : 0;
+		return accept;
 }
