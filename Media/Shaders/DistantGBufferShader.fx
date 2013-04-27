@@ -47,7 +47,7 @@ struct HS_OUTPUT
 };
 
 [domain("quad")]
-[partitioning("integer")]
+[partitioning("fractional_even")]
 [outputtopology("triangle_cw")]
 [outputcontrolpoints(4)]
 [patchconstantfunc("HS_CONSTANT")]
@@ -90,7 +90,21 @@ DS_OUTPUT DS(ConstantOutputType input, float2 coord : SV_DomainLocation, const O
 	float3 vertPos = lerp(pos1,pos2,coord.x);
 	
 	float2 uvs = vertPos.xz + float2(0.5f,0.5f);
+	
+	uint3 pixPos = uint3(uvs*63,0);
+	
+	//float height = heightTex.Load(pixPos);
+	//height = max(height,heightTex.Load(pixPos,int2(0,1)));
+	//height = max(height,heightTex.Load(pixPos,int2(1,1)));
+	//height = max(height,heightTex.Load(pixPos,int2(1,0)));
+	
 	float height = heightTex.SampleLevel(defaultSampler,uvs,0);
+	
+	// height=max(height,heightTex.SampleLevel(defaultSampler,uvs,0,int2(0,1)));
+	// height=max(height,heightTex.SampleLevel(defaultSampler,uvs,0,int2(1,1)));
+	// height=max(height,heightTex.SampleLevel(defaultSampler,uvs,0,int2(1,0)));
+	
+	//height/=4;
 	
 	vertPos = mul(float4(vertPos,1.0f),Model).xyz;
 	

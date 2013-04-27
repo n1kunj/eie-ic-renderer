@@ -2,7 +2,7 @@
 #include "GBuffer.h"
 #define CS_GROUP_DIM 18
 
-#define TILE_SIZE 100
+#define TILE_SIZE 128
 
 RWTexture2D<float4> albedoTex : register(t0);
 RWTexture2D<float4> normalTex : register(t1);
@@ -116,11 +116,13 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	uint numRoads = 0;
 	uint diag = 0;
 	uint filler = 0;
+	uint didDiag = 0;
 	
-	float roadWidth = 5;
+	float roadWidth = 10;
 
 	for (int i = 0; i < 4; i++) {
 	
+		int ind0 = (i-1)%4;
 		int ind1 = i%4;
 		int ind2 = (i+1)%4;
 	
@@ -131,15 +133,17 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 				float testDist = 5;
 				if (diag) {
 					hasRoad = (dist < roadWidth) ? 1 : hasRoad;
+					didDiag = 1;
 				}
-				else if (i>-1) {
+				else {
 					hasRoad = (dist < roadWidth) ? 1 : hasRoad;
 				}
 				numRoads++;
 				diag = 0;
 			}
 			else {
-				filler = (length(bounds[ind1] - pos) < roadWidth/2) ? 1 : filler;
+				float df = length(bounds[ind1] - pos);
+				filler = (df < roadWidth) ? 1 : filler;
 				if (!diag) {
 					bounds[ind2] = bounds[ind1];
 					accept[ind2] = accept[ind1];
@@ -172,34 +176,18 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 		colour = float3(0,1,0);
 	
 	}
-	else if (numRoads < 3) {
+	else if (numRoads < 2 && !didDiag) {
 		//height = 0.2f;
 		//colour = 1;
-				height = 1;
+		height = 1;
 		colour = float3(0,1,0);
 	}
 	else {
 		colour = 1;
-		height = 10 + 500 * hval;
+		height = 10 + 200 * hval;
 	}
 
-
-	
-	// if (numRoads) {
-		// if (hasRoad) {
-			// height = 0;
-			// colour = 0;
-		// }
-		// else {
-			// height = 0.2f;
-			// colour = 1;
-			// height = 10 + 500 * hval;
-		// }
-	// }
-	// else {
-		// height = 1;
-		// colour = float3(0,1,0);
-	// }
+	//height = 0;
 
 	
 	//colour = float3(height,height,height);
