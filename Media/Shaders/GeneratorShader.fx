@@ -115,8 +115,9 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	uint hasRoad = 0;
 	uint numRoads = 0;
 	uint diag = 0;
+	uint filler = 0;
 	
-	float roadWidth = 20;
+	float roadWidth = 5;
 
 	for (int i = 0; i < 4; i++) {
 	
@@ -138,8 +139,7 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 				diag = 0;
 			}
 			else {
-				hasRoad = (length(bounds[ind1] - pos) < roadWidth) ? 1 : hasRoad;
-				numRoads++;
+				filler = (length(bounds[ind1] - pos) < roadWidth/2) ? 1 : filler;
 				if (!diag) {
 					bounds[ind2] = bounds[ind1];
 					accept[ind2] = accept[ind1];
@@ -155,30 +155,51 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 		}
 	}
 	
-	//float2 noisepos = bounds[0]/10.0f;
-	float2 noisepos = bounds[0]/7350.2f;
+	float2 noisepos = bounds[0]/10.0f;
+	//float2 noisepos = bounds[0]/7350.2f;
 
 	
 	float hval = pow((noise2D(noisepos.x,noisepos.y)+1)/2,2);
 	
 	float3 colour;
-
 	
-	if (numRoads) {
-		if (hasRoad) {
-			height = 0;
-			colour = 0;
-		}
-		else {
-			height = 0.2f;
-			colour = 1;
-			height = 10 + 500 * hval;
-		}
+	if (hasRoad || filler) {
+		height = 0;
+		colour = 0;
 	}
-	else {
+	else if (!numRoads) {
 		height = 1;
 		colour = float3(0,1,0);
+	
 	}
+	else if (numRoads < 3) {
+		//height = 0.2f;
+		//colour = 1;
+				height = 1;
+		colour = float3(0,1,0);
+	}
+	else {
+		colour = 1;
+		height = 10 + 500 * hval;
+	}
+
+
+	
+	// if (numRoads) {
+		// if (hasRoad) {
+			// height = 0;
+			// colour = 0;
+		// }
+		// else {
+			// height = 0.2f;
+			// colour = 1;
+			// height = 10 + 500 * hval;
+		// }
+	// }
+	// else {
+		// height = 1;
+		// colour = float3(0,1,0);
+	// }
 
 	
 	//colour = float3(height,height,height);
