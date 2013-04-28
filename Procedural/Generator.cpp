@@ -3,8 +3,8 @@
 #include "../Utils/ShaderTools.h"
 #include "simplexnoise.h"
 
-#define ALBNORM_MAP_RESOLUTION 256
-#define HEIGHT_MAP_RESOLUTION 256
+#define ALBNORM_MAP_RESOLUTION 512
+#define HEIGHT_MAP_RESOLUTION 512
 #define CS_GROUP_DIM 16
 #define DISPATCH_DIM ALBNORM_MAP_RESOLUTION/CS_GROUP_DIM
 
@@ -37,9 +37,9 @@ DistantTextures::DistantTextures(DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBL
 	desc.Format = DXGI_FORMAT_R8G8B8A8_SNORM;
 	mNormalMap.mDesc = desc;
 
-	//desc.MipLevels = 1;
-	//desc.MiscFlags = 0;
-	//desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+	desc.MipLevels = 1;
+	desc.MiscFlags = 0;
+	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
 	desc.Format = DXGI_FORMAT_R16_FLOAT;
 	mHeightMap.mDesc = desc;
 }
@@ -65,7 +65,7 @@ void Generator::Generate(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dCont
 			ComputeTextures(pd3dContext, *first);
 			pd3dContext->GenerateMips(first->mAlbedoMap.mSRV);
 			pd3dContext->GenerateMips(first->mNormalMap.mSRV);
-			pd3dContext->GenerateMips(first->mHeightMap.mSRV);
+			//pd3dContext->GenerateMips(first->mHeightMap.mSRV);
 		}
 		mTextureQueue.pop_front();
 	}

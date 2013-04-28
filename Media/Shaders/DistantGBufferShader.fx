@@ -28,7 +28,7 @@ struct ConstantOutputType
 ConstantOutputType HS_CONSTANT(InputPatch<VS_OUTPUT,4> inputPatch, uint patchId : SV_PrimitiveID)
 {    
 	ConstantOutputType output;
-	float tessAmount = 4;
+	float tessAmount = 1;
 	
 	output.edges[0] = tessAmount;
 	output.edges[1] = tessAmount;
@@ -91,7 +91,7 @@ DS_OUTPUT DS(ConstantOutputType input, float2 coord : SV_DomainLocation, const O
 	
 	float2 uvs = vertPos.xz + float2(0.5f,0.5f);
 	
-	uint3 pixPos = uint3(uvs*63,0);
+	uint3 pixPos = uint3(uvs*255,0);
 	
 	//float height = heightTex.Load(pixPos);
 	//height = max(height,heightTex.Load(pixPos,int2(0,1)));

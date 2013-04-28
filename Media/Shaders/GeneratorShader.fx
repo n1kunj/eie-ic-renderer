@@ -2,7 +2,7 @@
 #include "GBuffer.h"
 #define CS_GROUP_DIM 18
 
-#define TILE_SIZE 128
+#define TILE_SIZE 100
 
 RWTexture2D<float4> albedoTex : register(t0);
 RWTexture2D<float4> normalTex : register(t1);
@@ -29,7 +29,7 @@ cbuffer CSPass1CSCB : register( b0 )
 	// 160,80,40,20,
 	// 10,5,2.5};
 	
-static const float scales[NOISE_ITERATIONS] = {150000,10000,1280,640,320,
+static const float scales[NOISE_ITERATIONS] = {150000,30000,1280,640,320,
 	160,80,40,20,
 	10,5,2.5};
 
@@ -55,21 +55,19 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	
 	float noises[NOISE_ITERATIONS];
 	float height = 0;
+	float terrainheight = 0;
 	[loop] for (int i = 0; i < 12; i++) {
 		//noises[i] =  noise2D(2 * hpos.x,2 * hpos.y);
 		noises[i] =  noise2D(hpos.x/(0.25*scales[i]),hpos.y/(0.25*scales[i]));
-		height+=noises[i] * bases[i];
 		//height+=(((int)(noises[i] * bases[i]))/4)*4;
 	}
-	height/=2.0f;
 	//height = (((int)height)/5)*5;
 	//height*=20.0f;
-	for (int i = 0; i < NOISE_ITERATIONS; i++) {
+	for (int i = 0; i < 2; i++) {
+		terrainheight+=noises[i] * bases[i];
 		//height+=noises[i] * bases[i];
 	}
-	
-	//height = pow((noises[0]+1)/2,3)*2000 - 500;
-	//height = acos(noises[1]);
+	terrainheight/=2.0f;
 	
 	float2 pos = (hpos);
 	
@@ -113,12 +111,17 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	accept[3] = isAccepted(bounds[3]);
 	
 	uint hasRoad = 0;
+	uint hasPave = 0;
+	uint nearRoad = 0;
 	uint numRoads = 0;
 	uint diag = 0;
 	uint filler = 0;
-	uint didDiag = 0;
 	
-	float roadWidth = 10;
+	float roadWidth = 9;
+	float paveWidth = 13;
+	float nearRoadWidth = 25;
+	
+	bool doDiag = 1;
 
 	for (int i = 0; i < 4; i++) {
 	
@@ -130,27 +133,30 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	
 		if (accept[ind1]) {
 			if (accept[ind2]) {
-				float testDist = 5;
-				if (diag) {
-					hasRoad = (dist < roadWidth) ? 1 : hasRoad;
-					didDiag = 1;
+				if (!(!diag || (diag && isLeftOf(bounds[ind1],bounds[ind2],pos)))){
+					dist+=5.0f;
 				}
-				else {
-					hasRoad = (dist < roadWidth) ? 1 : hasRoad;
-				}
+				hasRoad = (dist < roadWidth) ? 1 : hasRoad;
+				hasPave = (dist < paveWidth) ? 1 : hasPave;
+				nearRoad = (dist < nearRoadWidth) ? 1 : nearRoad;
+
 				numRoads++;
 				diag = 0;
 			}
 			else {
 				float df = length(bounds[ind1] - pos);
 				filler = (df < roadWidth) ? 1 : filler;
-				if (!diag) {
+				nearRoad = (df < nearRoadWidth) ? 1 : nearRoad;
+				hasPave = (df < paveWidth) ? 1 : hasPave;
+				if (doDiag) {
+					if (!diag) {
 					bounds[ind2] = bounds[ind1];
 					accept[ind2] = accept[ind1];
 					diag = 1;
-				}
-				else {
-					diag = 0;
+					}
+					else {
+						diag = 0;
+					}
 				}
 			}
 		}
@@ -168,15 +174,28 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	float3 colour;
 	
 	if (hasRoad || filler) {
-		height = 0;
-		colour = 0;
+		float delta = 0.025f*noises[10]+0.0125*noises[11];
+		height = 0.2f*delta;
+		colour = float3(0.55,0.52,0.52);
+		colour.xyz+=delta;
+		//colour.y+=0.05f*noises[10];
+		//colour.z+=0.05f*noises[9];
+	}
+	else if (hasPave) {
+		height = 0.15f;
+		colour = float3(0.259,0.259,0.259);
+	}
+	else if (nearRoad) {
+		height = 0.15f;
+		colour = float3(1,0,0);
+	
 	}
 	else if (!numRoads) {
 		height = 1;
 		colour = float3(0,1,0);
 	
 	}
-	else if (numRoads < 2 && !didDiag) {
+	else if (numRoads < 2) {
 		//height = 0.2f;
 		//colour = 1;
 		height = 1;
@@ -184,11 +203,16 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	}
 	else {
 		colour = 1;
-		height = 10 + 200 * hval;
+		height = 0;
+		//if (tileSize >512) {
+			//height = 30;
+			//height = 10 + 200 * hval;
+		//}
 	}
-
+	height+=terrainheight;
+	height = 0;
 	//height = 0;
-
+	//colour = 1;
 	
 	//colour = float3(height,height,height);
 	//colour = 5*height;
@@ -273,6 +297,11 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 
 	float3 normal = normalize(cross(vb,va));
 	
+	//height = hp[0]+hp[1]+hp[2]+hp[3] + 4*height;
+	//height/=8;
+	//normal = float3(0,1,0);
+
+	
 	//SpecPower is normalised between -1 and 1
 	//Then unpacked to between -128 and 128
 	int SpecPower = 128;
@@ -280,7 +309,6 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	//Then unpacked between 0 and 2
 	float SpecAmount = 0.1f;
 
-	//normal = float3(0,1,0);
 	
 	const float3 vertical = float3(0,1,0);
 	float dotprod = dot(vertical,normal);
@@ -384,20 +412,21 @@ bool isLeftOf(float2 a, float2 b, float2 p) {
 float2 getShiftedCoords(float2 p) {
 	//return p;
 	float rn = (float)(poorRNG(p)%100)/100.0f;
-	return p + TILE_SIZE * pow(rn*0.70f,2);
+	return p + TILE_SIZE * pow(rn*0.50f,2);
 }
 
 bool isAccepted(float2 pos) {
-		float2 pos1 = pos/1000;
-		float2 pos2 = pos/500;
-		float acc = 0;
-		acc += noise2D(pos1.x,pos1.y) + 0.7f*noise2D(pos2.x,pos2.y);
-//		+ sin(pos2.x+pos2.y);
-		//float acc = sin(avg2.x) + sin(avg2.y) + 0.2f;
-		//float acc = sin(sqrt(pos1.x*pos1.x+pos1.y*pos1.y));
-		//acc+=clamp(sin(pos2.x+pos2.y),0,1.0f);
-		acc+=(poorRNG(pos).x%128)/256.0f - 0.2f;
-		//acc-=0.7f*pow(noise2D(avg1.x,avg1.y),2) + 0.8f*pow(noise2D(avg2.x,avg2.y),2);
-		bool accept = (acc>-0.2f) ? 1 : 0;
-		return accept;
+	float2 pos1 = pos/1000;
+	float2 pos2 = pos/500;
+	float dv = sqrt(pos2.x*pos2.x+pos2.y*pos2.y) + 0.5*noise2D(pos2.x,pos2.y);
+	float sv = abs(sin(dv));
+	if (sv > 0.9) {
+		return 1;
+	}
+	float acc = 0;
+	acc += noise2D(pos1.x,pos1.y) + 0.7f*noise2D(pos2.x,pos2.y);
+	acc+=(poorRNG(pos).x%128)/256.0f - 0.4f;
+	
+	bool accept = (acc>-0.2f) ? 1 : 0;
+	return accept;
 }
