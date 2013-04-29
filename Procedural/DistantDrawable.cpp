@@ -7,6 +7,7 @@
 #include <algorithm>
 
 #define SIGNUM(X) ((X > 0) ? 1 : ((X < 0) ? -1 : 0))
+#define OVERLAP_SCALE 1.05f
 
 class LodLevel {
 	DOUBLE mTileSize;
@@ -38,8 +39,8 @@ public:
 				BasicDrawable d = BasicDrawable(pMesh,pShader,pCamera);
 
 				DrawableState& state = d.mState;
-
-				state.mScale = DirectX::XMFLOAT3((FLOAT)mTileSize, (FLOAT)mTileSize, (FLOAT)mTileSize);
+				FLOAT scale = (FLOAT)mTileSize*OVERLAP_SCALE;
+				state.mScale = DirectX::XMFLOAT3(scale,scale,scale);
 
 				DOUBLE posX = j * mTileSize;
 				DOUBLE posY = 0;

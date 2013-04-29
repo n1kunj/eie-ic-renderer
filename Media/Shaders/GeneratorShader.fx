@@ -4,6 +4,8 @@
 
 #define TILE_SIZE 128
 
+#define OVERLAP_SCALE 1.05f
+
 RWTexture2D<float4> albedoTex : register(t0);
 RWTexture2D<float4> normalTex : register(t1);
 RWTexture2D<float> heightTex : register(t2);
@@ -43,33 +45,25 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 			uint groupIndex 		: SV_GroupIndex)
 {
 	//Takes into account extra values around the edges
-	int2 pixLoc = groupThreadID.xy - 1 + (CS_GROUP_DIM-2) * groupID;
-
-	float r = (float)pixLoc.x/(bufferDim.x-1) - 0.5f;
-	float g = (float)pixLoc.y/(bufferDim.y-1) - 0.5f;
-	r = r * tileSize + coords.x;
-	g = g * tileSize + coords.y;
+	int2 pixIndex = groupThreadID.xy - 1 + (CS_GROUP_DIM-2) * groupID;
 	
-	float2 hpos = float2(r,g);
+	float2 pos = (float2)pixIndex/(bufferDim-1) - 0.50f;
+	pos = pos * OVERLAP_SCALE * tileSize + coords;
 	
+	float3 colour = 0;
+	float height = 0;
 	
 	float noises[NOISE_ITERATIONS];
-	float height = 0;
 	float terrainheight = 0;
+	
 	[loop] for (int i = 0; i < 12; i++) {
-		//noises[i] =  noise2D(2 * hpos.x,2 * hpos.y);
-		noises[i] =  noise2D(hpos.x/(0.25*scales[i]),hpos.y/(0.25*scales[i]));
-		//height+=(((int)(noises[i] * bases[i]))/4)*4;
+		noises[i] =  noise2D(pos.x/(0.25*scales[i]),pos.y/(0.25*scales[i]));
 	}
-	//height = (((int)height)/5)*5;
-	//height*=20.0f;
-	for (int i = 0; i < 2; i++) {
+	
+	for (int i = 0; i < 12; i++) {
 		terrainheight+=noises[i] * bases[i];
-		//height+=noises[i] * bases[i];
 	}
 	terrainheight/=2.0f;
-	
-	float2 pos = (hpos);
 	
 	//Find the bottom left value of the quadrant we're assumed to be in
 	int2 tile_id = floor(pos/TILE_SIZE);
@@ -120,23 +114,18 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	
 		int ind1 = i%4;
 		int ind2 = (i+1)%4;
-	
-		float dist = minDist(bounds[ind1],bounds[ind2],pos);
-	
+		
 		if (accept[ind1]) {
+			float dist;
 			if (accept[ind2]) {
-				//if (!(!diag || (diag && isLeftOf(bounds[ind1],bounds[ind2],pos)))){
-					//dist+=5.0f;
-				//}
+				dist = minDist(bounds[ind1],bounds[ind2],pos);
 				if (diag) {
 					dist+=4.0f;
 				}
-				roadDist = min(roadDist,dist);
 				diag = 0;
 			}
 			else {
-				float df = length(bounds[ind1] - pos);
-				roadDist = min(roadDist,df);
+				dist = length(bounds[ind1] - pos);
 				if (doDiag) {
 					if (!diag) {
 					bounds[ind2] = bounds[ind1];
@@ -148,6 +137,7 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 					}
 				}
 			}
+			roadDist = min(roadDist,dist);
 		}
 		else {
 			diag = 0;
@@ -155,15 +145,12 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	}
 	
 	float2 noisepos = bounds[0]/10.0f;
-	//float2 noisepos = bounds[0]/7350.2f;
 	
 	float hval = pow((noise2D(noisepos.x,noisepos.y)+1)/2,2);
 	
 	const float roadWidth = 9;
 	const float paveWidth = 13;
 	const float nearRoadWidth = 25;
-	
-	float3 colour;
 	
 	if (roadDist < roadWidth) {
 		float delta = 0.025f*noises[10]+0.0125*noises[11];
@@ -212,38 +199,31 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	
 	const float3 vertical = float3(0,1,0);
 	float dotprod = dot(vertical,normal);
-		
-	float3 rock1 = float3(0.63f,0.59f,0.70f);
-	float3 rock2 = float3(0.70f,0.611f,0.588f);
 	
-	float2 colPos = hpos/20.0f;
-	float3 colNoise;
-	colNoise.x = noise2D(colPos.x,colPos.y);
-	colNoise.y = noise2D(colPos.x+1000,colPos.y-1000);
-	colNoise.z = noise2D(colPos.x+10000,colPos.y-10000);
-	colNoise = (colNoise / 2) + 0.5f;
 	
-/* 	if (dotprod > 0.50f && height > 500) {
+	if (dotprod > 0.50f) {
 		colour = float3(1.0f,1.0f,1.0f);
-		//normal = lerp(vertical,normal,0.5f);
 		SpecPower = 20;
 		SpecAmount = 0.75f;
 	}
 	else {
+		float2 colPos = pos/20.0f;
+		float3 colNoise;
+		colNoise.x = noise2D(colPos.x,colPos.y);
+		colNoise.y = noise2D(colPos.x+1000,colPos.y-1000);
+		colNoise.z = noise2D(colPos.x+10000,colPos.y-10000);
+		colNoise = (colNoise / 2) + 0.5f;
+		
+		const float3 rock1 = float3(0.63f,0.59f,0.70f);
+		const float3 rock2 = float3(0.70f,0.611f,0.588f);
+		
 		colour = lerp(rock1,rock2,colNoise);
-	} */
-	
-	// [flatten] if ((groupThreadID.x + groupThreadID.y)%2==0) {
-		// colour = float3(1,0,0);
-	// }
-	// else {
-		// colour = float3(0,1,0);
-	// }
+	}
 	
 	if (all(groupThreadID.xy > 0) && all(groupThreadID.xy < CS_GROUP_DIM-1)) {
-		albedoTex[pixLoc.xy] = float4(colour,SpecAmount/2);
-		normalTex[pixLoc.xy] =  float4(normal,SpecPower/128.0f);
-		heightTex[pixLoc.xy] = height;
+		albedoTex[pixIndex.xy] = float4(colour,SpecAmount/2);
+		normalTex[pixIndex.xy] =  float4(normal,SpecPower/128.0f);
+		heightTex[pixIndex.xy] = height;
 	}
 }
 
@@ -303,7 +283,6 @@ bool isLeftOf(float2 a, float2 b, float2 p) {
 	float2 AB = b-a;
 	float2 AP = p-b;
 	return clamp(sign(AB.x*AP.y-AB.y*AP.x),0,1);
-	
 }
 
 float2 getShiftedCoords(float2 p) {
