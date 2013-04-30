@@ -11,10 +11,11 @@ RWTexture2D<float4> normalTex : register(t1);
 RWTexture2D<float> heightTex : register(t2);
 
 uint2 poorRNG(float2 xy);
-
 float minDist(float2 l1, float2 l2, float2 p);
+
+float getTileCoeff(float2 pos);
 bool isLeftOf(float2 a, float2 b, float2 p);
-bool isAccepted(float2 pos);
+bool isAccepted(float2 pos, float tileInd);
 
 float2 getShiftedCoords(float2 p);
 
@@ -25,24 +26,24 @@ cbuffer CSPass1CSCB : register( b0 )
 	uint tileSize;
 }
 
+#define NUM_BIOMES 9
+#define MAX_ROAD_BIOME_INDEX 6
 #define NOISE_ITERATIONS 12
-
-// static const float scales[NOISE_ITERATIONS] = {5120,2560,1280,640,320,
-	// 160,80,40,20,
-	// 10,5,2.5};
 	
 static const float scales[NOISE_ITERATIONS] = {150000,30000,12800,640,320,
 	160,80,40,20,
 	10,5,2.5};
 
-static const float bases[NOISE_ITERATIONS] = {256,128,64,32,16,8,4,2,1,0.5f,0.25f,0.125f};
-
-static const float coeffs[5][12] = {
-{256,128,64,32,16,8,4,2,1,0.5f,0.25f,0.125f},
-{256,128,64,32,16,8,4,2,1,0.5f,0.25f,0.125f},
-{256,128,64,32,16,8,4,2,1,0.5f,0.25f,0.125f},
-{256,128,64,32,16,8,4,2,1,0.5f,0.25f,0.125f},
-{0,0,0,0,0,0,0,0,0,0.5f,0.25f,0.125f}
+static const float coeffs[NUM_BIOMES][NOISE_ITERATIONS] = {
+{1024,512,128,64,32,16,8,4,2,1,0.5f,0.25f},
+{768,376,128,64,32,16,8,4,2,1,0.5f,0.25f},
+{512,128,64,32,16,8,4,2,1,0.5f,0.25f,0.125f},
+{512,128,64,32,16,8,4,2,1,0.5f,0.25f,0.125f},
+{512,64,32,16,8,4,2,1,0.5f,0.25f,0.125f,0.0725f},
+{512,64,32,16,8,4,0,0,0,0,0,0.0725f},
+{512,32,16,0,0,0,0,0,0,0,0,0.0725f},
+{512,32,16,0,0,0,0,0,0,0,0,0.0725f},
+{512,32,16,0,0,0,0,0,0,0,0,0.0725f},
 //{256,128,64,32,16,8,4,2,1,0.5f,0.25f,0.125f}
 };
 
@@ -66,7 +67,9 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	float terrainheight = 0;
 	
 	[loop] for (int i = 0; i < 12; i++) {
-		noises[i] =  noise2D(pos.x/(0.25*scales[i]),pos.y/(0.25*scales[i]));
+		float2 p2 = pos/(0.25f*scales[i]);
+		//noises[i] = noise2D(p2.x,p2.y)/2+0.5f;
+		noises[i] = noise2D(p2.x,p2.y);
 	}
 	
 	//Find the bottom left value of the quadrant we're assumed to be in
@@ -90,39 +93,24 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	
 	//if 1,1 then on top of cCo[0], if 0,0 then on top of cCo[3]
 	float2 uvs = smoothstep(0,TILE_SIZE,abs(pos2-cCo[0]));
-	
-	uint tileInds[4];
+
+	float tileCoeff[4];
 	
 	for (int i = 0; i < 4; i++) {
-		const float scale = 30000;
-		float n = noise2D(cCo[i].x/scale,cCo[i].y/scale);
-		//Mountains
-		if (n > 0.8f) {
-			tileInds[i] = 0;
-		}
-		//Rolling hills
-		else if (n > 0.6f) {
-			tileInds[i] = 1;
-		}
-		//Mostly Flat nothing
-		else if (n > 0.5f) {
-			tileInds[i] = 2;
-		}
-		//Suburbs etc.
-		else if (n > 0.2f) {
-			tileInds[i] = 3;
-		}
-		//City, blocks
-		else {
-			tileInds[i] = 4;
-		}
+		tileCoeff[i] = getTileCoeff(cCo[i]);
 	}
 	
 	
 	for (int i = 0; i < 12; i++) {
 		float coe[4];
 		[unroll] for (int j = 0; j < 4; j++) {
-			coe[j] = coeffs[tileInds[j]][i];
+			float ind = tileCoeff[j];
+			uint ind0 = floor(ind);
+			uint ind1 = ceil(ind);
+			float c0 = coeffs[ind0][i];
+			float c1 = coeffs[ind1][i];
+			float m = smoothstep(ind0,ind1,ind);
+			coe[j] = lerp(c0,c1,m);
 		}
 		float v1 = lerp(coe[0],coe[1],uvs.x);
 		float v2 = lerp(coe[2],coe[3],uvs.x);
@@ -161,10 +149,9 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	bounds[3] = getShiftedCoords(bl + float2(0,TILE_SIZE));
 	
 	bool accept[4];
-	accept[0] = isAccepted(bounds[0]);
-	accept[1] = isAccepted(bounds[1]);
-	accept[2] = isAccepted(bounds[2]);
-	accept[3] = isAccepted(bounds[3]);
+	[unroll] for (int i = 0; i < 4; i++) {
+		accept[i] = isAccepted(bounds[i], getTileCoeff(bounds[i]));
+	}
 	
 	uint diag = 0;
 	
@@ -233,10 +220,6 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	}
 	//colour = (roadDist-paveWidth)/100;
 	height+=terrainheight;
-	//colour = bCo[0];
-	//colour.x = tileInds[0]/5.0f;
-	//colour.y = tileInds[1]/5.0f;
-	//colour.z = tileInds[2]/5.0f;
 	
 	//Calculate normals
 	sGroupHeights[groupThreadID.x][groupThreadID.y] = height;
@@ -262,7 +245,7 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	//Then unpacked between 0 and 2
 	float SpecAmount = 0.1f;
 	
-/* 	const float3 vertical = float3(0,1,0);
+/*  	const float3 vertical = float3(0,1,0);
 	float dotprod = dot(vertical,normal);
 	
 	
@@ -352,11 +335,15 @@ bool isLeftOf(float2 a, float2 b, float2 p) {
 
 float2 getShiftedCoords(float2 p) {
 	return p;
-	float rn = (float)(poorRNG(p)%100)/100.0f;
-	return p + TILE_SIZE * pow(rn*0.50f,2);
+	//float rn = (float)(poorRNG(p)%100)/100.0f;
+	//return p + TILE_SIZE * pow(rn*0.50f,2);
 }
 
-bool isAccepted(float2 pos) {
+bool isAccepted(float2 pos, float tileInd) {
+
+	if (tileInd < MAX_ROAD_BIOME_INDEX) {
+		return 0;
+	}
 	float2 pos1 = pos/1000;
 	float2 pos2 = pos/500;
 	// float dv = sqrt(pos2.x*pos2.x+pos2.y*pos2.y) + 0.5*noise2D(pos2.x,pos2.y);
@@ -370,4 +357,10 @@ bool isAccepted(float2 pos) {
 	
 	bool accept = (acc>-0.3f) ? 1 : 0;
 	return accept;
+}
+
+float getTileCoeff(float2 pos) {
+	const float scale = 30000;
+	float n = (noise2D(pos.x/scale,pos.y/scale)/2)+0.5f;
+	return min(NUM_BIOMES-1,NUM_BIOMES*n);
 }
