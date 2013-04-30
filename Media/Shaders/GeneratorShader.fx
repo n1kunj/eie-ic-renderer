@@ -82,61 +82,53 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	
 	float2 pos2 = pos - float2(TILE_SIZE/2,TILE_SIZE/2);
 	
-	float2 cCo[3];
+	float2 cCo[4];
 	cCo[0] = tilePos[2];
 	cCo[1] = (pos2.x - tilePos[2].x < 0) ? tilePos[1] : tilePos[3];
 	cCo[2] = (pos2.y - tilePos[2].y < 0) ? tilePos[4] : tilePos[0];
+	cCo[3] = float2(cCo[1].x,cCo[2].y);
 	
-	float bCo[3];
+	//if 1,1 then on top of cCo[0], if 0,0 then on top of cCo[3]
+	float2 uvs = smoothstep(0,TILE_SIZE,abs(pos2-cCo[0]));
 	
-	{
-		//Calculate barycentric coordinates
-		float2 v23 = cCo[1] - cCo[2];
-		float2 vp3 = pos2 - cCo[2];
-		float2 v13 = cCo[0] - cCo[2];
-		
-		float det = (v23.y * v13.x - v23.x * v13.y);
-		
-		bCo[0] = (v23.y * vp3.x - v23.x * vp3.y)/det;
-		bCo[1] = ((-v13.y) * vp3.x + v13.x * vp3.y)/det; 
-		bCo[2] = 1 - bCo[0] - bCo[1];
-	}
+	uint tileInds[4];
 	
-	uint baryInds[3];
-	
-	for (int i = 0; i < 3; i++) {
+	for (int i = 0; i < 4; i++) {
 		const float scale = 30000;
 		float n = noise2D(cCo[i].x/scale,cCo[i].y/scale);
 		//Mountains
 		if (n > 0.8f) {
-			baryInds[i] = 0;
+			tileInds[i] = 0;
 		}
 		//Rolling hills
 		else if (n > 0.6f) {
-			baryInds[i] = 1;
+			tileInds[i] = 1;
 		}
 		//Mostly Flat nothing
 		else if (n > 0.5f) {
-			baryInds[i] = 2;
+			tileInds[i] = 2;
 		}
 		//Suburbs etc.
 		else if (n > 0.2f) {
-			baryInds[i] = 3;
+			tileInds[i] = 3;
 		}
 		//City, blocks
 		else {
-			baryInds[i] = 4;
+			tileInds[i] = 4;
 		}
 	}
 	
 	
 	for (int i = 0; i < 12; i++) {
-		float mult = 0;
-		[unroll] for (int j = 0; j < 3; j++) {
-			mult+= coeffs[baryInds[j]][i] * bCo[j];
+		float coe[4];
+		[unroll] for (int j = 0; j < 4; j++) {
+			coe[j] = coeffs[tileInds[j]][i];
 		}
+		float v1 = lerp(coe[0],coe[1],uvs.x);
+		float v2 = lerp(coe[2],coe[3],uvs.x);
+		float mult = lerp(v1,v2,uvs.y);
+		
 		terrainheight+=noises[i] * mult;
-		//terrainheight+=noises[i] * bases[i];
 	}
 	
 	float2 top = getShiftedCoords(tilePos[0]);
@@ -231,21 +223,20 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	else if (roadDist < nearRoadWidth) {
 		height = 0.15f;
 		colour = float3(1,0,0);
+		//height = pow((noises[2]/2)+0.5f,2) * 500.0f;
 	}
 	else {
 		colour = 1;
 		height = 0;
+		//height = 30 + pow((noises[2]/2)+0.5f,1) * 10.0f;
+
 	}
 	//colour = (roadDist-paveWidth)/100;
 	height+=terrainheight;
-	colour = bCo[0];
-	//colour.x = baryInds[0]/5.0f;
-	//colour.y = baryInds[1]/5.0f;
-	//colour.z = baryInds[2]/5.0f;
-	
-	//float val = (noises[0] + noises[1] + noises[2] + 3)/6;
-
-	//height = blNoise * 1000;
+	//colour = bCo[0];
+	//colour.x = tileInds[0]/5.0f;
+	//colour.y = tileInds[1]/5.0f;
+	//colour.z = tileInds[2]/5.0f;
 	
 	//Calculate normals
 	sGroupHeights[groupThreadID.x][groupThreadID.y] = height;
@@ -360,7 +351,7 @@ bool isLeftOf(float2 a, float2 b, float2 p) {
 }
 
 float2 getShiftedCoords(float2 p) {
-	//return p;
+	return p;
 	float rn = (float)(poorRNG(p)%100)/100.0f;
 	return p + TILE_SIZE * pow(rn*0.50f,2);
 }
