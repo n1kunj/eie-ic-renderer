@@ -31,11 +31,20 @@ cbuffer CSPass1CSCB : register( b0 )
 	// 160,80,40,20,
 	// 10,5,2.5};
 	
-static const float scales[NOISE_ITERATIONS] = {150000,30000,1280,640,320,
+static const float scales[NOISE_ITERATIONS] = {150000,30000,12800,640,320,
 	160,80,40,20,
 	10,5,2.5};
 
-static const float bases[NOISE_ITERATIONS] = {512,256,128,64,32,16,8,4,2,1,0.5f,0.25f};
+static const float bases[NOISE_ITERATIONS] = {256,128,64,32,16,8,4,2,1,0.5f,0.25f,0.125f};
+
+static const float coeffs[5][12] = {
+{256,128,64,32,16,8,4,2,1,0.5f,0.25f,0.125f},
+{256,128,64,32,16,8,4,2,1,0.5f,0.25f,0.125f},
+{256,128,64,32,16,8,4,2,1,0.5f,0.25f,0.125f},
+{256,128,64,32,16,8,4,2,1,0.5f,0.25f,0.125f},
+{0,0,0,0,0,0,0,0,0,0.5f,0.25f,0.125f}
+//{256,128,64,32,16,8,4,2,1,0.5f,0.25f,0.125f}
+};
 
 groupshared float sGroupHeights[CS_GROUP_DIM][CS_GROUP_DIM];
 
@@ -60,20 +69,81 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 		noises[i] =  noise2D(pos.x/(0.25*scales[i]),pos.y/(0.25*scales[i]));
 	}
 	
-	for (int i = 0; i < 12; i++) {
-		terrainheight+=noises[i] * bases[i];
-	}
-	terrainheight/=2.0f;
-	
 	//Find the bottom left value of the quadrant we're assumed to be in
 	int2 tile_id = floor(pos/TILE_SIZE);
 	float2 bl = TILE_SIZE * tile_id;
 	
-	float2 centre = getShiftedCoords(bl);
-	float2 top = getShiftedCoords(bl + float2(0,TILE_SIZE));
-	float2 right = getShiftedCoords(bl + float2(TILE_SIZE,0));
-	float2 bottom = getShiftedCoords(bl + float2(0,-TILE_SIZE));
-	float2 left = getShiftedCoords(bl + float2(-TILE_SIZE,0));
+	float2 tilePos[5];
+	tilePos[0] = bl + float2(0,TILE_SIZE);
+	tilePos[1] = bl + float2(-TILE_SIZE,0);
+	tilePos[2] = bl;
+	tilePos[3] = bl + float2(TILE_SIZE,0);
+	tilePos[4] = bl + float2(0,-TILE_SIZE);
+	
+	float2 pos2 = pos - float2(TILE_SIZE/2,TILE_SIZE/2);
+	
+	float2 cCo[3];
+	cCo[0] = tilePos[2];
+	cCo[1] = (pos2.x - tilePos[2].x < 0) ? tilePos[1] : tilePos[3];
+	cCo[2] = (pos2.y - tilePos[2].y < 0) ? tilePos[4] : tilePos[0];
+	
+	float bCo[3];
+	
+	{
+		//Calculate barycentric coordinates
+		float2 v23 = cCo[1] - cCo[2];
+		float2 vp3 = pos2 - cCo[2];
+		float2 v13 = cCo[0] - cCo[2];
+		
+		float det = (v23.y * v13.x - v23.x * v13.y);
+		
+		bCo[0] = (v23.y * vp3.x - v23.x * vp3.y)/det;
+		bCo[1] = ((-v13.y) * vp3.x + v13.x * vp3.y)/det; 
+		bCo[2] = 1 - bCo[0] - bCo[1];
+	}
+	
+	uint baryInds[3];
+	
+	for (int i = 0; i < 3; i++) {
+		const float scale = 30000;
+		float n = noise2D(cCo[i].x/scale,cCo[i].y/scale);
+		//Mountains
+		if (n > 0.8f) {
+			baryInds[i] = 0;
+		}
+		//Rolling hills
+		else if (n > 0.6f) {
+			baryInds[i] = 1;
+		}
+		//Mostly Flat nothing
+		else if (n > 0.5f) {
+			baryInds[i] = 2;
+		}
+		//Suburbs etc.
+		else if (n > 0.2f) {
+			baryInds[i] = 3;
+		}
+		//City, blocks
+		else {
+			baryInds[i] = 4;
+		}
+	}
+	
+	
+	for (int i = 0; i < 12; i++) {
+		float mult = 0;
+		[unroll] for (int j = 0; j < 3; j++) {
+			mult+= coeffs[baryInds[j]][i] * bCo[j];
+		}
+		terrainheight+=noises[i] * mult;
+		//terrainheight+=noises[i] * bases[i];
+	}
+	
+	float2 top = getShiftedCoords(tilePos[0]);
+	float2 left = getShiftedCoords(tilePos[1]);
+	float2 centre = getShiftedCoords(tilePos[2]);
+	float2 right = getShiftedCoords(tilePos[3]);
+	float2 bottom = getShiftedCoords(tilePos[4]);
 	
 	bool lct = isLeftOf(centre,top,pos);
 	bool lcr = isLeftOf(centre,right,pos);
@@ -120,7 +190,7 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 			if (accept[ind2]) {
 				dist = minDist(bounds[ind1],bounds[ind2],pos);
 				if (diag) {
-					dist+=4.0f;
+					dist+=2.0f;
 				}
 				diag = 0;
 			}
@@ -144,12 +214,8 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 		}
 	}
 	
-	float2 noisepos = bounds[0]/10.0f;
-	
-	float hval = pow((noise2D(noisepos.x,noisepos.y)+1)/2,2);
-	
-	const float roadWidth = 9;
-	const float paveWidth = 13;
+ 	const float roadWidth = 6;
+	const float paveWidth = 8;
 	const float nearRoadWidth = 25;
 	
 	if (roadDist < roadWidth) {
@@ -170,8 +236,16 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 		colour = 1;
 		height = 0;
 	}
-	colour = (roadDist-paveWidth)/100;
+	//colour = (roadDist-paveWidth)/100;
 	height+=terrainheight;
+	colour = bCo[0];
+	//colour.x = baryInds[0]/5.0f;
+	//colour.y = baryInds[1]/5.0f;
+	//colour.z = baryInds[2]/5.0f;
+	
+	//float val = (noises[0] + noises[1] + noises[2] + 3)/6;
+
+	//height = blNoise * 1000;
 	
 	//Calculate normals
 	sGroupHeights[groupThreadID.x][groupThreadID.y] = height;
@@ -197,7 +271,7 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	//Then unpacked between 0 and 2
 	float SpecAmount = 0.1f;
 	
-	const float3 vertical = float3(0,1,0);
+/* 	const float3 vertical = float3(0,1,0);
 	float dotprod = dot(vertical,normal);
 	
 	
@@ -218,7 +292,7 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 		const float3 rock2 = float3(0.70f,0.611f,0.588f);
 		
 		colour = lerp(rock1,rock2,colNoise);
-	}
+	} */
 	
 	if (all(groupThreadID.xy > 0) && all(groupThreadID.xy < CS_GROUP_DIM-1)) {
 		albedoTex[pixIndex.xy] = float4(colour,SpecAmount/2);
@@ -294,15 +368,15 @@ float2 getShiftedCoords(float2 p) {
 bool isAccepted(float2 pos) {
 	float2 pos1 = pos/1000;
 	float2 pos2 = pos/500;
-	float dv = sqrt(pos2.x*pos2.x+pos2.y*pos2.y) + 0.5*noise2D(pos2.x,pos2.y);
-	float sv = abs(sin(dv));
-	if (sv > 0.9) {
-		return 1;
-	}
+	// float dv = sqrt(pos2.x*pos2.x+pos2.y*pos2.y) + 0.5*noise2D(pos2.x,pos2.y);
+	// float sv = abs(sin(dv));
+	// if (sv > 0.9) {
+		// return 1;
+	// }
 	float acc = 0;
-	acc += noise2D(pos1.x,pos1.y) + 0.7f*noise2D(pos2.x,pos2.y);
+	//acc += noise2D(pos1.x,pos1.y) + 0.7f*noise2D(pos2.x,pos2.y);
 	acc+=(poorRNG(pos).x%128)/256.0f - 0.4f;
 	
-	bool accept = (acc>-0.2f) ? 1 : 0;
+	bool accept = (acc>-0.3f) ? 1 : 0;
 	return accept;
 }
