@@ -28,6 +28,7 @@ cbuffer CSPass1CSCB : register( b0 )
 
 #define NUM_BIOMES 9
 #define MAX_ROAD_BIOME_INDEX 6
+#define FULL_BLOCKS 7
 #define NOISE_ITERATIONS 12
 	
 static const float scales[NOISE_ITERATIONS] = {150000,30000,12800,640,320,
@@ -44,7 +45,6 @@ static const float coeffs[NUM_BIOMES][NOISE_ITERATIONS] = {
 {512,32,16,0,0,0,0,0,0,0,0,0.0725f},
 {512,32,16,0,0,0,0,0,0,0,0,0.0725f},
 {512,32,16,0,0,0,0,0,0,0,0,0.0725f},
-//{256,128,64,32,16,8,4,2,1,0.5f,0.25f,0.125f}
 };
 
 groupshared float sGroupHeights[CS_GROUP_DIM][CS_GROUP_DIM];
@@ -68,7 +68,6 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	
 	[loop] for (int i = 0; i < 12; i++) {
 		float2 p2 = pos/(0.25f*scales[i]);
-		//noises[i] = noise2D(p2.x,p2.y)/2+0.5f;
 		noises[i] = noise2D(p2.x,p2.y);
 	}
 	
@@ -91,17 +90,15 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	cCo[2] = (pos2.y - tilePos[2].y < 0) ? tilePos[4] : tilePos[0];
 	cCo[3] = float2(cCo[1].x,cCo[2].y);
 	
-	//if 1,1 then on top of cCo[0], if 0,0 then on top of cCo[3]
 	float2 uvs = smoothstep(0,TILE_SIZE,abs(pos2-cCo[0]));
 
 	float tileCoeff[4];
 	
-	for (int i = 0; i < 4; i++) {
+	[unroll] for (int i = 0; i < 4; i++) {
 		tileCoeff[i] = getTileCoeff(cCo[i]);
 	}
 	
-	
-	for (int i = 0; i < 12; i++) {
+	[loop] for (int i = 0; i < 12; i++) {
 		float coe[4];
 		[unroll] for (int j = 0; j < 4; j++) {
 			float ind = tileCoeff[j];
@@ -159,7 +156,7 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	
 	bool doDiag = 1;
 
-	for (int i = 0; i < 4; i++) {
+	[loop] for (int i = 0; i < 4; i++) {
 	
 		int ind1 = i%4;
 		int ind2 = (i+1)%4;
@@ -195,7 +192,7 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	
  	const float roadWidth = 6;
 	const float paveWidth = 8;
-	const float nearRoadWidth = 25;
+	const float nearRoadWidth = 100;
 	
 	if (roadDist < roadWidth) {
 		float delta = 0.025f*noises[10]+0.0125*noises[11];
@@ -209,14 +206,14 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	}
 	else if (roadDist < nearRoadWidth) {
 		height = 0.15f;
-		colour = float3(1,0,0);
+		//colour = float3(1,0,0);
 		//height = pow((noises[2]/2)+0.5f,2) * 500.0f;
 	}
 	else {
 		colour = 1;
 		height = 0;
 		//height = 30 + pow((noises[2]/2)+0.5f,1) * 10.0f;
-
+		//height = 10 + tileCoeff[0]*20.0f;
 	}
 	//colour = (roadDist-paveWidth)/100;
 	height+=terrainheight;
@@ -343,6 +340,9 @@ bool isAccepted(float2 pos, float tileInd) {
 
 	if (tileInd < MAX_ROAD_BIOME_INDEX) {
 		return 0;
+	}
+	else if (tileInd > FULL_BLOCKS) {
+		return 1;
 	}
 	float2 pos1 = pos/1000;
 	float2 pos2 = pos/500;

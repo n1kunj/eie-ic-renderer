@@ -6,19 +6,27 @@
 
 class MeshLoaderInterface;
 
-struct Vertex
+struct VertexData
 {
 	DirectX::XMFLOAT3 POSITION;
 	DirectX::XMFLOAT3 NORMAL;
 };
 
-const D3D11_INPUT_ELEMENT_DESC vertexLayout[] =
+struct InstanceData
 {
-	{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	DirectX::XMFLOAT3 POSITION;
 };
 
-const UINT numLayoutElements = ARRAYSIZE(vertexLayout);
+const D3D11_INPUT_ELEMENT_DESC VertexLayout[] =
+{
+	//Vertex Data, slot 0
+	{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	//Instance Data, slot 1
+	{ "POSITION", 1, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D11_INPUT_PER_INSTANCE_DATA, 0 },
+};
+
+const UINT numLayoutElements = ARRAYSIZE(VertexLayout);
 
 class DrawableMesh {
 public:
@@ -46,7 +54,7 @@ public:
 	/**Returns a dynamically allocated array of type Vertex
 	Remains allocated until you call cleanup or destroy the object
 	Pass in a UINT pointer to get number of verts returned**/
-	virtual Vertex* loadVertices(UINT* retNumVertices) = 0;
+	virtual VertexData* loadVertices(UINT* retNumVertices) = 0;
 
 	/**Returns a dynamically allocated array of indices
 	Remains allocated until you call cleanup or destroy the object

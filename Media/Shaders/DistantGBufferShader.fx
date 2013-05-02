@@ -61,7 +61,6 @@ HS_OUTPUT HS(InputPatch<VS_OUTPUT,4> patch, uint pointId : SV_OutputControlPoint
 struct DS_OUTPUT
 {
 	float4 Pos : SV_POSITION;
-	//float3 Norm : NORMAL;
 	float2 UV : TEXCOORDS;
 };
 
@@ -91,20 +90,7 @@ DS_OUTPUT DS(ConstantOutputType input, float2 coord : SV_DomainLocation, const O
 	
 	float2 uvs = vertPos.xz + float2(0.5f,0.5f);
 	
-	uint3 pixPos = uint3(uvs*255,0);
-	
-	//float height = heightTex.Load(pixPos);
-	//height = max(height,heightTex.Load(pixPos,int2(0,1)));
-	//height = max(height,heightTex.Load(pixPos,int2(1,1)));
-	//height = max(height,heightTex.Load(pixPos,int2(1,0)));
-	
 	float height = heightTex.SampleLevel(defaultSampler,uvs,0);
-	
-	// height=max(height,heightTex.SampleLevel(defaultSampler,uvs,0,int2(0,1)));
-	// height=max(height,heightTex.SampleLevel(defaultSampler,uvs,0,int2(1,1)));
-	// height=max(height,heightTex.SampleLevel(defaultSampler,uvs,0,int2(1,0)));
-	
-	//height/=4;
 	
 	vertPos = mul(float4(vertPos,1.0f),Model).xyz;
 	
@@ -144,7 +130,6 @@ GBuffer PS( DS_OUTPUT input )
 
 	output.albedo = float4(albedo,1.0f);
 	output.normal_specular = float4(EncodeSphereMap(normal),specAmount,specPower);
-
 	
 	return output;
 }

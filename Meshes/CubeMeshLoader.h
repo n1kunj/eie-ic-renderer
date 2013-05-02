@@ -9,7 +9,7 @@ public:
 	CubeMeshLoader();
 	~CubeMeshLoader();
 
-	Vertex* loadVertices( UINT* retNumVertices );
+	VertexData* loadVertices( UINT* retNumVertices );
 	UINT* loadIndices( UINT* retNumIndices );
 
 	void cleanup();

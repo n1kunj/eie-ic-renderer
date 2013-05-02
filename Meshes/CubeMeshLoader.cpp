@@ -4,7 +4,7 @@
 
 using namespace DirectX;
 
-Vertex vertices[] =
+VertexData vertices[] =
 {
 	{ XMFLOAT3( -1.0f, 1.0f, -1.0f ), XMFLOAT3( 0.0f, 1.0f, 0.0f ) },
 	{ XMFLOAT3( 1.0f, 1.0f, -1.0f ), XMFLOAT3( 0.0f, 1.0f, 0.0f ) },
@@ -58,9 +58,9 @@ UINT indices[] =
 	23,20,22
 };
 
-Vertex* CubeMeshLoader::loadVertices( UINT* retNumVertices )
+VertexData* CubeMeshLoader::loadVertices( UINT* retNumVertices )
 {
-	*retNumVertices = (UINT) sizeof(vertices)/sizeof(Vertex);
+	*retNumVertices = (UINT) sizeof(vertices)/sizeof(VertexData);
 	return vertices;
 }
 

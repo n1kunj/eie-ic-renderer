@@ -31,11 +31,11 @@ HRESULT DrawableMesh::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 	HRESULT hr = S_OK;
 
 	//Load vertices buffer
-	Vertex* vertices = mMeshLoader->loadVertices(&mNumVertices);
+	VertexData* vertices = mMeshLoader->loadVertices(&mNumVertices);
 
 	D3D11_BUFFER_DESC bd;
 	ZeroMemory( &bd, sizeof(bd) );
-	bd.ByteWidth = sizeof(Vertex) * mNumVertices;
+	bd.ByteWidth = sizeof(VertexData) * mNumVertices;
 	bd.Usage = D3D11_USAGE_DEFAULT;
 	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	bd.CPUAccessFlags = 0;

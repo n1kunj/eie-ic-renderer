@@ -9,7 +9,7 @@ private:
 	UINT mSideVertCount;
 	UINT mNumVertices;
 	UINT mNumIndices;
-	Vertex* mVerts;
+	VertexData* mVerts;
 	UINT* mIndices;
 public:
 	//Creates a plane with the specified vert count on each side.
@@ -27,7 +27,7 @@ public:
 		cleanup();
 	}
 
-	Vertex* loadVertices( UINT* retNumVertices ) {
+	VertexData* loadVertices( UINT* retNumVertices ) {
 		if (mVerts == NULL) {
 			createPlane();
 		}
@@ -52,12 +52,12 @@ private:
 	void createPlane() {
 		using namespace DirectX;
 
-		mVerts = new Vertex[mNumVertices];
+		mVerts = new VertexData[mNumVertices];
 		mIndices = new UINT[mNumIndices];
 
 		//Create from 0,0,0 to 1,0,1 then shift
 		for (UINT i = 0; i < mNumVertices; i++) {
-			Vertex &vert = mVerts[i];
+			VertexData &vert = mVerts[i];
 			float x = float(i % mSideVertCount)/(mSideVertCount-1) - 0.5f;
 			float z = float(i / mSideVertCount)/(mSideVertCount-1) - 0.5f;
 			vert.POSITION = XMFLOAT3(x,0,z);

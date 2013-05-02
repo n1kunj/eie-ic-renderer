@@ -80,7 +80,7 @@ public:
 			V_RELEASE_IF_RETURN(pVSBlob,pd3dDevice->CreateVertexShader( pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, &mVertexShader ));
 
 			//Create the input layout
-			V_RELEASE_AND_RETURN(pVSBlob,pd3dDevice->CreateInputLayout( vertexLayout, numLayoutElements, pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), &mVertexLayout ));
+			V_RELEASE_AND_RETURN(pVSBlob,pd3dDevice->CreateInputLayout( VertexLayout, numLayoutElements, pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), &mVertexLayout ));
 		}
 
 		// Compile the hull shader
@@ -186,7 +186,7 @@ private:
 		//Set vertex layout and bind buffers
 		pd3dContext->IASetInputLayout( mVertexLayout );
 
-		UINT stride = sizeof( Vertex );
+		UINT stride = sizeof( VertexData );
 		UINT offset = 0;
 		pd3dContext->IASetVertexBuffers( 0, 1, &pMesh->mVertexBuffer, &stride, &offset );
 

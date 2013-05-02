@@ -93,7 +93,7 @@ void DefaultShader::DrawMesh(ID3D11DeviceContext* pd3dContext, const DrawableMes
 	//Set vertex layout and bind buffers
 	pd3dContext->IASetInputLayout( sVertexLayout );
 
-	UINT stride = sizeof( Vertex );
+	UINT stride = sizeof( VertexData );
 	UINT offset = 0;
 	pd3dContext->IASetVertexBuffers( 0, 1, &pMesh->mVertexBuffer, &stride, &offset );
 
@@ -129,7 +129,7 @@ HRESULT DefaultShader::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 	V_RELEASE_IF_RETURN(pVSBlob,pd3dDevice->CreateVertexShader( pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, &sVertexShader ));
 
 	//Create the input layout
-	V_RELEASE_AND_RETURN(pVSBlob,pd3dDevice->CreateInputLayout( vertexLayout, numLayoutElements, pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), &sVertexLayout ));
+	V_RELEASE_AND_RETURN(pVSBlob,pd3dDevice->CreateInputLayout( VertexLayout, numLayoutElements, pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), &sVertexLayout ));
 
 	// Compile the pixel shader
 	ID3DBlob* pPSBlob = NULL;

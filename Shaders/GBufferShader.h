@@ -11,9 +11,6 @@
 
 __declspec(align(16)) struct GBufferVSCB
 {
-	DirectX::XMMATRIX Model;
-	DirectX::XMMATRIX View;
-	DirectX::XMMATRIX Projection;
 	DirectX::XMMATRIX MV;
 	DirectX::XMMATRIX MVP;
 };
@@ -68,7 +65,7 @@ public:
 		V_RELEASE_IF_RETURN(pVSBlob,pd3dDevice->CreateVertexShader( pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, &mVertexShader ));
 
 		//Create the input layout
-		V_RELEASE_AND_RETURN(pVSBlob,pd3dDevice->CreateInputLayout( vertexLayout, numLayoutElements, pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), &mVertexLayout ));
+		V_RELEASE_AND_RETURN(pVSBlob,pd3dDevice->CreateInputLayout( VertexLayout, numLayoutElements, pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), &mVertexLayout ));
 
 		// Compile the pixel shader
 		ID3DBlob* pPSBlob = NULL;
@@ -109,9 +106,6 @@ public:
 		D3D11_MAPPED_SUBRESOURCE MappedResource;
 		pd3dContext->Map(mVSConstantBuffer,0,D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
 		GBufferVSCB* vscb = (GBufferVSCB*)MappedResource.pData;
-		vscb->Model = XMMatrixTranspose(pState->mModelMatrix);
-		vscb->View = XMMatrixTranspose(pCamera->mViewMatrix);
-		vscb->Projection = XMMatrixTranspose(pCamera->mProjectionMatrix);
 		vscb->MV = XMMatrixMultiplyTranspose(pState->mModelMatrix,pCamera->mViewMatrix);
 		vscb->MVP = XMMatrixMultiplyTranspose(pState->mModelMatrix,pCamera->mViewProjectionMatrix);
 		pd3dContext->Unmap(mVSConstantBuffer,0);
@@ -130,7 +124,7 @@ public:
 		//Set vertex layout and bind buffers
 		pd3dContext->IASetInputLayout( mVertexLayout );
 
-		UINT stride = sizeof( Vertex );
+		UINT stride = sizeof( VertexData );
 		UINT offset = 0;
 		pd3dContext->IASetVertexBuffers( 0, 1, &pMesh->mVertexBuffer, &stride, &offset );
 
