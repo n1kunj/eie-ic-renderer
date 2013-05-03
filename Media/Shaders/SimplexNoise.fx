@@ -20,7 +20,7 @@ StructuredBuffer<uint> simplexBuffer : register(t0);
 
 [call] float noise2D( float x, float y) {
 	
-	    // Noise contributions from the three corners
+	// Noise contributions from the three corners
     float n0, n1, n2;
 
     // Skew the input space to determine which simplex cell we're in

@@ -253,51 +253,9 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 	
 	DrawableState& state = mCityDrawable.mState;
 
-	//TODO: this is temporary, it'll be dealt with in the generator later
-	ID3D11Device* device =  DXUTGetD3D11Device();	
-
-	const UINT number = 200000;
-
-	{
-		auto& ib = state.mInstanceBuffer;
-
-		ib = std::make_shared<StructuredBuffer<InstanceData> >();
-	
-		ib->mBindFlags = D3D11_BIND_SHADER_RESOURCE;
-		ib->mCPUAccessFlags = 0;
-		ib->mUsage = D3D11_USAGE_DEFAULT;
-		ib->mElements = number;
-
-		InstanceData* ids = new InstanceData[number];
-
-		for (int i = 0; i < number; i++) {
-			ids[i].POSITION = DirectX::XMFLOAT3(i,0,0);
-		}
-		ib->CreateBuffer(device,ids);
-		delete[] ids;
-	}
-	{
-		auto& ib = state.mIndirectBuffer;
-		ib = std::make_shared<StructuredBuffer<UINT> >();
-
-		ib->mBindFlags = 0;
-		ib->mCPUAccessFlags = 0;
-		ib->mUsage = D3D11_USAGE_DEFAULT;
-		ib->mElements = 5;
-		ib->mMiscFlags = D3D11_RESOURCE_MISC_DRAWINDIRECT_ARGS;
-
-		UINT datas[5] = {
-			cityMesh->mNumIndices,
-			number,
-			0,
-			0,
-			0
-		};
-		ib->CreateBuffer(device,datas);
-		state.mDiffuseColour = DirectX::XMFLOAT3(1,0,0);
-	}
-
-
+	state.mDiffuseColour = DirectX::XMFLOAT3(1,0,0);
+	state.mCityTile = std::make_shared<CityTile>(0,0,0,1024,cityMesh);
+	pGenerator->InitialiseCityTile(state.mCityTile);
 }
 
 DistantDrawable::~DistantDrawable()
@@ -318,5 +276,7 @@ void DistantDrawable::Draw( ID3D11DeviceContext* pd3dContext )
 	//Draw from the bottom up
 	mLods[num_lods-1]->Draw(pd3dContext);
 
-	mCityDrawable.DrawInstancedIndirect(pd3dContext);
+	if (mCityDrawable.mState.mCityTile.unique()) {
+		mCityDrawable.DrawInstancedIndirect(pd3dContext);
+	}
 }

@@ -7,6 +7,7 @@
 #define HEIGHT_MAP_RESOLUTION 512
 #define CS_GROUP_DIM 16
 #define DISPATCH_DIM ALBNORM_MAP_RESOLUTION/CS_GROUP_DIM
+#define MAX_BUILDINGS_PER_TILE 20000
 
 __declspec(align(16)) struct HeightMapCSCB {
 	DirectX::XMUINT2 bufferDim;
@@ -44,31 +45,93 @@ DistantTextures::DistantTextures(DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBL
 	mHeightMap.mDesc = desc;
 }
 
+CityTile::CityTile( DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize, DrawableMesh* pMesh)
+{
+	//TODO: append
+	mPosX = pPosX;
+	mPosY = pPosY;
+	mPosZ = pPosZ;
+	mSize = pSize;
+	{
+		auto& ib = mInstanceBuffer;
+		ib.mBindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+		ib.mCPUAccessFlags = 0;
+		ib.mUsage = D3D11_USAGE_DEFAULT;
+		ib.mElements = MAX_BUILDINGS_PER_TILE;
+		ib.mDefaultUAVDesc = FALSE;
+		ib.mUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_APPEND;
+		ib.mUAVDesc.Buffer.NumElements = MAX_BUILDINGS_PER_TILE;
+		ib.mUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+	}
+	{
+		auto& ib =  mIndirectBuffer;
+		ib.mCPUAccessFlags = 0;
+		ib.mUsage = D3D11_USAGE_DEFAULT;
+		ib.mElements = 5;
+		ib.mMiscFlags = D3D11_RESOURCE_MISC_DRAWINDIRECT_ARGS;
+		
+		//Arguments for drawinstancedindexedindirect
+		mIndirectData[0] = pMesh->mNumIndices;
+		mIndirectData[1] = 1000; //This will be updated later
+		mIndirectData[2] = 0;
+		mIndirectData[3] = 0;
+		mIndirectData[4] = 0;
+	}
+}
+
+
 void Generator::Generate(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, UINT pMaxRuntimeMillis) {
 
-	if (mTextureQueue.size() == 0) {
+	if (mTextureQueue.size() != 0) {
+		for (int i = 0; i < 1; i++) {
+			ProcessDT(pd3dDevice,pd3dContext);
+		}
+	}
+	else if (mCityQueue.size() != 0) {
+		for (int i = 0; i < 1; i++) {
+			ProcessCT(pd3dDevice,pd3dContext);
+		}
+	}
+	else {
 		return;
 	}
-	for (int i = 0; i < 1; i++) {
-		DTPTR &first = mTextureQueue.front();
+}
 
-		if (first.unique()) {
-			first.reset();
-		}
-		else {
-			//Check if the texture already exists
-			if (first->mAlbedoMap.mTexture == NULL) {
-				first->mAlbedoMap.CreateTexture(pd3dDevice);
-				first->mNormalMap.CreateTexture(pd3dDevice);
-				first->mHeightMap.CreateTexture(pd3dDevice);
-			}
-			ComputeTextures(pd3dContext, *first);
-			pd3dContext->GenerateMips(first->mAlbedoMap.mSRV);
-			pd3dContext->GenerateMips(first->mNormalMap.mSRV);
-			//pd3dContext->GenerateMips(first->mHeightMap.mSRV);
-		}
-		mTextureQueue.pop_front();
+void Generator::ProcessDT(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext) {
+	DTPTR &first = mTextureQueue.front();
+
+	if (first.unique()) {
+		first.reset();
 	}
+	else {
+		//Check if the texture already exists
+		if (first->mAlbedoMap.mTexture == NULL) {
+			first->mAlbedoMap.CreateTexture(pd3dDevice);
+			first->mNormalMap.CreateTexture(pd3dDevice);
+			first->mHeightMap.CreateTexture(pd3dDevice);
+		}
+		ComputeTextures(pd3dContext, *first);
+		pd3dContext->GenerateMips(first->mAlbedoMap.mSRV);
+		pd3dContext->GenerateMips(first->mNormalMap.mSRV);
+	}
+	mTextureQueue.pop_front();
+}
+
+void Generator::ProcessCT( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext )
+{
+	CTPTR &first = mCityQueue.front();
+
+	if (first.unique()) {
+		first.reset();
+	}
+	else {
+		if (first->mInstanceBuffer.mBuffer == NULL) {
+			first->mInstanceBuffer.CreateBuffer(pd3dDevice);
+			first->mIndirectBuffer.CreateBuffer(pd3dDevice,first->mIndirectData);
+		}
+		ComputeCity(pd3dContext,*first);
+	}
+	mCityQueue.pop_front();
 }
 
 void Generator::ComputeTextures(ID3D11DeviceContext* pd3dContext, DistantTextures &pDT )
@@ -91,15 +154,15 @@ void Generator::ComputeTextures(ID3D11DeviceContext* pd3dContext, DistantTexture
 	}
 
 	D3D11_MAPPED_SUBRESOURCE MappedResource;
-	pd3dContext->Map(mCSCB,0,D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
+	pd3dContext->Map(mCSCBDistant,0,D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
 	HeightMapCSCB* cscb = (HeightMapCSCB*)MappedResource.pData;
 	cscb->bufferDim = DirectX::XMUINT2(ALBNORM_MAP_RESOLUTION, ALBNORM_MAP_RESOLUTION);
 	cscb->coords = DirectX::XMINT2((INT)pDT.mPosX,(INT)pDT.mPosZ);
 	cscb->tileSize = (UINT)pDT.mSize;
 
-	pd3dContext->Unmap(mCSCB,0);
+	pd3dContext->Unmap(mCSCBDistant,0);
 
-	pd3dContext->CSSetConstantBuffers(0,1,&mCSCB);
+	pd3dContext->CSSetConstantBuffers(0,1,&mCSCBDistant);
 
 	ID3D11UnorderedAccessView* uavs[3] = {pDT.mAlbedoMap.mUAV,
 		pDT.mNormalMap.mUAV,pDT.mHeightMap.mUAV};
@@ -107,7 +170,7 @@ void Generator::ComputeTextures(ID3D11DeviceContext* pd3dContext, DistantTexture
 	pd3dContext->CSSetUnorderedAccessViews(0,3,uavs,0);
 	pd3dContext->CSSetShaderResources(0,1,&mSimplexBuffer.mSRV);
 
-	pd3dContext->CSSetShader(mCS,0,0);
+	pd3dContext->CSSetShader(mCSDistant,0,0);
 	pd3dContext->Dispatch(DISPATCH_DIM,DISPATCH_DIM,1);
 
 	ID3D11UnorderedAccessView* nulluavs[3] = {NULL,NULL,NULL};
@@ -116,18 +179,45 @@ void Generator::ComputeTextures(ID3D11DeviceContext* pd3dContext, DistantTexture
 	pd3dContext->CSSetShaderResources(0,1,nullsrv);
 }
 
+void Generator::ComputeCity( ID3D11DeviceContext* pd3dContext, CityTile &pCT )
+{
+	if (!mCompiled) {
+		return;
+	}
+	pd3dContext->CSSetUnorderedAccessViews(0,1,&pCT.mInstanceBuffer.mUAV,0);
+	pd3dContext->CSSetShader(mCSCity,0,0);
+	pd3dContext->Dispatch(1,1,1);
+
+	ID3D11UnorderedAccessView* nulluavs[1] = {NULL};
+	pd3dContext->CSSetUnorderedAccessViews(0,1,nulluavs,0);
+
+	//TODO:
+}
+
+
 HRESULT Generator::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 {
 	OnD3D11DestroyDevice();
 	HRESULT hr;
 
 	//Compile CS
-	ID3DBlob* pCSBlob = NULL;
-	V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\GeneratorShader.fx", "CSPass1", "cs_5_0", &pCSBlob ));
+	{
+		ID3DBlob* pCSBlob = NULL;
+		V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\GeneratorShader.fx", "CSPass1", "cs_5_0", &pCSBlob ));
 
-	//Create the compute shader
-	//If fails, releases pCSBlob.
-	V_RELEASE_IF_RETURN(pCSBlob,pd3dDevice->CreateComputeShader( pCSBlob->GetBufferPointer(), pCSBlob->GetBufferSize(), NULL, &mCS ));
+		//Create the compute shader
+		//If fails, releases pCSBlob.
+		V_RELEASE_IF_RETURN(pCSBlob,pd3dDevice->CreateComputeShader( pCSBlob->GetBufferPointer(), pCSBlob->GetBufferSize(), NULL, &mCSDistant ));
+	}
+
+	{
+		ID3DBlob* pCSBlob = NULL;
+		V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\GeneratorShader.fx", "CSCityPass", "cs_5_0", &pCSBlob ));
+
+		//Create the compute shader
+		//If fails, releases pCSBlob.
+		V_RELEASE_IF_RETURN(pCSBlob,pd3dDevice->CreateComputeShader( pCSBlob->GetBufferPointer(), pCSBlob->GetBufferSize(), NULL, &mCSCity ));
+	}
 
 	D3D11_BUFFER_DESC bd;
 	ZeroMemory( &bd, sizeof(bd) );
@@ -135,7 +225,9 @@ HRESULT Generator::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	bd.ByteWidth = sizeof(HeightMapCSCB);
-	V_RETURN(pd3dDevice->CreateBuffer( &bd, NULL, &mCSCB ));
+	V_RETURN(pd3dDevice->CreateBuffer( &bd, NULL, &mCSCBDistant ));
+
+	//TODO: City constant buffer
 
 	mSimplexBuffer.CreateBuffer(pd3dDevice);
 
@@ -143,14 +235,12 @@ HRESULT Generator::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 	return S_OK;
 }
 
-Generator::Generator( MessageLogger* pLogger ) : mCompiled(FALSE),mCS(NULL),mCSCB(NULL), mLogger(pLogger), mSimplexInit(FALSE)
+Generator::Generator( MessageLogger* pLogger ) : mCompiled(FALSE),mCSDistant(NULL),mCSCity(NULL), mCSCBDistant(NULL), mCSCBCity(NULL), mLogger(pLogger), mSimplexInit(FALSE)
 {
 
 	//if x0 > y0, use right 16 bits, else use left 16 bits
 	UINT i1 = 0;
 	UINT j1 = 1;
-
-
 
 	for (int ii = 0; ii < 256; ii++) {
 		for (int jj = 0; jj < 256; jj++) {

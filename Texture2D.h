@@ -48,10 +48,19 @@ public:
 	UINT mCPUAccessFlags;
 	UINT mMiscFlags;
 	ID3D11Buffer* mBuffer;
+	BOOL mDefaultSRVDesc;
+	BOOL mDefaultUAVDesc;
+	D3D11_SHADER_RESOURCE_VIEW_DESC mSRVDesc;
+	D3D11_UNORDERED_ACCESS_VIEW_DESC mUAVDesc;
 	ID3D11ShaderResourceView* mSRV;
 	ID3D11UnorderedAccessView* mUAV;
 
-	StructuredBuffer() : mBuffer(NULL), mSRV(NULL), mUAV(NULL),mBindFlags(0),mElements(0),mUsage(D3D11_USAGE_DEFAULT),mCPUAccessFlags(0),mMiscFlags(0){}
+	StructuredBuffer() : mBuffer(NULL), mSRV(NULL), mUAV(NULL),mBindFlags(0),mElements(0),mUsage(D3D11_USAGE_DEFAULT),mCPUAccessFlags(0),mMiscFlags(0),
+	mDefaultSRVDesc(TRUE),mDefaultUAVDesc(TRUE){
+		::ZeroMemory (&mSRVDesc, sizeof (mSRVDesc));
+		::ZeroMemory (&mUAVDesc, sizeof (mUAVDesc));
+	}
+
 
 	void CreateBuffer(ID3D11Device* pd3dDevice) {
 		CreateBuffer(pd3dDevice,NULL);
@@ -84,10 +93,12 @@ public:
 		}
 
 		if (mBindFlags & D3D11_BIND_SHADER_RESOURCE) {
-			pd3dDevice->CreateShaderResourceView(mBuffer,0,&mSRV);
+			D3D11_SHADER_RESOURCE_VIEW_DESC* srvd = mDefaultSRVDesc ? NULL : &mSRVDesc;
+			pd3dDevice->CreateShaderResourceView(mBuffer,srvd,&mSRV);
 		}
 		if (mBindFlags & D3D11_BIND_UNORDERED_ACCESS) {
-			pd3dDevice->CreateUnorderedAccessView(mBuffer,0,&mUAV);
+			D3D11_UNORDERED_ACCESS_VIEW_DESC* uavd = mDefaultUAVDesc ? NULL : &mUAVDesc;
+			pd3dDevice->CreateUnorderedAccessView(mBuffer,uavd,&mUAV);
 		}
 	}
 

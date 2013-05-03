@@ -8,6 +8,7 @@
 #include "../DrawableState.h"
 #include "../Camera.h"
 #include "../Utils/ShaderTools.h"
+#include "../Procedural/Generator.h"
 
 __declspec(align(16)) struct GBufferVSCB
 {
@@ -135,16 +136,16 @@ public:
 
 	void DrawInstancedIndirect(ID3D11DeviceContext* pd3dContext, const DrawableMesh* pMesh, const DrawableState* pState, const Camera* pCamera) {
 
-		assert(pState->mInstanceBuffer != NULL);
-		assert(pState->mIndirectBuffer != NULL);
+		assert(pState->mCityTile != NULL);
 
 		setupShader(pd3dContext,pMesh,pState,pCamera);
 
 		pd3dContext->IASetInputLayout( mInstancedVL );
 		pd3dContext->VSSetShader( mInstancedVS, NULL, 0 );
-		pd3dContext->VSSetShaderResources(0,1,&pState->mInstanceBuffer->mSRV);
+		CityTile& ct = *pState->mCityTile;
+		pd3dContext->VSSetShaderResources(0,1,&ct.mInstanceBuffer.mSRV);
 
-		pd3dContext->DrawIndexedInstancedIndirect(pState->mIndirectBuffer->mBuffer,0);
+		pd3dContext->DrawIndexedInstancedIndirect(ct.mIndirectBuffer.mBuffer,0);
 
 	}
 private:

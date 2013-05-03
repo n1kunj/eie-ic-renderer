@@ -52,21 +52,13 @@ PS_INPUT VS_INSTANCED( VS_INPUT input, uint index : SV_InstanceID)
 	Model2._m30_m31_m32+=cOffset;
 	
 	float4 pos = float4(input.mPos,1);
-	//pos+=float4(index,0.01f,0.01f,0.01f);
+	//pos.xyz*=10;
 	pos+=float4(bIndices[index],0);
-	pos+=float4(bIndices[index+1],0);
-	pos+=float4(bIndices[index+2],0);
-	pos+=float4(bIndices[index+3],0);
+	//pos+=float4(-5,150,-20,0);
 	
 	pos = mul(pos,Model2);
 	
 	output.mPos = mul(pos,cVP);
-	
-	//matrix m2 = mul(cModel,cMV);
-	//matrix m3 = mul(cVP,m2);
-	//output.mNorm = normalize(mul(input.mNorm,(float3x3)m3)).xyz;
-
-	
 	output.mNorm = normalize(mul(input.mNorm,(float3x3)cMV)).xyz;
     return output;
 }

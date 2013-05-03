@@ -8,6 +8,7 @@
 
 class Camera;
 class DistantTextures;
+class CityTile;
 
 class DrawableState {
 public:
@@ -23,8 +24,9 @@ public:
 	FLOAT mSpecularExponent;
 	FLOAT mSpecularAmount;
 	std::shared_ptr<DistantTextures> mDistantTextures;
-	std::shared_ptr<StructuredBuffer<InstanceData> > mInstanceBuffer;
-	std::shared_ptr<StructuredBuffer<UINT> > mIndirectBuffer;
+	std::shared_ptr<CityTile> mCityTile;
+	//std::shared_ptr<StructuredBuffer<InstanceData> > mInstanceBuffer;
+	//std::shared_ptr<StructuredBuffer<UINT> > mIndirectBuffer;
 
 	void updateMatrices();
 	void setPosition(DOUBLE x, DOUBLE y, DOUBLE z);

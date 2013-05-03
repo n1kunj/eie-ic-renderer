@@ -6,9 +6,9 @@
 
 #define OVERLAP_SCALE 1.05f
 
-RWTexture2D<float4> albedoTex : register(t0);
-RWTexture2D<float4> normalTex : register(t1);
-RWTexture2D<float> heightTex : register(t2);
+RWTexture2D<float4> albedoTex : register(u0);
+RWTexture2D<float4> normalTex : register(u1);
+RWTexture2D<float> heightTex : register(u2);
 
 uint2 poorRNG(float2 xy);
 float minDist(float2 l1, float2 l2, float2 p);
@@ -270,6 +270,22 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 		normalTex[pixIndex.xy] =  float4(normal,SpecPower/128.0f);
 		heightTex[pixIndex.xy] = height;
 	}
+}
+
+struct Instance {
+	float3 mPos;
+};
+
+AppendStructuredBuffer<Instance> sInstance : register(u0);
+
+[numthreads(16, 16, 1)]
+void CSCityPass(uint3 groupID 			: SV_GroupID,
+			uint3 groupThreadID    	: SV_GroupThreadID,
+			uint groupIndex 		: SV_GroupIndex)
+{
+	Instance i0;
+	i0.mPos = float3(groupThreadID*10);
+	sInstance.Append(i0);
 }
 
 uint2 poorRNG(float2 xy)

@@ -2,7 +2,7 @@ function runcube()
 run("cube.lua")
 end
 
---CAMERA:setEye(0,500,0)
+CAMERA:setEye(0,300,0)
 
 reset()
 
@@ -10,9 +10,9 @@ reset()
 
 --distDr = DistantDrawable(CAMERA,SHADERMAN,MESHMAN,GENERATOR,10,8,32);
 
-distDr = DistantDrawable(CAMERA,SHADERMAN,MESHMAN,GENERATOR,6,8,64);
+--distDr = DistantDrawable(CAMERA,SHADERMAN,MESHMAN,GENERATOR,6,8,64);
 
---distDr = DistantDrawable(CAMERA,SHADERMAN,MESHMAN,GENERATOR,4,1,128);
+distDr = DistantDrawable(CAMERA,SHADERMAN,MESHMAN,GENERATOR,4,1,128);
 
 --distDr = DistantDrawable(CAMERA,SHADERMAN,MESHMAN,GENERATOR,8,10,32);
 

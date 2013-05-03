@@ -10,7 +10,8 @@ DrawableState::DrawableState()
 	mScale(1.0f,1.0f,1.0f),	mDiffuseColour(1.0f,0.00f,0.50f),
 	mSpecularColour(0.0f,1.0f,0.0f), mAmbientColour(1.0f,0.50f,0.50f),
 	mSpecularExponent(100.0f),mSpecularAmount(1.0f), mCoords(0,0,0),
-	mDistantTextures(NULL),mInstanceBuffer(NULL),mIndirectBuffer(NULL)
+	mDistantTextures(NULL),//mInstanceBuffer(NULL),mIndirectBuffer(NULL)
+	mCityTile(NULL)
 {
 	// Initialize the world matrix
 	mModelMatrix = XMMatrixIdentity();
