@@ -25,6 +25,7 @@ public:
 	DrawableShader* mShader;
 
 	void Draw(ID3D11DeviceContext* pd3dContext);
+	void DrawInstancedIndirect(ID3D11DeviceContext* pd3dContext);
 	static void DrawInstanced(ID3D11DeviceContext* pd3dContext, BasicDrawable* pDrawableList, UINT pCount);
 	
 	BasicDrawable(DrawableMesh* pMesh, DrawableShader* pShader, Camera* pCamera);

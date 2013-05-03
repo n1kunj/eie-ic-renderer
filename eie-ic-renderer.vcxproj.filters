@@ -118,9 +118,6 @@
     <ClInclude Include="Utils\ShaderTools.h">
       <Filter>Utils</Filter>
     </ClInclude>
-    <ClInclude Include="Shaders\DefaultShader.h">
-      <Filter>Shaders</Filter>
-    </ClInclude>
     <ClInclude Include="DrawableMesh.h" />
     <ClInclude Include="DrawableState.h" />
     <ClInclude Include="Drawable.h" />
@@ -177,9 +174,6 @@
     <ClCompile Include="Gui.cpp" />
     <ClCompile Include="Utils\ShaderTools.cpp">
       <Filter>Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="Shaders\DefaultShader.cpp">
-      <Filter>Shaders</Filter>
     </ClCompile>
     <ClCompile Include="DrawableMesh.cpp" />
     <ClCompile Include="DrawableState.cpp" />

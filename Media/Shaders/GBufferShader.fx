@@ -2,43 +2,80 @@
 
 cbuffer VSConstantBuffer : register( b0 )
 {
-	matrix MV;
-	matrix MVP;
+	matrix cModel;
+	matrix cMV;
+	matrix cVP;
+	int3 cOffset;
 }
 
 cbuffer PSConstantBuffer : register( b0 )
 {
-	float3 Albedo;
-	float SpecPower;
-	float SpecAmount;
+	float3 cAlbedo;
+	float cSpecPower;
+	float cSpecAmount;
 }
 
 struct VS_INPUT
 {
-    float3 Pos : POSITION;
-    float3 Norm : NORMAL;
+    float3 mPos : POSITION;
+    float3 mNorm : NORMAL;
 };
 
 struct PS_INPUT
 {
-    float4 Pos : SV_POSITION;
-    float3 Norm : NORMAL0;
+    float4 mPos : SV_POSITION;
+    float3 mNorm : NORMAL0;
 };
 
 PS_INPUT VS( VS_INPUT input)
 {
     PS_INPUT output;
 	
-	output.Pos = mul(float4(input.Pos,1),MVP);
-    output.Norm = normalize(mul(input.Norm,MV));
+	matrix Model2 = cModel;
+	Model2._m30_m31_m32+=cOffset;
+	
+	float4 pos = mul(float4(input.mPos,1),Model2);
+	
+	output.mPos = mul(pos,cVP);
+	
+	output.mNorm = normalize(mul(input.mNorm,(float3x3)cMV)).xyz;
+    return output;
+}
+
+StructuredBuffer<float3> bIndices : register(t0);
+
+PS_INPUT VS_INSTANCED( VS_INPUT input, uint index : SV_InstanceID)
+{
+    PS_INPUT output;
+	
+	matrix Model2 = cModel;
+	Model2._m30_m31_m32+=cOffset;
+	
+	float4 pos = float4(input.mPos,1);
+	//pos+=float4(index,0.01f,0.01f,0.01f);
+	pos+=float4(bIndices[index],0);
+	pos+=float4(bIndices[index+1],0);
+	pos+=float4(bIndices[index+2],0);
+	pos+=float4(bIndices[index+3],0);
+	
+	pos = mul(pos,Model2);
+	
+	output.mPos = mul(pos,cVP);
+	
+	//matrix m2 = mul(cModel,cMV);
+	//matrix m3 = mul(cVP,m2);
+	//output.mNorm = normalize(mul(input.mNorm,(float3x3)m3)).xyz;
+
+	
+	output.mNorm = normalize(mul(input.mNorm,(float3x3)cMV)).xyz;
     return output;
 }
 
 GBuffer PS( PS_INPUT input )
 {
 	GBuffer output;
-	output.normal_specular = float4(EncodeSphereMap(input.Norm),SpecAmount,SpecPower);
-	output.albedo = float4(Albedo,1.0f);
+	output.mNormSpec = float4(EncodeSphereMap(input.mNorm),cSpecAmount,cSpecPower);
+	output.mAlbedo = float4(cAlbedo,1.0f);
 	
 	return output;
 }

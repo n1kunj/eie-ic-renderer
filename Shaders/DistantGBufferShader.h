@@ -17,16 +17,8 @@ __declspec(align(16)) struct DistantGBufferVSCB
 	DirectX::XMMATRIX VP;
 	DirectX::XMMATRIX MV;
 	DirectX::XMMATRIX MVP;
-	DirectX::XMINT3 coords;
+	DirectX::XMINT3 Offset;
 	FLOAT padding;
-};
-
-__declspec(align(16)) struct DistantGBufferPSCB
-{
-	DirectX::XMFLOAT3 Albedo;
-	FLOAT SpecPower;
-	FLOAT SpecAmount;
-	DirectX::XMFLOAT3 padding0;
 };
 
 class DistantGBufferShader : public DrawableShader {
@@ -38,7 +30,6 @@ private:
 	ID3D11DomainShader* mDomainShader;
 	ID3D11PixelShader* mPixelShader;
 	ID3D11Buffer* mDSConstantBuffer;
-	ID3D11Buffer* mPSConstantBuffer;
 	ID3D11SamplerState* mDefaultSampler;
 	ID3D11SamplerState* mAnisotropicSampler;
 
@@ -50,14 +41,13 @@ public:
 		SAFE_RELEASE(mHullShader);
 		SAFE_RELEASE(mDomainShader);
 		SAFE_RELEASE(mDSConstantBuffer);
-		SAFE_RELEASE(mPSConstantBuffer);
 		SAFE_RELEASE(mDefaultSampler);
 		SAFE_RELEASE(mAnisotropicSampler);
 		mCompiled = FALSE;
 	}
 
 	DistantGBufferShader() : DrawableShader(L"DistantGBufferShader"),mCompiled(FALSE),mVertexLayout(NULL),
-		mVertexShader(NULL),mPixelShader(NULL),mDSConstantBuffer(NULL),mPSConstantBuffer(NULL), mHullShader(NULL), mDomainShader(NULL), mDefaultSampler(NULL), mAnisotropicSampler(NULL) {}
+		mVertexShader(NULL),mPixelShader(NULL),mDSConstantBuffer(NULL),mHullShader(NULL), mDomainShader(NULL), mDefaultSampler(NULL), mAnisotropicSampler(NULL) {}
 
 	~DistantGBufferShader()
 	{
@@ -116,9 +106,6 @@ public:
 			bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 			bd.ByteWidth = sizeof(DistantGBufferVSCB);
 			V_RETURN(pd3dDevice->CreateBuffer( &bd, NULL, &mDSConstantBuffer ));
-
-			bd.ByteWidth = sizeof(DistantGBufferPSCB);
-			V_RETURN(pd3dDevice->CreateBuffer( &bd, NULL, &mPSConstantBuffer ));
 		}
 
 		//Create the sampler state
@@ -165,7 +152,11 @@ private:
 		vscb->VP = XMMatrixTranspose(pCamera->mViewProjectionMatrix);
 		vscb->MV = XMMatrixMultiplyTranspose(pState->mModelMatrix,pCamera->mViewMatrix);
 		vscb->MVP = XMMatrixMultiplyTranspose(pState->mModelMatrix,pCamera->mViewProjectionMatrix);
-		vscb->coords = pCamera->mCoords;
+		const XMINT3& mCrds = pState->mCoords;
+		const XMINT3& cCrds = pCamera->mCoords;
+		vscb->Offset = XMINT3(mCrds.x - cCrds.x,
+			mCrds.y - cCrds.y,
+			mCrds.z - cCrds.z);
 		pd3dContext->Unmap(mDSConstantBuffer,0);
 
 		pd3dContext->DSSetConstantBuffers( 0, 1, &mDSConstantBuffer );
@@ -174,21 +165,11 @@ private:
 		pd3dContext->PSSetSamplers(1,1,&mAnisotropicSampler);
 		pd3dContext->DSSetSamplers(0,1,&mDefaultSampler);
 
-		pd3dContext->Map(mPSConstantBuffer,0,D3D11_MAP_WRITE_DISCARD,0,&MappedResource);
-		DistantGBufferPSCB* pscb = (DistantGBufferPSCB*)MappedResource.pData;
-		pscb->Albedo = pState->mDiffuseColour;
-		pscb->SpecPower = pState->mSpecularExponent;
-		pscb->SpecAmount = pState->mSpecularAmount;
-		pd3dContext->Unmap(mPSConstantBuffer,0);
-
-		pd3dContext->PSSetConstantBuffers( 1, 1, &mPSConstantBuffer );
-
 		//Set vertex layout and bind buffers
 		pd3dContext->IASetInputLayout( mVertexLayout );
 
-		UINT stride = sizeof( VertexData );
 		UINT offset = 0;
-		pd3dContext->IASetVertexBuffers( 0, 1, &pMesh->mVertexBuffer, &stride, &offset );
+		pd3dContext->IASetVertexBuffers( 0, 1, &pMesh->mVertexBuffer, &VertexDataStride, &offset );
 
 		pd3dContext->IASetIndexBuffer( pMesh->mIndexBuffer, pMesh->mIndexBufferFormat, 0 );
 		pd3dContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST );

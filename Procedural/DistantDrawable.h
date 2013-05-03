@@ -22,6 +22,7 @@ private:
 	UINT mTileDimensionLength;
 	UINT mNumLods;
 	DOUBLE mMinTileSize;
+	BasicDrawable mCityDrawable;
 };
 
 

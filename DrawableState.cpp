@@ -10,7 +10,7 @@ DrawableState::DrawableState()
 	mScale(1.0f,1.0f,1.0f),	mDiffuseColour(1.0f,0.00f,0.50f),
 	mSpecularColour(0.0f,1.0f,0.0f), mAmbientColour(1.0f,0.50f,0.50f),
 	mSpecularExponent(100.0f),mSpecularAmount(1.0f), mCoords(0,0,0),
-	mDistantTextures(NULL)
+	mDistantTextures(NULL),mInstanceBuffer(NULL),mIndirectBuffer(NULL)
 {
 	// Initialize the world matrix
 	mModelMatrix = XMMatrixIdentity();
@@ -21,17 +21,13 @@ DrawableState::~DrawableState()
 
 }
 
-void DrawableState::updateMatrices(Camera* pCamera)
+void DrawableState::updateMatrices()
 {
-	mCamOffset = XMINT3(mCoords.x - pCamera->mCoords.x,
-		mCoords.y - pCamera->mCoords.y,
-		mCoords.z - pCamera->mCoords.z);
-
 	XMMATRIX scaleMatrix = XMMatrixScaling(mScale.x,mScale.y,mScale.z);
 	XMMATRIX rotateMatrix = XMMatrixRotationRollPitchYaw(mRotation.x,mRotation.y,mRotation.z);
 	XMMATRIX transformMatrix = XMMatrixMultiply(scaleMatrix,rotateMatrix);
-	XMMATRIX translateMatrix = XMMatrixTranslation(mPosition.x + mCamOffset.x,
-		mPosition.y + mCamOffset.y,mPosition.z + mCamOffset.z);
+	XMMATRIX translateMatrix = XMMatrixTranslation(mPosition.x,
+		mPosition.y,mPosition.z);
 	mModelMatrix = XMMatrixMultiply(transformMatrix, translateMatrix);
 }
 

@@ -243,12 +243,6 @@ int WINAPI wWinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdL
 	_CrtSetDbgFlag( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
 #endif
 
-	//Must be initialised here as static initialisation causes an assertion failure
-	RendererMessageProcessor rMP = RendererMessageProcessor(&devConsole,&renderer);
-	rMProc = &rMP;
-
-	devConsole.setMessageProcessor(rMProc);
-
 	// Set general DXUT callbacks
 	DXUTSetCallbackFrameMove( OnFrameMove );
 	DXUTSetCallbackKeyboard( OnKeyboard );
@@ -274,6 +268,13 @@ int WINAPI wWinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdL
 	DXUTCreateWindow( L"Renderer" );
 
 	DXUTCreateDevice( D3D_FEATURE_LEVEL_11_0, true, 640, 480 );
+
+	//Must be initialised here as static initialisation causes an assertion failure
+	RendererMessageProcessor rMP = RendererMessageProcessor(&devConsole,&renderer);
+	rMProc = &rMP;
+
+	devConsole.setMessageProcessor(rMProc);
+
 	DXUTMainLoop(); // Enter into the DXUT render loop
 
 	// Perform any application-level cleanup here

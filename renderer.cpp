@@ -3,7 +3,6 @@
 #include "MessageProcessor.h"
 #include "Meshes/CubeMeshLoader.h"
 #include "Meshes/PlaneLoader.h"
-#include "Shaders/DefaultShader.h"
 #include "Shaders/GBufferShader.h"
 #include "Shaders/DistantGBufferShader.h"
 #include "DrawableState.h"
@@ -31,7 +30,6 @@ Renderer::Renderer(MessageLogger* mLogger) : mLogger(mLogger), mDrawableManager(
 	mMeshManager->addMesh(new DrawableMesh(L"Plane128",new PlaneLoader(129)));
 	mMeshManager->addMesh(new DrawableMesh(L"Plane256",new PlaneLoader(257)));
 	mShaderManager = new ShaderManager(mLogger);
-	mShaderManager->addShader(new DefaultShader());
 	mShaderManager->addShader(new GBufferShader());
 	mShaderManager->addShader(new DistantGBufferShader());
 

@@ -46,13 +46,18 @@ public:
 	D3D11_USAGE mUsage;
 	UINT mElements;
 	UINT mCPUAccessFlags;
+	UINT mMiscFlags;
 	ID3D11Buffer* mBuffer;
 	ID3D11ShaderResourceView* mSRV;
 	ID3D11UnorderedAccessView* mUAV;
 
-	StructuredBuffer() : mBuffer(NULL), mSRV(NULL), mUAV(NULL) {}
+	StructuredBuffer() : mBuffer(NULL), mSRV(NULL), mUAV(NULL),mBindFlags(0),mElements(0),mUsage(D3D11_USAGE_DEFAULT),mCPUAccessFlags(0),mMiscFlags(0){}
 
 	void CreateBuffer(ID3D11Device* pd3dDevice) {
+		CreateBuffer(pd3dDevice,NULL);
+	}
+
+	void CreateBuffer(ID3D11Device* pd3dDevice, VOID* pInitData) {
 		OnD3D11DestroyDevice();
 		D3D11_BUFFER_DESC desc;
 		::ZeroMemory (&desc, sizeof (desc));
@@ -61,8 +66,23 @@ public:
 		desc.ByteWidth = mElements * sizeof(T);
 		desc.CPUAccessFlags = mCPUAccessFlags;
 		desc.StructureByteStride = sizeof(T);
-		desc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
-		pd3dDevice->CreateBuffer(&desc,0,&mBuffer);
+		desc.MiscFlags = mMiscFlags;
+
+		if (!(mMiscFlags & D3D11_RESOURCE_MISC_DRAWINDIRECT_ARGS) && !(mBindFlags & D3D11_BIND_VERTEX_BUFFER)) {
+			desc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+		}
+
+		if (pInitData!=NULL) {
+			D3D11_SUBRESOURCE_DATA initData;
+			ZeroMemory( &initData, sizeof(initData) );
+			initData.pSysMem = pInitData;
+
+			pd3dDevice->CreateBuffer(&desc,&initData,&mBuffer);
+		}
+		else {
+			pd3dDevice->CreateBuffer(&desc,0,&mBuffer);
+		}
+
 		if (mBindFlags & D3D11_BIND_SHADER_RESOURCE) {
 			pd3dDevice->CreateShaderResourceView(mBuffer,0,&mSRV);
 		}

@@ -16,6 +16,10 @@ public:
 			DrawMesh(pd3dContext,pMesh,pState[i],pCamera);
 		}
 	}
+	virtual void DrawInstancedIndirect(ID3D11DeviceContext* pd3dContext, const DrawableMesh* pMesh, const DrawableState* pState, const Camera* pCamera) {
+		//Implementable optionally
+		return;
+	}
 	virtual HRESULT OnD3D11CreateDevice(ID3D11Device* pd3dDevice) = 0;
 	virtual void OnD3D11DestroyDevice() = 0;
 

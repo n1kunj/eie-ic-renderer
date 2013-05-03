@@ -1,7 +1,7 @@
 struct GBuffer
 {
-    float4 normal_specular : SV_Target0;
-    float4 albedo : SV_Target1;
+    float4 mNormSpec : SV_Target0;
+    float4 mAlbedo : SV_Target1;
 };
 
 float2 EncodeSphereMap(float3 n)

@@ -8,7 +8,7 @@ void BasicDrawable::Draw(ID3D11DeviceContext* pd3dContext)
 {
 	//TODO: bounds of a given object
 	if (mCamera->testFrustum(mState.mPosition,mState.mCoords, mState.getBoundingRadius()) == TRUE) {
-		mState.updateMatrices(mCamera);
+		mState.updateMatrices();
 		mShader->DrawMesh(pd3dContext,mMesh,&mState,mCamera);
 	}
 }
@@ -43,11 +43,18 @@ void BasicDrawable::DrawInstanced( ID3D11DeviceContext* pd3dContext, BasicDrawab
 	for (UINT i = 0; i < pCount; i++) {
 		DrawableState& state = pDrawableList[i].mState;
 		if (camera->testFrustum(state.mPosition, state.mCoords, state.getBoundingRadius())) {
-			state.updateMatrices(camera);
+			state.updateMatrices();
 			drawers[count] = &state;
 			count++;
 		}
 	}
 
 	shader->DrawInstanced(pd3dContext,mesh,drawers,camera,count);
+}
+
+void BasicDrawable::DrawInstancedIndirect(ID3D11DeviceContext* pd3dContext) {
+	//if (mCamera->testFrustum(mState.mPosition,mState.mCoords, mState.getBoundingRadius()) == TRUE) {
+		mState.updateMatrices();
+		mShader->DrawInstancedIndirect(pd3dContext,mMesh,&mState,mCamera);
+	//}
 }

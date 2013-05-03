@@ -474,7 +474,6 @@
     <ClCompile Include="Procedural\Generator.cpp" />
     <ClCompile Include="Procedural\simplexnoise.cpp" />
     <ClCompile Include="Renderer.cpp" />
-    <ClCompile Include="Shaders\DefaultShader.cpp" />
     <ClCompile Include="Shaders\LightingShader.h" />
     <ClCompile Include="Utils\ShaderTools.cpp" />
     <ClInclude Include="Camera.h" />
@@ -495,7 +494,6 @@
     <ClInclude Include="Procedural\Generator.h" />
     <ClInclude Include="Procedural\simplexnoise.h" />
     <ClInclude Include="ShaderManager.h" />
-    <ClInclude Include="Shaders\DefaultShader.h" />
     <ClInclude Include="Shaders\DistantGBufferShader.h" />
     <ClInclude Include="Shaders\FXAAShader.h" />
     <ClInclude Include="Shaders\GBufferShader.h" />

@@ -3,6 +3,8 @@
 #define DRAWABLE_STATE_H
 #include "DirectXMath\DirectXMath.h"
 #include <memory>
+#include "Texture2D.h"
+#include "DrawableMesh.h"
 
 class Camera;
 class DistantTextures;
@@ -21,8 +23,10 @@ public:
 	FLOAT mSpecularExponent;
 	FLOAT mSpecularAmount;
 	std::shared_ptr<DistantTextures> mDistantTextures;
+	std::shared_ptr<StructuredBuffer<InstanceData> > mInstanceBuffer;
+	std::shared_ptr<StructuredBuffer<UINT> > mIndirectBuffer;
 
-	void updateMatrices(Camera* pCamera);
+	void updateMatrices();
 	void setPosition(DOUBLE x, DOUBLE y, DOUBLE z);
 	FLOAT getBoundingRadius() {
 		//TODO: better bounds calculations

@@ -12,10 +12,14 @@ struct VertexData
 	DirectX::XMFLOAT3 NORMAL;
 };
 
+const UINT VertexDataStride = sizeof(VertexData);
+
 struct InstanceData
 {
 	DirectX::XMFLOAT3 POSITION;
 };
+
+//const UINT InstanceDataStride = sizeof(InstanceData);
 
 const D3D11_INPUT_ELEMENT_DESC VertexLayout[] =
 {
@@ -23,7 +27,7 @@ const D3D11_INPUT_ELEMENT_DESC VertexLayout[] =
 	{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	//Instance Data, slot 1
-	{ "POSITION", 1, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D11_INPUT_PER_INSTANCE_DATA, 0 },
+	//{ "POSITION", 1, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D11_INPUT_PER_INSTANCE_DATA, 0 },
 };
 
 const UINT numLayoutElements = ARRAYSIZE(VertexLayout);
