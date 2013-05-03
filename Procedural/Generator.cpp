@@ -5,15 +5,24 @@
 
 #define ALBNORM_MAP_RESOLUTION 512
 #define HEIGHT_MAP_RESOLUTION 512
-#define CS_GROUP_DIM 16
-#define DISPATCH_DIM ALBNORM_MAP_RESOLUTION/CS_GROUP_DIM
-#define MAX_BUILDINGS_PER_TILE 20000
+#define DISTANT_CS_GROUP_DIM 16
+#define DISTANT_DISPATCH_DIM (ALBNORM_MAP_RESOLUTION/DISTANT_CS_GROUP_DIM)
+
+#define CITY_CS_GROUP_DIM 16
+#define CITY_CS_TILE_DIM 64
+
+#define MAX_BUILDINGS_PER_TILE 100000
 
 __declspec(align(16)) struct HeightMapCSCB {
 	DirectX::XMUINT2 bufferDim;
 	DirectX::XMINT2 coords;
 	UINT tileSize;
 	DirectX::XMUINT3 padding;
+};
+
+__declspec(align(16)) struct CityCSCB {
+	DirectX::XMINT2 coords;
+	UINT tileSize;
 };
 
 DistantTextures::DistantTextures(DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize) {
@@ -47,7 +56,6 @@ DistantTextures::DistantTextures(DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBL
 
 CityTile::CityTile( DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize, DrawableMesh* pMesh)
 {
-	//TODO: append
 	mPosX = pPosX;
 	mPosY = pPosY;
 	mPosZ = pPosZ;
@@ -72,7 +80,7 @@ CityTile::CityTile( DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize, Draw
 		
 		//Arguments for drawinstancedindexedindirect
 		mIndirectData[0] = pMesh->mNumIndices;
-		mIndirectData[1] = 1000; //This will be updated later
+		mIndirectData[1] = 0; //This will be updated later
 		mIndirectData[2] = 0;
 		mIndirectData[3] = 0;
 		mIndirectData[4] = 0;
@@ -171,7 +179,7 @@ void Generator::ComputeTextures(ID3D11DeviceContext* pd3dContext, DistantTexture
 	pd3dContext->CSSetShaderResources(0,1,&mSimplexBuffer.mSRV);
 
 	pd3dContext->CSSetShader(mCSDistant,0,0);
-	pd3dContext->Dispatch(DISPATCH_DIM,DISPATCH_DIM,1);
+	pd3dContext->Dispatch(DISTANT_DISPATCH_DIM,DISTANT_DISPATCH_DIM,1);
 
 	ID3D11UnorderedAccessView* nulluavs[3] = {NULL,NULL,NULL};
 	pd3dContext->CSSetUnorderedAccessViews(0,3,nulluavs,0);
@@ -184,14 +192,27 @@ void Generator::ComputeCity( ID3D11DeviceContext* pd3dContext, CityTile &pCT )
 	if (!mCompiled) {
 		return;
 	}
+
+	D3D11_MAPPED_SUBRESOURCE MappedResource;
+	pd3dContext->Map(mCSCBCity,0,D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
+	CityCSCB* cscb = (CityCSCB*)MappedResource.pData;
+	cscb->coords = DirectX::XMINT2((INT)pCT.mPosX,(INT)pCT.mPosZ);
+	cscb->tileSize = pCT.mSize;
+	pd3dContext->Unmap(mCSCBDistant,0);
+
+	pd3dContext->CSSetConstantBuffers(0,1,&mCSCBCity);
 	pd3dContext->CSSetUnorderedAccessViews(0,1,&pCT.mInstanceBuffer.mUAV,0);
 	pd3dContext->CSSetShader(mCSCity,0,0);
-	pd3dContext->Dispatch(1,1,1);
+
+	UINT dwidth = (pCT.mSize/CITY_CS_GROUP_DIM)/CITY_CS_TILE_DIM;
+	
+	//TODO: dispatch number
+	pd3dContext->Dispatch(dwidth,dwidth,1);
+
+	pd3dContext->CopyStructureCount(pCT.mIndirectBuffer.mBuffer,4,pCT.mInstanceBuffer.mUAV);
 
 	ID3D11UnorderedAccessView* nulluavs[1] = {NULL};
 	pd3dContext->CSSetUnorderedAccessViews(0,1,nulluavs,0);
-
-	//TODO:
 }
 
 
@@ -227,7 +248,8 @@ HRESULT Generator::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 	bd.ByteWidth = sizeof(HeightMapCSCB);
 	V_RETURN(pd3dDevice->CreateBuffer( &bd, NULL, &mCSCBDistant ));
 
-	//TODO: City constant buffer
+	bd.ByteWidth = sizeof(CityCSCB);
+	V_RETURN(pd3dDevice->CreateBuffer( &bd, NULL, &mCSCBCity ));
 
 	mSimplexBuffer.CreateBuffer(pd3dDevice);
 

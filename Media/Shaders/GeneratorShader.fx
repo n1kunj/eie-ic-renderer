@@ -272,6 +272,14 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	}
 }
 
+//********CITY CS************//
+
+cbuffer CSCityPassCB : register( b0 )
+{
+	int2 tileCoords;
+	uint tileLength;
+}
+
 struct Instance {
 	float3 mPos;
 };
@@ -279,12 +287,10 @@ struct Instance {
 AppendStructuredBuffer<Instance> sInstance : register(u0);
 
 [numthreads(16, 16, 1)]
-void CSCityPass(uint3 groupID 			: SV_GroupID,
-			uint3 groupThreadID    	: SV_GroupThreadID,
-			uint groupIndex 		: SV_GroupIndex)
+void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 {
 	Instance i0;
-	i0.mPos = float3(groupThreadID*10);
+	i0.mPos = float3(dispatchID.x*3,0,dispatchID.y*3);
 	sInstance.Append(i0);
 }
 

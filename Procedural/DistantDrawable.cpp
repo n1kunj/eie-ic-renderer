@@ -254,7 +254,7 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 	DrawableState& state = mCityDrawable.mState;
 
 	state.mDiffuseColour = DirectX::XMFLOAT3(1,0,0);
-	state.mCityTile = std::make_shared<CityTile>(0,0,0,1024,cityMesh);
+	state.mCityTile = std::make_shared<CityTile>(0,0,0,4096,cityMesh);
 	pGenerator->InitialiseCityTile(state.mCityTile);
 }
 
