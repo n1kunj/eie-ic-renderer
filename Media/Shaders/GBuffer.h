@@ -26,4 +26,5 @@ float3 DecodeSphereMap(float2 e)
 struct Instance {
 	float3 mPos;
 	float3 mSize;
+	float3 mColour;
 };

@@ -27,6 +27,13 @@ struct PS_INPUT
     float3 mNorm : NORMAL0;
 };
 
+struct PS_INPUT_INSTANCED
+{
+    float4 mPos : SV_POSITION;
+    float3 mNorm : NORMAL0;
+	float3 mColour : COLOUR0;
+};
+
 PS_INPUT VS( VS_INPUT input)
 {
     PS_INPUT output;
@@ -44,9 +51,9 @@ PS_INPUT VS( VS_INPUT input)
 
 StructuredBuffer<Instance> bIndices : register(t0);
 
-PS_INPUT VS_INSTANCED( VS_INPUT input, uint index : SV_InstanceID)
+PS_INPUT_INSTANCED VS_INSTANCED( VS_INPUT input, uint index : SV_InstanceID)
 {
-    PS_INPUT output;
+    PS_INPUT_INSTANCED output;
 	
 	matrix Model2 = cModel;
 	Model2._m30_m31_m32+=cOffset;
@@ -62,6 +69,7 @@ PS_INPUT VS_INSTANCED( VS_INPUT input, uint index : SV_InstanceID)
 	
 	output.mPos = mul(pos,cVP);
 	output.mNorm = normalize(mul(input.mNorm,(float3x3)cMV)).xyz;
+	output.mColour = i0.mColour;
     return output;
 }
 
@@ -70,6 +78,15 @@ GBuffer PS( PS_INPUT input )
 	GBuffer output;
 	output.mNormSpec = float4(EncodeSphereMap(input.mNorm),cSpecAmount,cSpecPower);
 	output.mAlbedo = float4(cAlbedo,1.0f);
+	
+	return output;
+}
+
+GBuffer PS_INSTANCED( PS_INPUT_INSTANCED input )
+{
+	GBuffer output;
+	output.mNormSpec = float4(EncodeSphereMap(input.mNorm),cSpecAmount,cSpecPower);
+	output.mAlbedo = float4(input.mColour,1.0f);
 	
 	return output;
 }

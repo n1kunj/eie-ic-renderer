@@ -11,7 +11,7 @@
 #define CITY_CS_GROUP_DIM 16
 #define CITY_CS_TILE_DIM 64
 
-#define MAX_BUILDINGS_PER_TILE 100000
+#define MIN_BUILDING_FOOTPRINT 10
 
 __declspec(align(16)) struct HeightMapCSCB {
 	DirectX::XMUINT2 bufferDim;
@@ -62,14 +62,17 @@ CityTile::CityTile( DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize, Draw
 	mPosZ = pPosZ;
 	mSize = pSize;
 	{
+		UINT numBuildings = pSize / MIN_BUILDING_FOOTPRINT;
+		numBuildings*=numBuildings;
+
 		auto& ib = mInstanceBuffer;
 		ib.mBindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
 		ib.mCPUAccessFlags = 0;
 		ib.mUsage = D3D11_USAGE_DEFAULT;
-		ib.mElements = MAX_BUILDINGS_PER_TILE;
+		ib.mElements = numBuildings;
 		ib.mDefaultUAVDesc = FALSE;
 		ib.mUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_APPEND;
-		ib.mUAVDesc.Buffer.NumElements = MAX_BUILDINGS_PER_TILE;
+		ib.mUAVDesc.Buffer.NumElements = numBuildings;
 		ib.mUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
 	}
 	{

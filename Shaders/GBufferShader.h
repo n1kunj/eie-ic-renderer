@@ -34,6 +34,7 @@ private:
 	ID3D11VertexShader* mInstancedVS;
 	ID3D11InputLayout* mInstancedVL;
 	ID3D11PixelShader* mPixelShader;
+	ID3D11PixelShader* mInstancedPS;
 	ID3D11Buffer* mVSConstantBuffer;
 	ID3D11Buffer* mPSConstantBuffer;
 
@@ -43,6 +44,7 @@ public:
 		SAFE_RELEASE(mInstancedVS);
 		SAFE_RELEASE(mInstancedVL);
 		SAFE_RELEASE(mPixelShader);
+		SAFE_RELEASE(mInstancedPS);
 		SAFE_RELEASE(mVertexLayout);
 		SAFE_RELEASE(mVSConstantBuffer);
 		SAFE_RELEASE(mPSConstantBuffer);
@@ -50,7 +52,7 @@ public:
 	}
 
 	GBufferShader() : DrawableShader(L"GBufferShader"),mCompiled(FALSE),mVertexLayout(NULL),mInstancedVS(NULL),mInstancedVL(NULL),
-		mVertexShader(NULL),mPixelShader(NULL),mVSConstantBuffer(NULL),mPSConstantBuffer(NULL) {}
+		mVertexShader(NULL),mPixelShader(NULL),mVSConstantBuffer(NULL),mPSConstantBuffer(NULL),mInstancedPS(NULL) {}
 
 	GBufferShader::~GBufferShader()
 	{
@@ -96,7 +98,18 @@ public:
 
 			// Create the pixel shader
 			V_RELEASE_AND_RETURN(pPSBlob, pd3dDevice->CreatePixelShader( pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), NULL, &mPixelShader ));
+		}
 
+		{
+			// Compile the pixel shader
+			ID3DBlob* pPSBlob = NULL;
+			V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\GBufferShader.fx", "PS_INSTANCED", "ps_5_0", &pPSBlob ));
+
+			// Create the pixel shader
+			V_RELEASE_AND_RETURN(pPSBlob, pd3dDevice->CreatePixelShader( pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), NULL, &mInstancedPS ));
+		}
+
+		{
 			// Create the constant buffer
 			D3D11_BUFFER_DESC bd;
 			ZeroMemory( &bd, sizeof(bd) );
@@ -126,6 +139,7 @@ public:
 		}
 
 		setupShader(pd3dContext,pMesh,pState,pCamera);
+		pd3dContext->PSSetShader( mPixelShader, NULL, 0 );
 		pd3dContext->IASetInputLayout( mVertexLayout );
 		pd3dContext->VSSetShader( mVertexShader, NULL, 0 );
 
@@ -142,6 +156,7 @@ public:
 
 		pd3dContext->IASetInputLayout( mInstancedVL );
 		pd3dContext->VSSetShader( mInstancedVS, NULL, 0 );
+		pd3dContext->PSSetShader(mInstancedPS,NULL,0);
 		CityTile& ct = *pState->mCityTile;
 		pd3dContext->VSSetShaderResources(0,1,&ct.mInstanceBuffer.mSRV);
 
@@ -185,9 +200,6 @@ private:
 
 		pd3dContext->IASetIndexBuffer( pMesh->mIndexBuffer, pMesh->mIndexBufferFormat, 0 );
 		pd3dContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
-
-		//Set shaders
-		pd3dContext->PSSetShader( mPixelShader, NULL, 0 );
 	}
 
 	void cleanupShader(ID3D11DeviceContext* pd3dContext) {

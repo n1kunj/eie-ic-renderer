@@ -16,8 +16,8 @@ float minDist(float2 l1, float2 l2, float2 p);
 float getTileCoeff(float2 pos);
 bool isLeftOf(float2 a, float2 b, float2 p);
 bool isAccepted(float2 pos, float tileInd);
-
 float2 getShiftedCoords(float2 p);
+
 
 cbuffer CSPass1CSCB : register( b0 )
 {
@@ -30,6 +30,8 @@ cbuffer CSPass1CSCB : register( b0 )
 #define MAX_ROAD_BIOME_INDEX 6
 #define FULL_BLOCKS 7
 #define NOISE_ITERATIONS 12
+
+void getHeightNoisesBoundsAccept( in float2 pos, out float terrainHeight, out float noises[NOISE_ITERATIONS], out float2 bounds[4], out bool accept[4]);
 	
 static const float scales[NOISE_ITERATIONS] = {150000,30000,12800,640,320,
 	160,80,40,20,
@@ -60,95 +62,12 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	float2 pos = (float2)pixIndex/(bufferDim-1) - 0.50f;
 	pos = pos * OVERLAP_SCALE * tileSize + coords;
 	
-	float3 colour = 0;
-	float height = 0;
-	
-	float noises[NOISE_ITERATIONS];
 	float terrainheight = 0;
-	
-	[loop] for (int i = 0; i < 12; i++) {
-		float2 p2 = pos/(0.25f*scales[i]);
-		noises[i] = noise2D(p2.x,p2.y);
-	}
-	
-	//Find the bottom left value of the quadrant we're assumed to be in
-	int2 tile_id = floor(pos/TILE_SIZE);
-	float2 bl = TILE_SIZE * tile_id;
-	
-	float2 tilePos[5];
-	tilePos[0] = bl + float2(0,TILE_SIZE);
-	tilePos[1] = bl + float2(-TILE_SIZE,0);
-	tilePos[2] = bl;
-	tilePos[3] = bl + float2(TILE_SIZE,0);
-	tilePos[4] = bl + float2(0,-TILE_SIZE);
-	
-	float2 pos2 = pos - float2(TILE_SIZE/2,TILE_SIZE/2);
-	
-	float2 cCo[4];
-	cCo[0] = tilePos[2];
-	cCo[1] = (pos2.x - tilePos[2].x < 0) ? tilePos[1] : tilePos[3];
-	cCo[2] = (pos2.y - tilePos[2].y < 0) ? tilePos[4] : tilePos[0];
-	cCo[3] = float2(cCo[1].x,cCo[2].y);
-	
-	float2 uvs = smoothstep(0,TILE_SIZE,abs(pos2-cCo[0]));
-
-	float tileCoeff[4];
-	
-	[unroll] for (int i = 0; i < 4; i++) {
-		tileCoeff[i] = getTileCoeff(cCo[i]);
-	}
-	
-	[loop] for (int i = 0; i < 12; i++) {
-		float coe[4];
-		[loop] for (int j = 0; j < 4; j++) {
-			float ind = tileCoeff[j];
-			uint ind0 = floor(ind);
-			uint ind1 = ceil(ind);
-			float c0 = coeffs[ind0][i];
-			float c1 = coeffs[ind1][i];
-			float m = smoothstep(ind0,ind1,ind);
-			coe[j] = lerp(c0,c1,m);
-		}
-		float v1 = lerp(coe[0],coe[1],uvs.x);
-		float v2 = lerp(coe[2],coe[3],uvs.x);
-		float mult = lerp(v1,v2,uvs.y);
-		
-		terrainheight+=noises[i] * mult;
-	}
-	
-	float2 top = getShiftedCoords(tilePos[0]);
-	float2 left = getShiftedCoords(tilePos[1]);
-	float2 centre = getShiftedCoords(tilePos[2]);
-	float2 right = getShiftedCoords(tilePos[3]);
-	float2 bottom = getShiftedCoords(tilePos[4]);
-	
-	bool lct = isLeftOf(centre,top,pos);
-	bool lcr = isLeftOf(centre,right,pos);
-	bool lcb = isLeftOf(centre,bottom,pos);
-	bool lcl = isLeftOf(centre,left,pos);
-	
-	if (!lcl && lct) {
-		tile_id += int2(-1,0);
-	}
-	else if (!lcb && lcl) {
-		tile_id += int2(-1,-1);
-	}
-	else if (!lcr && lcb) {
-		tile_id += int2(0,-1);
-	}
-	bl = TILE_SIZE * tile_id;
-
+	float noises[NOISE_ITERATIONS];
 	float2 bounds[4];
-	
-	bounds[0] = getShiftedCoords(bl);
-	bounds[1] = getShiftedCoords(bl + float2(TILE_SIZE,0));
-	bounds[2] = getShiftedCoords(bl + float2(TILE_SIZE,TILE_SIZE));
-	bounds[3] = getShiftedCoords(bl + float2(0,TILE_SIZE));
-	
 	bool accept[4];
-	[unroll] for (int i = 0; i < 4; i++) {
-		accept[i] = isAccepted(bounds[i], getTileCoeff(bounds[i]));
-	}
+
+	getHeightNoisesBoundsAccept(pos,terrainheight,noises,bounds,accept);
 	
 	uint diag = 0;
 	
@@ -193,6 +112,9 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
  	const float roadWidth = 6;
 	const float paveWidth = 8;
 	const float nearRoadWidth = 100;
+	
+	float3 colour = 0;
+	float height = 0;
 	
 	if (roadDist < roadWidth) {
 		float delta = 0.025f*noises[10]+0.0125*noises[11];
@@ -288,10 +210,34 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 	float2 pos = float2(-4096,-4096) - ((float)tileLength/2) + TILE_SIZE*dispatchID;
 	//float2 pos = tileCoords - ((float)tileLength/2) + TILE_SIZE*dispatchID;
 	
-	float height = 0;
-	
-	float noises[NOISE_ITERATIONS];
 	float terrainheight = 0;
+	float noises[NOISE_ITERATIONS];
+	float2 bounds[4];
+	bool accept[4];
+
+	getHeightNoisesBoundsAccept(pos,terrainheight,noises,bounds,accept);
+	
+	float height = (noise2D(pos.x/1000,pos.y/725)/2)+0.5f;
+	height = 10 + pow(height,4)*300;
+	
+	float3 col;
+	col.r = (noise2D(pos.x/1000,pos.y/725)/2)+0.5f;
+	col.g = (noise2D(pos.x/1000+900,pos.y/725-800)/2)+0.5f;
+	col.b = (noise2D(pos.x/1000-900,pos.y/725)/2+8000)+0.5f;
+	
+	
+	if (accept[0] && accept[1] && accept[2] && accept[3]) {
+		Instance i0;
+		i0.mPos = float3(pos.x+TILE_SIZE/2,terrainheight + height/2,pos.y+TILE_SIZE/2);
+		i0.mSize = float3(50,height,50);
+		i0.mColour = col;
+		sInstance.Append(i0);
+	}
+}
+
+//*******UTILITY FUNCTIONS**********//
+
+void getHeightNoisesBoundsAccept( in float2 pos, out float terrainheight, out float noises[NOISE_ITERATIONS], out float2 bounds[4], out bool accept[4]) {
 	
 	[loop] for (int i = 0; i < 12; i++) {
 		float2 p2 = pos/(0.25f*scales[i]);
@@ -365,57 +311,15 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 	}
 	bl = TILE_SIZE * tile_id;
 
-	float2 bounds[4];
 	bounds[0] = getShiftedCoords(bl);
 	bounds[1] = getShiftedCoords(bl + float2(TILE_SIZE,0));
 	bounds[2] = getShiftedCoords(bl + float2(TILE_SIZE,TILE_SIZE));
 	bounds[3] = getShiftedCoords(bl + float2(0,TILE_SIZE));
 	
-	bool accept[4];
 	[unroll] for (int i = 0; i < 4; i++) {
 		accept[i] = isAccepted(bounds[i], getTileCoeff(bounds[i]));
 	}
 	
-	if (accept[0] && accept[1] && accept[2] && accept[3]) {
-		Instance i0;
-		i0.mPos = float3(pos.x+TILE_SIZE/2,terrainheight+150,pos.y+TILE_SIZE/2);
-		i0.mSize = float3(50,300,50);
-		sInstance.Append(i0);
-	}
-	
-	
-	
-
-}
-
-uint2 poorRNG(float2 xy)
-{
-	uint m_z = asuint(asuint(xy.x) - xy.y);
-	uint m_w = asuint(asuint(xy.y) + xy.x);
-
-	//uint m_z = asuint(xy.x - xy.y);
-	//uint m_w = asuint(xy.y + xy.x);
-	
-	//m_z = ((m_z >> 16) ^ m_z) * 0x45d9f3b;
-	//m_w = ((m_w >> 16) ^ m_w) * 0x45d9f3b;
-	
-    //m_z = ((m_z >> 16) ^ m_w) * 0x45d9f3b;
-    //m_z = ((m_z >> 16) ^ m_z);
-	
-    m_w = ((m_z >> 16) ^ m_w) * 0x45d9f3b;
-    m_w = ((m_w >> 16) ^ m_w);
-	
-	m_z = 36969 * (m_z & 65535) + (m_z >> 16);
-    m_w = 18000 * (m_w & 65535) + (m_w >> 16);
-	
-	uint r1 = (m_z << 16) + m_w;
-	
-	m_z = 36969 * (m_z & 65535) + (m_z >> 16);
-    m_w = 18000 * (m_w & 65535) + (m_w >> 16);
-	
-	uint r2 = (m_z << 16) + m_w;
-	
-	return uint2(r1,r2);
 }
 
 float minDist( float2 l1, float2 l2, float2 p) {
@@ -481,4 +385,35 @@ float getTileCoeff(float2 pos) {
 	const float scale = 30000;
 	float n = (noise2D(pos.x/scale,pos.y/scale)/2)+0.5f;
 	return min(NUM_BIOMES-1,NUM_BIOMES*n);
+}
+
+
+uint2 poorRNG(float2 xy)
+{
+	uint m_z = asuint(asuint(xy.x) - xy.y);
+	uint m_w = asuint(asuint(xy.y) + xy.x);
+
+	//uint m_z = asuint(xy.x - xy.y);
+	//uint m_w = asuint(xy.y + xy.x);
+	
+	//m_z = ((m_z >> 16) ^ m_z) * 0x45d9f3b;
+	//m_w = ((m_w >> 16) ^ m_w) * 0x45d9f3b;
+	
+    //m_z = ((m_z >> 16) ^ m_w) * 0x45d9f3b;
+    //m_z = ((m_z >> 16) ^ m_z);
+	
+    m_w = ((m_z >> 16) ^ m_w) * 0x45d9f3b;
+    m_w = ((m_w >> 16) ^ m_w);
+	
+	m_z = 36969 * (m_z & 65535) + (m_z >> 16);
+    m_w = 18000 * (m_w & 65535) + (m_w >> 16);
+	
+	uint r1 = (m_z << 16) + m_w;
+	
+	m_z = 36969 * (m_z & 65535) + (m_z >> 16);
+    m_w = 18000 * (m_w & 65535) + (m_w >> 16);
+	
+	uint r2 = (m_z << 16) + m_w;
+	
+	return uint2(r1,r2);
 }
