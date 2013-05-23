@@ -42,7 +42,7 @@ PS_INPUT VS( VS_INPUT input)
     return output;
 }
 
-StructuredBuffer<float3> bIndices : register(t0);
+StructuredBuffer<Instance> bIndices : register(t0);
 
 PS_INPUT VS_INSTANCED( VS_INPUT input, uint index : SV_InstanceID)
 {
@@ -51,10 +51,12 @@ PS_INPUT VS_INSTANCED( VS_INPUT input, uint index : SV_InstanceID)
 	matrix Model2 = cModel;
 	Model2._m30_m31_m32+=cOffset;
 	
+	Instance i0 = bIndices[index];
+	
 	float4 pos = float4(input.mPos,1);
-	//pos.xyz*=10;
-	pos+=float4(bIndices[index],0);
-	//pos+=float4(-5,150,-20,0);
+	pos.xyz*=i0.mSize;
+	
+	pos+=float4(i0.mPos,0);
 	
 	pos = mul(pos,Model2);
 	

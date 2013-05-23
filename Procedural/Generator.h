@@ -88,6 +88,8 @@ private:
 	void ProcessDT(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext);
 	void ProcessCT(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext);
 	void ComputeTextures(ID3D11DeviceContext* pd3dContext, DistantTextures &pDT );
+
+	void InitialiseSimplex( ID3D11DeviceContext* pd3dContext );
 	void ComputeCity(ID3D11DeviceContext* pd3dContext, CityTile &pCT);
 };
 

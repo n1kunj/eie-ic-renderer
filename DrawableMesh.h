@@ -17,6 +17,7 @@ const UINT VertexDataStride = sizeof(VertexData);
 struct InstanceData
 {
 	DirectX::XMFLOAT3 POSITION;
+	DirectX::XMFLOAT3 SIZE;
 };
 
 //const UINT InstanceDataStride = sizeof(InstanceData);

@@ -100,7 +100,7 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	
 	[loop] for (int i = 0; i < 12; i++) {
 		float coe[4];
-		[unroll] for (int j = 0; j < 4; j++) {
+		[loop] for (int j = 0; j < 4; j++) {
 			float ind = tileCoeff[j];
 			uint ind0 = floor(ind);
 			uint ind1 = ceil(ind);
@@ -280,18 +280,112 @@ cbuffer CSCityPassCB : register( b0 )
 	uint tileLength;
 }
 
-struct Instance {
-	float3 mPos;
-};
-
 AppendStructuredBuffer<Instance> sInstance : register(u0);
 
 [numthreads(16, 16, 1)]
 void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 {
-	Instance i0;
-	i0.mPos = float3(dispatchID.x*3,0,dispatchID.y*3);
-	sInstance.Append(i0);
+	float2 pos = float2(-4096,-4096) - ((float)tileLength/2) + TILE_SIZE*dispatchID;
+	//float2 pos = tileCoords - ((float)tileLength/2) + TILE_SIZE*dispatchID;
+	
+	float height = 0;
+	
+	float noises[NOISE_ITERATIONS];
+	float terrainheight = 0;
+	
+	[loop] for (int i = 0; i < 12; i++) {
+		float2 p2 = pos/(0.25f*scales[i]);
+		noises[i] = noise2D(p2.x,p2.y);
+	}
+	
+	//Find the bottom left value of the quadrant we're assumed to be in
+	int2 tile_id = floor(pos/TILE_SIZE);
+	float2 bl = TILE_SIZE * tile_id;
+	
+	float2 tilePos[5];
+	tilePos[0] = bl + float2(0,TILE_SIZE);
+	tilePos[1] = bl + float2(-TILE_SIZE,0);
+	tilePos[2] = bl;
+	tilePos[3] = bl + float2(TILE_SIZE,0);
+	tilePos[4] = bl + float2(0,-TILE_SIZE);
+	
+	float2 pos2 = pos - float2(TILE_SIZE/2,TILE_SIZE/2);
+	
+	float2 cCo[4];
+	cCo[0] = tilePos[2];
+	cCo[1] = (pos2.x - tilePos[2].x < 0) ? tilePos[1] : tilePos[3];
+	cCo[2] = (pos2.y - tilePos[2].y < 0) ? tilePos[4] : tilePos[0];
+	cCo[3] = float2(cCo[1].x,cCo[2].y);
+	
+	float2 uvs = smoothstep(0,TILE_SIZE,abs(pos2-cCo[0]));
+
+	float tileCoeff[4];
+	
+	[unroll] for (int i = 0; i < 4; i++) {
+		tileCoeff[i] = getTileCoeff(cCo[i]);
+	}
+	
+	[loop] for (int i = 0; i < 12; i++) {
+		float coe[4];
+		[loop] for (int j = 0; j < 4; j++) {
+			float ind = tileCoeff[j];
+			uint ind0 = floor(ind);
+			uint ind1 = ceil(ind);
+			float c0 = coeffs[ind0][i];
+			float c1 = coeffs[ind1][i];
+			float m = smoothstep(ind0,ind1,ind);
+			coe[j] = lerp(c0,c1,m);
+		}
+		float v1 = lerp(coe[0],coe[1],uvs.x);
+		float v2 = lerp(coe[2],coe[3],uvs.x);
+		float mult = lerp(v1,v2,uvs.y);
+		
+		terrainheight+=noises[i] * mult;
+	}
+	
+	float2 top = getShiftedCoords(tilePos[0]);
+	float2 left = getShiftedCoords(tilePos[1]);
+	float2 centre = getShiftedCoords(tilePos[2]);
+	float2 right = getShiftedCoords(tilePos[3]);
+	float2 bottom = getShiftedCoords(tilePos[4]);
+	
+	bool lct = isLeftOf(centre,top,pos);
+	bool lcr = isLeftOf(centre,right,pos);
+	bool lcb = isLeftOf(centre,bottom,pos);
+	bool lcl = isLeftOf(centre,left,pos);
+	
+	if (!lcl && lct) {
+		tile_id += int2(-1,0);
+	}
+	else if (!lcb && lcl) {
+		tile_id += int2(-1,-1);
+	}
+	else if (!lcr && lcb) {
+		tile_id += int2(0,-1);
+	}
+	bl = TILE_SIZE * tile_id;
+
+	float2 bounds[4];
+	bounds[0] = getShiftedCoords(bl);
+	bounds[1] = getShiftedCoords(bl + float2(TILE_SIZE,0));
+	bounds[2] = getShiftedCoords(bl + float2(TILE_SIZE,TILE_SIZE));
+	bounds[3] = getShiftedCoords(bl + float2(0,TILE_SIZE));
+	
+	bool accept[4];
+	[unroll] for (int i = 0; i < 4; i++) {
+		accept[i] = isAccepted(bounds[i], getTileCoeff(bounds[i]));
+	}
+	
+	if (accept[0] && accept[1] && accept[2] && accept[3]) {
+		Instance i0;
+		i0.mPos = float3(pos.x+TILE_SIZE/2,terrainheight+150,pos.y+TILE_SIZE/2);
+		i0.mSize = float3(50,300,50);
+		sInstance.Append(i0);
+	}
+	
+	
+	
+
 }
 
 uint2 poorRNG(float2 xy)
@@ -363,7 +457,9 @@ bool isAccepted(float2 pos, float tileInd) {
 	if (tileInd < MAX_ROAD_BIOME_INDEX) {
 		return 0;
 	}
-	else if (tileInd > FULL_BLOCKS) {
+	else if (tileInd > 0) {
+
+	//else if (tileInd > FULL_BLOCKS) {
 		return 1;
 	}
 	float2 pos1 = pos/1000;

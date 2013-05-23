@@ -23,6 +23,7 @@ __declspec(align(16)) struct HeightMapCSCB {
 __declspec(align(16)) struct CityCSCB {
 	DirectX::XMINT2 coords;
 	UINT tileSize;
+	UINT padding0;
 };
 
 DistantTextures::DistantTextures(DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize) {
@@ -90,14 +91,16 @@ CityTile::CityTile( DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize, Draw
 
 void Generator::Generate(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, UINT pMaxRuntimeMillis) {
 
-	if (mTextureQueue.size() != 0) {
-		for (int i = 0; i < 1; i++) {
-			ProcessDT(pd3dDevice,pd3dContext);
-		}
-	}
-	else if (mCityQueue.size() != 0) {
+
+
+	if (mCityQueue.size() != 0) {
 		for (int i = 0; i < 1; i++) {
 			ProcessCT(pd3dDevice,pd3dContext);
+		}
+	}
+	else if (mTextureQueue.size() != 0) {
+		for (int i = 0; i < 1; i++) {
+			ProcessDT(pd3dDevice,pd3dContext);
 		}
 	}
 	else {
@@ -149,16 +152,7 @@ void Generator::ComputeTextures(ID3D11DeviceContext* pd3dContext, DistantTexture
 	}
 
 	if (!mSimplexInit) {
-		UINT* simpl = mSimplexBuffer.MapDiscard(pd3dContext);
-		UINT index = 0;
-		for (int i = 0; i < 256; i++) {
-			for (int j = 0; j < 256; j++) {
-				simpl[index] = mSimplex2DLUT[i][j];
-				index++;
-			}
-		}
-		mSimplexBuffer.Unmap(pd3dContext);
-		mSimplexInit = TRUE;
+		InitialiseSimplex(pd3dContext);
 	}
 
 	D3D11_MAPPED_SUBRESOURCE MappedResource;
@@ -193,6 +187,10 @@ void Generator::ComputeCity( ID3D11DeviceContext* pd3dContext, CityTile &pCT )
 		return;
 	}
 
+	if (!mSimplexInit) {
+		InitialiseSimplex(pd3dContext);
+	}
+
 	D3D11_MAPPED_SUBRESOURCE MappedResource;
 	pd3dContext->Map(mCSCBCity,0,D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
 	CityCSCB* cscb = (CityCSCB*)MappedResource.pData;
@@ -202,6 +200,7 @@ void Generator::ComputeCity( ID3D11DeviceContext* pd3dContext, CityTile &pCT )
 
 	pd3dContext->CSSetConstantBuffers(0,1,&mCSCBCity);
 	pd3dContext->CSSetUnorderedAccessViews(0,1,&pCT.mInstanceBuffer.mUAV,0);
+	pd3dContext->CSSetShaderResources(0,1,&mSimplexBuffer.mSRV);
 	pd3dContext->CSSetShader(mCSCity,0,0);
 
 	UINT dwidth = (pCT.mSize/CITY_CS_GROUP_DIM)/CITY_CS_TILE_DIM;
@@ -213,6 +212,8 @@ void Generator::ComputeCity( ID3D11DeviceContext* pd3dContext, CityTile &pCT )
 
 	ID3D11UnorderedAccessView* nulluavs[1] = {NULL};
 	pd3dContext->CSSetUnorderedAccessViews(0,1,nulluavs,0);
+	ID3D11ShaderResourceView* nullsrv[1] = {NULL};
+	pd3dContext->CSSetShaderResources(0,1,nullsrv);
 }
 
 
@@ -298,4 +299,18 @@ Generator::Generator( MessageLogger* pLogger ) : mCompiled(FALSE),mCSDistant(NUL
 	mSimplexBuffer.mCPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	mSimplexBuffer.mUsage = D3D11_USAGE_DYNAMIC;
 	mSimplexBuffer.mElements = 256*256;
+}
+
+void Generator::InitialiseSimplex( ID3D11DeviceContext* pd3dContext )
+{
+	UINT* simpl = mSimplexBuffer.MapDiscard(pd3dContext);
+	UINT index = 0;
+	for (int i = 0; i < 256; i++) {
+		for (int j = 0; j < 256; j++) {
+			simpl[index] = mSimplex2DLUT[i][j];
+			index++;
+		}
+	}
+	mSimplexBuffer.Unmap(pd3dContext);
+	mSimplexInit = TRUE;
 }

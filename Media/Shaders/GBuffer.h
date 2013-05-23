@@ -22,3 +22,8 @@ float3 DecodeSphereMap(float2 e)
 	n.z  = 3.0f - 8.0f * f;
 	return n;
 }
+
+struct Instance {
+	float3 mPos;
+	float3 mSize;
+};
