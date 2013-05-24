@@ -174,9 +174,9 @@ private:
 		pd3dContext->IASetIndexBuffer( pMesh->mIndexBuffer, pMesh->mIndexBufferFormat, 0 );
 		pd3dContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST );
 
-		pd3dContext->DSSetShaderResources(0,1,&pState->mDistantTextures->mHeightMap.mSRV);
+		pd3dContext->DSSetShaderResources(0,1,&pState->mDistantTile->mHeightMap.mSRV);
 
-		ID3D11ShaderResourceView* pssrvs[2] = {pState->mDistantTextures->mAlbedoMap.mSRV,pState->mDistantTextures->mNormalMap.mSRV};
+		ID3D11ShaderResourceView* pssrvs[2] = {pState->mDistantTile->mAlbedoMap.mSRV,pState->mDistantTile->mNormalMap.mSRV};
 
 		pd3dContext->PSSetShaderResources(0,2,pssrvs);
 		//Set shaders

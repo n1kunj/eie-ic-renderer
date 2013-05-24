@@ -8,6 +8,7 @@
 class ShaderManager;
 class MeshManager;
 class Generator;
+template<typename tileType>
 class LodLevel;
 
 class DistantDrawable : public Drawable {
@@ -17,7 +18,7 @@ public:
 	virtual ~DistantDrawable();
 private:
 	DistantDrawable(const DistantDrawable& copy);
-	std::vector<LodLevel*> mLods;
+	std::vector<LodLevel<DistantTile>*> mLods;
 	//MUST BE EVEN ELSE UNDEFINED RESULTS
 	UINT mTileDimensionLength;
 	UINT mNumLods;

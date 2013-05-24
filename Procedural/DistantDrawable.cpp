@@ -5,10 +5,18 @@
 #include "../MeshManager.h"
 #include "Generator.h"
 #include <algorithm>
+#include <functional>
 
 #define SIGNUM(X) ((X > 0) ? 1 : ((X < 0) ? -1 : 0))
 #define OVERLAP_SCALE 1.05f
 
+typedef void (*TileCreatorFunc)(DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh);
+
+typedef void (*TileUpdaterFunc)(DrawableState& pState, Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY, DOUBLE pPosZ);
+
+typedef void (*TileDrawerFunc)(BasicDrawable& pDrawable, ID3D11DeviceContext* pd3dContext);
+
+template<typename tileType>
 class LodLevel {
 	DOUBLE mTileSize;
 	INT mTileDim;
@@ -19,12 +27,15 @@ class LodLevel {
 	Camera* mCamera;
 	Generator* mGenerator;
 	DOUBLE mMaxDist;
+	TileCreatorFunc mTCF;
+	TileUpdaterFunc mTUF;
+	TileDrawerFunc mTDF;
 public:
 	INT mStickyOffsetX;
 	INT mStickyOffsetZ;
 
-	LodLevel(DOUBLE pTileSize, UINT pTileDimension, DrawableMesh* pMesh, DrawableShader* pShader, Camera* pCamera, Generator* pGenerator, LodLevel* pHigherLevel)
-		: mTileSize(pTileSize), mTileDim(pTileDimension), mHTD(pTileDimension/2), mCamera(pCamera), mHigherLevel(pHigherLevel), mGenerator(pGenerator)
+	LodLevel(DOUBLE pTileSize, UINT pTileDimension, DrawableMesh* pMesh, DrawableShader* pShader, Camera* pCamera, Generator* pGenerator, LodLevel* pHigherLevel, TileCreatorFunc pTCF, TileUpdaterFunc pTUF, TileDrawerFunc pTDF)
+		: mTileSize(pTileSize), mTileDim(pTileDimension), mHTD(pTileDimension/2), mCamera(pCamera), mHigherLevel(pHigherLevel), mGenerator(pGenerator), mTCF(pTCF), mTUF(pTUF), mTDF(pTDF)
 	{
 		mStickyOffsetX = 0;
 		mStickyOffsetZ = 0;
@@ -49,9 +60,7 @@ public:
 				posZ += mTileSize/2;
 				state.setPosition(posX,posY,posZ);
 
-				state.mDistantTextures = std::shared_ptr<DistantTextures>(new DistantTextures(posX,posY,posZ,mTileSize));
-
-				pGenerator->InitialiseDistantTileHighPriority(state.mDistantTextures);
+				mTCF(state,mGenerator,posX,posY,posZ,mTileSize,pMesh);
 
 				mTiles.push_back(d);
 			}
@@ -104,14 +113,7 @@ public:
 				if (newPosX != posX || newPosZ != posZ) {
 					s.setPosition(newPosX,posY,newPosZ);
 
-					auto& dt = s.mDistantTextures;
-					dt->mPosX = newPosX;
-					dt->mPosZ = newPosZ;
-
-					//If unique, add to the generator. Else, it's already in there pending!
-					if (dt.unique()) {
-						mGenerator->InitialiseDistantTile(dt);
-					}
+					mTUF(s,mGenerator,newPosX,posY,newPosZ);
 				}
 			}
 		}
@@ -133,6 +135,10 @@ public:
 			mSortedTiles[n].first = distsq;
 		}
 
+		auto distCompare = [](std::pair<FLOAT,UINT> a, std::pair<FLOAT,UINT> b) -> BOOL {
+			return a.first < b.first;
+		};
+
 		std::sort(mSortedTiles.begin(),mSortedTiles.end(),distCompare);
 
 		//Draw recursively
@@ -149,7 +155,7 @@ public:
 			INT offsetX = shiftx * mTileDim + j - mHTD;
 			INT offsetZ = shiftz * mTileDim + i - mHTD;
 
-			if (d.mState.mDistantTextures.unique()) {
+			if (d.mState.mDistantTile.unique()) {
 				DrawRecursiveAtPos(offsetX,offsetZ,pd3dContext);
 			}
 		}
@@ -158,13 +164,13 @@ private:
 
 	BOOL DrawableAtPos(INT offsetX, INT offsetZ) {
 		//Get indexes i and j from offsets
-		//Double modulo because for some reason % actually calculates the remainder! Which can be negative!
+		//Double modulo because, for some reason, % actually calculates the remainder! Which can be negative! What a world!
 
 		INT j = (((offsetX + mHTD)%mTileDim)+mTileDim)%mTileDim;
 		INT i = (((offsetZ + mHTD)%mTileDim)+mTileDim)%mTileDim;
 
 		UINT index = i*mTileDim + j;
-		return mTiles[index].mState.mDistantTextures.unique();
+		return mTiles[index].mState.mDistantTile.unique();
 	}
 
 	//If draw success, returns true. Else, returns false
@@ -179,7 +185,7 @@ private:
 		BasicDrawable& d = mTiles[index];
 
 		if (mHigherLevel == NULL) {
-			d.Draw(pd3dContext);
+			mTDF(d,pd3dContext);
 		}
 		else {
 			INT x0 = 2*offsetX;
@@ -197,7 +203,7 @@ private:
 			INT maxZ = soz + hlhtd - 1;
 
 			if (x0 < minX || x1 > maxX || z0 < minZ || z1 > maxZ) {
-				d.Draw(pd3dContext);
+				mTDF(d,pd3dContext);
 				return;
 			}
 
@@ -213,14 +219,9 @@ private:
 				mHigherLevel->DrawRecursiveAtPos(x1,z1,pd3dContext);
 			}
 			else {
-				d.Draw(pd3dContext);
+				mTDF(d,pd3dContext);
 			}
 		}
-	}
-
-	static BOOL distCompare(std::pair<FLOAT,UINT> a, std::pair<FLOAT,UINT> b)
-	{
-		return a.first < b.first;
 	}
 };
 
@@ -235,10 +236,33 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 
 	mLods.reserve(mNumLods);
 
+	//Fuck yeah lambdas, best goddamn things ever
+	auto TCF = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
+		pState.mDistantTile = std::shared_ptr<DistantTile>(new DistantTile(pPosX,pPosY,pPosZ,pTileSize));
+		pGenerator->InitialiseTileHighPriority(pState.mDistantTile);
+	};
+
+	auto TUF = [](DrawableState& pState, Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY, DOUBLE pPosZ) -> void {
+		auto& dt = pState.mDistantTile;
+		dt->mPosX = pPosX;
+		dt->mPosY = pPosY;
+		dt->mPosZ = pPosZ;
+
+		//If unique, add to the generator. Else, it's already in there pending!
+		if (dt.unique()) {
+			pGenerator->InitialiseTile(dt);
+		}
+	};
+
+	auto TDF = [](BasicDrawable& pDrawable, ID3D11DeviceContext* pd3dContext) -> void {
+		pDrawable.Draw(pd3dContext);
+	};
+
 	DOUBLE tileSize = pMinTileSize;
-	LodLevel* prevLod = NULL;
+	LodLevel<DistantTile>* prevLod = NULL;
 	for (UINT i = 0; i < mNumLods; i++) {
-		LodLevel* ll = new LodLevel(tileSize,mTileDimensionLength,mesh,shader,pCamera,pGenerator,prevLod);
+		LodLevel<DistantTile>* ll = new LodLevel<DistantTile>(tileSize,mTileDimensionLength,mesh,shader,pCamera,pGenerator,prevLod,
+			TCF,TUF,TDF);
 
 		mLods.push_back(ll);
 
@@ -255,7 +279,7 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 
 	state.mDiffuseColour = DirectX::XMFLOAT3(1,0,0);
 	state.mCityTile = std::make_shared<CityTile>(0,0,0,4096,cityMesh);
-	pGenerator->InitialiseCityTile(state.mCityTile);
+	pGenerator->InitialiseTile(state.mCityTile);
 }
 
 DistantDrawable::~DistantDrawable()

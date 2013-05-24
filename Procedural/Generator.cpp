@@ -26,7 +26,7 @@ __declspec(align(16)) struct CityCSCB {
 	UINT padding0;
 };
 
-DistantTextures::DistantTextures(DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize) {
+DistantTile::DistantTile(DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize) {
 	mPosX = pPosX;
 	mPosY = pPosY;
 	mPosZ = pPosZ;
@@ -148,7 +148,7 @@ void Generator::ProcessCT( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dCo
 	mCityQueue.pop_front();
 }
 
-void Generator::ComputeTextures(ID3D11DeviceContext* pd3dContext, DistantTextures &pDT )
+void Generator::ComputeTextures(ID3D11DeviceContext* pd3dContext, DistantTile &pDT )
 {
 	if (!mCompiled) {
 		return;

@@ -9,7 +9,7 @@
 #include "../MessageProcessor.h"
 #include "../DrawableMesh.h"
 
-class DistantTextures {
+class DistantTile {
 public:
 	DOUBLE mPosX;
 	DOUBLE mPosY;
@@ -20,8 +20,8 @@ public:
 	Texture2D mNormalMap;
 	Texture2D mHeightMap;
 
-	DistantTextures(DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize);
-	~DistantTextures() {}
+	DistantTile(DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize);
+	~DistantTile() {}
 };
 
 class CityTile {
@@ -39,7 +39,7 @@ public:
 	~CityTile() {}
 };
 
-typedef std::shared_ptr<DistantTextures> DTPTR;
+typedef std::shared_ptr<DistantTile> DTPTR;
 typedef std::shared_ptr<CityTile> CTPTR;
 class Generator {
 private:
@@ -72,14 +72,17 @@ public:
 		mTextureQueue.clear();
 	}
 
-	void InitialiseDistantTile(DTPTR const& pDistantTexture) {
-		mTextureQueue.push_back(pDistantTexture);
+	void InitialiseTile(DTPTR const& pDistantTile) {
+		mTextureQueue.push_back(pDistantTile);
 	}
-	void InitialiseDistantTileHighPriority(DTPTR const& pDistantTexture) {
-		mTextureQueue.push_front(pDistantTexture);
+	void InitialiseTileHighPriority(DTPTR const& pDistantTile) {
+		mTextureQueue.push_front(pDistantTile);
 	}
-	void InitialiseCityTile(CTPTR const& pCityTile) {
+	void InitialiseTile(CTPTR const& pCityTile) {
 		mCityQueue.push_back(pCityTile);
+	}
+	void InitialiseTileHighPriority(CTPTR const& pCityTile) {
+		mCityQueue.push_front(pCityTile);
 	}
 
 	void Generate(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, UINT pMaxRuntimeMillis);
@@ -87,7 +90,7 @@ public:
 private:
 	void ProcessDT(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext);
 	void ProcessCT(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext);
-	void ComputeTextures(ID3D11DeviceContext* pd3dContext, DistantTextures &pDT );
+	void ComputeTextures(ID3D11DeviceContext* pd3dContext, DistantTile &pDT );
 
 	void InitialiseSimplex( ID3D11DeviceContext* pd3dContext );
 	void ComputeCity(ID3D11DeviceContext* pd3dContext, CityTile &pCT);
