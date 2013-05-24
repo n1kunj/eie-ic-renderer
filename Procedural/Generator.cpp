@@ -11,7 +11,7 @@
 #define CITY_CS_GROUP_DIM 16
 #define CITY_CS_TILE_DIM 64
 
-#define MIN_BUILDING_FOOTPRINT 10
+#define MIN_BUILDING_FOOTPRINT 16
 
 __declspec(align(16)) struct HeightMapCSCB {
 	DirectX::XMUINT2 bufferDim;
@@ -62,17 +62,17 @@ CityTile::CityTile( DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize, Draw
 	mPosZ = pPosZ;
 	mSize = pSize;
 	{
-		UINT numBuildings = pSize / MIN_BUILDING_FOOTPRINT;
+		FLOAT numBuildings = pSize / MIN_BUILDING_FOOTPRINT;
 		numBuildings*=numBuildings;
 
 		auto& ib = mInstanceBuffer;
 		ib.mBindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
 		ib.mCPUAccessFlags = 0;
 		ib.mUsage = D3D11_USAGE_DEFAULT;
-		ib.mElements = numBuildings;
+		ib.mElements = (INT)numBuildings;
 		ib.mDefaultUAVDesc = FALSE;
 		ib.mUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_APPEND;
-		ib.mUAVDesc.Buffer.NumElements = numBuildings;
+		ib.mUAVDesc.Buffer.NumElements = (INT)numBuildings;
 		ib.mUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
 	}
 	{
@@ -139,10 +139,8 @@ void Generator::ProcessCT( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dCo
 		first.reset();
 	}
 	else {
-		if (first->mInstanceBuffer.mBuffer == NULL) {
-			first->mInstanceBuffer.CreateBuffer(pd3dDevice);
-			first->mIndirectBuffer.CreateBuffer(pd3dDevice,first->mIndirectData);
-		}
+		first->mInstanceBuffer.CreateBuffer(pd3dDevice);
+		first->mIndirectBuffer.CreateBuffer(pd3dDevice,first->mIndirectData);
 		ComputeCity(pd3dContext,*first);
 	}
 	mCityQueue.pop_front();
@@ -199,7 +197,7 @@ void Generator::ComputeCity( ID3D11DeviceContext* pd3dContext, CityTile &pCT )
 	CityCSCB* cscb = (CityCSCB*)MappedResource.pData;
 	cscb->coords = DirectX::XMINT2((INT)pCT.mPosX,(INT)pCT.mPosZ);
 	cscb->tileSize = pCT.mSize;
-	pd3dContext->Unmap(mCSCBDistant,0);
+	pd3dContext->Unmap(mCSCBCity,0);
 
 	pd3dContext->CSSetConstantBuffers(0,1,&mCSCBCity);
 	pd3dContext->CSSetUnorderedAccessViews(0,1,&pCT.mInstanceBuffer.mUAV,0);

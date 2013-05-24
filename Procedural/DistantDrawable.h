@@ -19,11 +19,11 @@ public:
 private:
 	DistantDrawable(const DistantDrawable& copy);
 	std::vector<LodLevel<DistantTile>*> mLods;
+	LodLevel<CityTile>* mCityLods;
 	//MUST BE EVEN ELSE UNDEFINED RESULTS
 	UINT mTileDimensionLength;
 	UINT mNumLods;
 	DOUBLE mMinTileSize;
-	BasicDrawable mCityDrawable;
 };
 
 

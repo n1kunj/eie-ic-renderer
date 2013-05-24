@@ -16,11 +16,14 @@ typedef void (*TileUpdaterFunc)(DrawableState& pState, Generator* pGenerator, DO
 
 typedef void (*TileDrawerFunc)(BasicDrawable& pDrawable, ID3D11DeviceContext* pd3dContext);
 
+typedef BOOL (*TileUniqueFunc)(DrawableState& pState);
+
 template<typename tileType>
 class LodLevel {
 	DOUBLE mTileSize;
 	INT mTileDim;
 	INT mHTD;
+	FLOAT mOverlapScale;
 	std::vector<BasicDrawable> mTiles;
 	std::vector<std::pair<FLOAT,UINT> > mSortedTiles;
 	LodLevel* mHigherLevel;
@@ -30,12 +33,13 @@ class LodLevel {
 	TileCreatorFunc mTCF;
 	TileUpdaterFunc mTUF;
 	TileDrawerFunc mTDF;
+	TileUniqueFunc mTUniqueF;
 public:
 	INT mStickyOffsetX;
 	INT mStickyOffsetZ;
 
-	LodLevel(DOUBLE pTileSize, UINT pTileDimension, DrawableMesh* pMesh, DrawableShader* pShader, Camera* pCamera, Generator* pGenerator, LodLevel* pHigherLevel, TileCreatorFunc pTCF, TileUpdaterFunc pTUF, TileDrawerFunc pTDF)
-		: mTileSize(pTileSize), mTileDim(pTileDimension), mHTD(pTileDimension/2), mCamera(pCamera), mHigherLevel(pHigherLevel), mGenerator(pGenerator), mTCF(pTCF), mTUF(pTUF), mTDF(pTDF)
+	LodLevel(DOUBLE pTileSize, UINT pTileDimension, FLOAT pOverlapScale, DrawableMesh* pMesh, DrawableShader* pShader, Camera* pCamera, Generator* pGenerator, LodLevel* pHigherLevel, TileCreatorFunc pTCF, TileUpdaterFunc pTUF, TileDrawerFunc pTDF, TileUniqueFunc pTUniqueF)
+		: mTileSize(pTileSize), mTileDim(pTileDimension), mHTD(pTileDimension/2), mOverlapScale(pOverlapScale), mCamera(pCamera), mHigherLevel(pHigherLevel), mGenerator(pGenerator), mTCF(pTCF), mTUF(pTUF), mTDF(pTDF), mTUniqueF(pTUniqueF)
 	{
 		mStickyOffsetX = 0;
 		mStickyOffsetZ = 0;
@@ -50,7 +54,7 @@ public:
 				BasicDrawable d = BasicDrawable(pMesh,pShader,pCamera);
 
 				DrawableState& state = d.mState;
-				FLOAT scale = (FLOAT)mTileSize*OVERLAP_SCALE;
+				FLOAT scale = (FLOAT)mTileSize*mOverlapScale;
 				state.mScale = DirectX::XMFLOAT3(scale,scale,scale);
 
 				DOUBLE posX = j * mTileSize;
@@ -155,7 +159,7 @@ public:
 			INT offsetX = shiftx * mTileDim + j - mHTD;
 			INT offsetZ = shiftz * mTileDim + i - mHTD;
 
-			if (d.mState.mDistantTile.unique()) {
+			if (mTUniqueF(d.mState)) {
 				DrawRecursiveAtPos(offsetX,offsetZ,pd3dContext);
 			}
 		}
@@ -170,7 +174,7 @@ private:
 		INT i = (((offsetZ + mHTD)%mTileDim)+mTileDim)%mTileDim;
 
 		UINT index = i*mTileDim + j;
-		return mTiles[index].mState.mDistantTile.unique();
+		return mTUniqueF(mTiles[index].mState);
 	}
 
 	//If draw success, returns true. Else, returns false
@@ -226,60 +230,94 @@ private:
 };
 
 DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager, MeshManager* pMeshManager, Generator* pGenerator, UINT pTileDimensionLength, UINT pNumLods, DOUBLE pMinTileSize) : Drawable(pCamera)
-,mCityDrawable(NULL,NULL,NULL){
-	DrawableShader* shader = pShaderManager->getDrawableShader("DistantGBufferShader");
-	DrawableMesh* mesh = pMeshManager->getDrawableMesh("Plane16");
+{
+	{
+		//Initialise terrain
 
-	mTileDimensionLength = pTileDimensionLength;
-	mNumLods = pNumLods;
-	mMinTileSize = pMinTileSize;
+		DrawableShader* shader = pShaderManager->getDrawableShader("DistantGBufferShader");
+		DrawableMesh* mesh = pMeshManager->getDrawableMesh("Plane16");
 
-	mLods.reserve(mNumLods);
+		mTileDimensionLength = pTileDimensionLength;
+		mNumLods = pNumLods;
+		mMinTileSize = pMinTileSize;
 
-	//Fuck yeah lambdas, best goddamn things ever
-	auto TCF = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
-		pState.mDistantTile = std::shared_ptr<DistantTile>(new DistantTile(pPosX,pPosY,pPosZ,pTileSize));
-		pGenerator->InitialiseTileHighPriority(pState.mDistantTile);
-	};
+		mLods.reserve(mNumLods);
 
-	auto TUF = [](DrawableState& pState, Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY, DOUBLE pPosZ) -> void {
-		auto& dt = pState.mDistantTile;
-		dt->mPosX = pPosX;
-		dt->mPosY = pPosY;
-		dt->mPosZ = pPosZ;
+		//Fuck yeah lambdas, best goddamn things ever
+		auto TCF = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
+			pState.mDistantTile = std::shared_ptr<DistantTile>(new DistantTile(pPosX,pPosY,pPosZ,pTileSize));
+			pGenerator->InitialiseTileHighPriority(pState.mDistantTile);
+		};
+	
+		auto TUF = [](DrawableState& pState, Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY, DOUBLE pPosZ) -> void {
+			auto& dt = pState.mDistantTile;
+			dt->mPosX = pPosX;
+			dt->mPosY = pPosY;
+			dt->mPosZ = pPosZ;
+	
+			//If unique, add to the generator. Else, it's already in there pending!
+			if (dt.unique()) {
+				pGenerator->InitialiseTile(dt);
+			}
+		};
+	
+		auto TDF = [](BasicDrawable& pDrawable, ID3D11DeviceContext* pd3dContext) -> void {
+			pDrawable.Draw(pd3dContext);
+		};
 
-		//If unique, add to the generator. Else, it's already in there pending!
-		if (dt.unique()) {
-			pGenerator->InitialiseTile(dt);
+		auto TUniqueF = [](DrawableState& pState) -> BOOL {
+			return pState.mDistantTile.unique();
+		};
+
+		DOUBLE tileSize = pMinTileSize;
+		LodLevel<DistantTile>* prevLod = NULL;
+		for (UINT i = 0; i < mNumLods; i++) {
+			LodLevel<DistantTile>* ll = new LodLevel<DistantTile>(tileSize, mTileDimensionLength, OVERLAP_SCALE, mesh, shader, pCamera, pGenerator, prevLod, TCF, TUF, TDF, TUniqueF);
+	
+			mLods.push_back(ll);
+	
+			prevLod = ll;
+			tileSize*=2;
 		}
-	};
-
-	auto TDF = [](BasicDrawable& pDrawable, ID3D11DeviceContext* pd3dContext) -> void {
-		pDrawable.Draw(pd3dContext);
-	};
-
-	DOUBLE tileSize = pMinTileSize;
-	LodLevel<DistantTile>* prevLod = NULL;
-	for (UINT i = 0; i < mNumLods; i++) {
-		LodLevel<DistantTile>* ll = new LodLevel<DistantTile>(tileSize,mTileDimensionLength,mesh,shader,pCamera,pGenerator,prevLod,
-			TCF,TUF,TDF);
-
-		mLods.push_back(ll);
-
-		prevLod = ll;
-		tileSize*=2;
 	}
 
-	DrawableShader* cityShader = pShaderManager->getDrawableShader("GBufferShader");
-	DrawableMesh* cityMesh = pMeshManager->getDrawableMesh("CubeMesh");
+	{
+		//Initialise city
 
-	mCityDrawable = BasicDrawable(cityMesh,cityShader,pCamera);
-	
-	DrawableState& state = mCityDrawable.mState;
+		auto TCF = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
+			pState.mCityTile = std::make_shared<CityTile>(pPosX,pPosY,pPosZ,pTileSize,pMesh);
+			pGenerator->InitialiseTile(pState.mCityTile);
+		};
 
-	state.mDiffuseColour = DirectX::XMFLOAT3(1,0,0);
-	state.mCityTile = std::make_shared<CityTile>(0,0,0,4096,cityMesh);
-	pGenerator->InitialiseTile(state.mCityTile);
+		auto TUF = [](DrawableState& pState, Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY, DOUBLE pPosZ) -> void {
+			auto& dt = pState.mCityTile;
+			dt->mPosX = pPosX;
+			dt->mPosY = pPosY;
+			dt->mPosZ = pPosZ;
+
+			//If unique, add to the generator. Else, it's already in there pending!
+			if (dt.unique()) {
+				pGenerator->InitialiseTile(dt);
+			}
+		};
+
+		auto TDF = [](BasicDrawable& pDrawable, ID3D11DeviceContext* pd3dContext) -> void {
+			pDrawable.DrawInstancedIndirect(pd3dContext);
+		};
+
+		auto TUniqueF = [](DrawableState& pState) -> BOOL {
+			return pState.mCityTile.unique();
+		};
+
+		DrawableShader* cityShader = pShaderManager->getDrawableShader("GBufferShader");
+		DrawableMesh* cityMesh = pMeshManager->getDrawableMesh("CubeMesh");
+
+		float cityTileDim = 2048;
+
+		UINT dimension = (UINT)(pMinTileSize * pow(2,mNumLods-1) * mTileDimensionLength)/cityTileDim;
+
+		mCityLods = new LodLevel<CityTile>(cityTileDim,dimension,1.0f/cityTileDim,cityMesh,cityShader,pCamera,pGenerator,NULL,TCF,TUF,TDF,TUniqueF);
+	}
 }
 
 DistantDrawable::~DistantDrawable()
@@ -287,6 +325,7 @@ DistantDrawable::~DistantDrawable()
 	for (int i = 0; i < mLods.size(); i++ ) {
 		delete mLods[i];
 	}
+	delete mCityLods;
 }
 
 void DistantDrawable::Draw( ID3D11DeviceContext* pd3dContext )
@@ -300,7 +339,7 @@ void DistantDrawable::Draw( ID3D11DeviceContext* pd3dContext )
 	//Draw from the bottom up
 	mLods[num_lods-1]->Draw(pd3dContext);
 
-	if (mCityDrawable.mState.mCityTile.unique()) {
-		mCityDrawable.DrawInstancedIndirect(pd3dContext);
-	}
+	mCityLods->Update();
+
+	mCityLods->Draw(pd3dContext);
 }

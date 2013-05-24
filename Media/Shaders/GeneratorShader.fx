@@ -2,7 +2,7 @@
 #include "GBuffer.h"
 #define CS_GROUP_DIM 18
 
-#define TILE_SIZE 128
+#define TILE_SIZE 64
 
 #define OVERLAP_SCALE 1.05f
 
@@ -43,10 +43,10 @@ static const float coeffs[NUM_BIOMES][NOISE_ITERATIONS] = {
 {512,128,64,32,16,8,4,2,1,0.5f,0.25f,0.125f},
 {512,128,64,32,16,8,4,2,1,0.5f,0.25f,0.125f},
 {512,64,32,16,8,4,2,1,0.5f,0.25f,0.125f,0.0725f},
-{512,64,32,16,8,4,0,0,0,0,0,0.0725f},
-{512,32,16,0,0,0,0,0,0,0,0,0.0725f},
-{512,32,16,0,0,0,0,0,0,0,0,0.0725f},
-{512,32,16,0,0,0,0,0,0,0,0,0.0725f},
+{512,64,32,16,0,0,0,0,0,0,0,0},
+{512,0,0,0,0,0,0,0,0,0,0,0},
+{512,0,0,0,0,0,0,0,0,0,0,0},
+{512,0,0,0,0,0,0,0,0,0,0,0},
 };
 
 groupshared float sGroupHeights[CS_GROUP_DIM][CS_GROUP_DIM];
@@ -117,10 +117,10 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	float height = 0;
 	
 	if (roadDist < roadWidth) {
-		float delta = 0.025f*noises[10]+0.0125*noises[11];
-		height = 0.2f*delta;
+		//float delta = 0.025f*noises[10]+0.0125*noises[11];
+		//height = 0.2f*delta;
 		colour = float3(0.55,0.52,0.52);
-		colour.xyz+=delta;
+		//colour.xyz+=delta;
 	}
 	else if (roadDist < paveWidth) {
 		height = 0.15f;
@@ -207,8 +207,8 @@ AppendStructuredBuffer<Instance> sInstance : register(u0);
 [numthreads(16, 16, 1)]
 void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 {
-	float2 pos = float2(-4096,-4096) - ((float)tileLength/2) + TILE_SIZE*dispatchID;
-	//float2 pos = tileCoords - ((float)tileLength/2) + TILE_SIZE*dispatchID;
+	float2 p1 = TILE_SIZE*dispatchID - ((float)tileLength/2);
+	float2 pos = tileCoords + p1;
 	
 	float terrainheight = 0;
 	float noises[NOISE_ITERATIONS];
@@ -217,19 +217,18 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 
 	getHeightNoisesBoundsAccept(pos,terrainheight,noises,bounds,accept);
 	
-	float height = (noise2D(pos.x/1000,pos.y/725)/2)+0.5f;
-	height = 10 + pow(height,4)*300;
+	float height = (noise2D(pos.x/100,pos.y/72)/2)+0.5f;
+	height = 10 + pow(height,10)*500;
 	
 	float3 col;
 	col.r = (noise2D(pos.x/1000,pos.y/725)/2)+0.5f;
 	col.g = (noise2D(pos.x/1000+900,pos.y/725-800)/2)+0.5f;
 	col.b = (noise2D(pos.x/1000-900,pos.y/725)/2+8000)+0.5f;
 	
-	
 	if (accept[0] && accept[1] && accept[2] && accept[3]) {
 		Instance i0;
-		i0.mPos = float3(pos.x+TILE_SIZE/2,terrainheight + height/2,pos.y+TILE_SIZE/2);
-		i0.mSize = float3(50,height,50);
+		i0.mPos = float3(p1.x+TILE_SIZE/2,terrainheight-5 + (2*height/2),p1.y+TILE_SIZE/2);
+		i0.mSize = float3(22,height,22);
 		i0.mColour = col;
 		sInstance.Append(i0);
 	}
