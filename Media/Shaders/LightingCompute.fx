@@ -188,7 +188,7 @@ void LightingCS(uint3 groupId 			: SV_GroupID,
 		}
 	}
 	
-	float fogEnd = 22000;
+	float fogEnd = 60000;
 	float fogStart = 4000;
 	
 	if (all(screenPix.xy < bufferDim.xy)) {

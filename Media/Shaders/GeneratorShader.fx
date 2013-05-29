@@ -2,7 +2,7 @@
 #include "GBuffer.h"
 #define CS_GROUP_DIM 18
 
-#define TILE_SIZE 64
+#define TILE_SIZE 128
 
 #define OVERLAP_SCALE 1.05f
 
@@ -27,8 +27,8 @@ cbuffer CSPass1CSCB : register( b0 )
 }
 
 #define NUM_BIOMES 9
+#define MIN_ROAD_BIOME_INDEX 2
 #define MAX_ROAD_BIOME_INDEX 6
-#define FULL_BLOCKS 7
 #define NOISE_ITERATIONS 12
 
 void getHeightNoisesBoundsAccept( in float2 pos, out float terrainHeight, out float noises[NOISE_ITERATIONS], out float2 bounds[4], out bool accept[4]);
@@ -38,15 +38,18 @@ static const float scales[NOISE_ITERATIONS] = {150000,30000,12800,640,320,
 	10,5,2.5};
 
 static const float coeffs[NUM_BIOMES][NOISE_ITERATIONS] = {
-{1024,512,128,64,32,16,8,4,2,1,0.5f,0.25f},
+/* {2048,512,128,64,32,16,8,4,2,1,0.5f,0.25f},
 {768,376,128,64,32,16,8,4,2,1,0.5f,0.25f},
-{512,128,64,32,16,8,4,2,1,0.5f,0.25f,0.125f},
-{512,128,64,32,16,8,4,2,1,0.5f,0.25f,0.125f},
-{512,64,32,16,8,4,2,1,0.5f,0.25f,0.125f,0.0725f},
-{512,64,32,16,0,0,0,0,0,0,0,0},
-{512,0,0,0,0,0,0,0,0,0,0,0},
-{512,0,0,0,0,0,0,0,0,0,0,0},
-{512,0,0,0,0,0,0,0,0,0,0,0},
+{512,128,64,32,16,8,4,2,1,0.5f,0.25f,0.125f}, */
+{0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0},//
+{128,0,0,0,0,0,0,0,0,0,0,0},//
+{256,0,0,0,0,0,0,0,0,0,0,0},//
+{128,0,0,0,0,0,0,0,0,0,0,0},//
+{0,0,0,0,0,0,0,0,0,0,0,0},//
+{0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0},
 };
 
 groupshared float sGroupHeights[CS_GROUP_DIM][CS_GROUP_DIM];
@@ -73,7 +76,7 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	
 	float roadDist = 9999999.0f;
 	
-	bool doDiag = 1;
+	bool doDiag = 0;
 
 	[loop] for (int i = 0; i < 4; i++) {
 	
@@ -109,37 +112,47 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 		}
 	}
 	
- 	const float roadWidth = 6;
-	const float paveWidth = 8;
-	const float nearRoadWidth = 100;
+ 	const float roadWidth = 9;
+	const float paveWidth = 14;
+	const float nearRoadWidth = 20;
+	
+	//SpecPower is normalised between -1 and 1
+	//Then unpacked to between 0 and 128
+	int SpecPower = 128;
+	//SpecAmount is normalised between 0 and 1
+	//Then unpacked between 0 and 1
+	float SpecAmount = 0.1f;
 	
 	float3 colour = 0;
 	float height = 0;
 	
 	if (roadDist < roadWidth) {
-		//float delta = 0.025f*noises[10]+0.0125*noises[11];
-		//height = 0.2f*delta;
 		colour = float3(0.55,0.52,0.52);
-		//colour.xyz+=delta;
+		height = 5.0f;
 	}
 	else if (roadDist < paveWidth) {
-		height = 0.15f;
+		height = 5.15f;
 		colour = float3(0.259,0.259,0.259);
 	}
 	else if (roadDist < nearRoadWidth) {
-		height = 0.15f;
-		//colour = float3(1,0,0);
-		//height = pow((noises[2]/2)+0.5f,2) * 500.0f;
+		height = 5.15f;
+		colour = float3(0.90,0.90,0.90);
 	}
 	else {
-		colour = 1;
-		height = 0;
-		//height = 30 + pow((noises[2]/2)+0.5f,1) * 10.0f;
-		//height = 10 + tileCoeff[0]*20.0f;
+		colour = float3(0.90,0.90,0.90);
+		height = 5.15f;
 	}
-	//colour = (roadDist-paveWidth)/100;
-	height+=terrainheight;
 	
+	//Water
+	if (terrainheight == 0) {
+		colour = float3(0,0,0.5f);
+		height = 0.25f*(noises[5] + noises[9] + noises[10]);
+		SpecPower = 20;
+		SpecAmount = 1;
+	}
+	
+	height+=terrainheight;
+
 	//Calculate normals
 	sGroupHeights[groupThreadID.x][groupThreadID.y] = height;
 
@@ -157,12 +170,7 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 
 	float3 normal = normalize(cross(vb,va));
 	
-	//SpecPower is normalised between -1 and 1
-	//Then unpacked to between -128 and 128
-	int SpecPower = 128;
-	//SpecAmount is normalised between 0 and 1
-	//Then unpacked between 0 and 2
-	float SpecAmount = 0.1f;
+
 	
 /*  	const float3 vertical = float3(0,1,0);
 	float dotprod = dot(vertical,normal);
@@ -188,8 +196,8 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	} */
 	
 	if (all(groupThreadID.xy > 0) && all(groupThreadID.xy < CS_GROUP_DIM-1)) {
-		albedoTex[pixIndex.xy] = float4(colour,SpecAmount/2);
-		normalTex[pixIndex.xy] =  float4(normal,SpecPower/128.0f);
+		albedoTex[pixIndex.xy] = float4(colour,SpecAmount);
+		normalTex[pixIndex.xy] = float4(normal,SpecPower/64.0f - 1);
 		heightTex[pixIndex.xy] = height;
 	}
 }
@@ -218,17 +226,29 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 	getHeightNoisesBoundsAccept(pos,terrainheight,noises,bounds,accept);
 	
 	float height = (noise2D(pos.x/100,pos.y/72)/2)+0.5f;
-	height = 10 + pow(height,10)*500;
+	height = 30 + pow(height,6)*500;
 	
 	float3 col;
 	col.r = (noise2D(pos.x/1000,pos.y/725)/2)+0.5f;
 	col.g = (noise2D(pos.x/1000+900,pos.y/725-800)/2)+0.5f;
 	col.b = (noise2D(pos.x/1000-900,pos.y/725)/2+8000)+0.5f;
 	
-	if (accept[0] && accept[1] && accept[2] && accept[3]) {
+	uint numAccept = 0;
+	for (int i = 0; i < 4; i++) {
+		numAccept+=(accept[i] && accept[(i+1)%4]) ? 1 : 0;
+	}
+	
+	if (numAccept <= 1) {
+		return;
+	}
+	
+//	float2 minFootprint = float2(
+//	float2 maxFootPrint = float2(45,45);
+	
+	for (int i = 0; i < 1; i++) {
 		Instance i0;
 		i0.mPos = float3(p1.x+TILE_SIZE/2,terrainheight-5 + (2*height/2),p1.y+TILE_SIZE/2);
-		i0.mSize = float3(22,height,22);
+		i0.mSize = float3(45,height,45);
 		i0.mColour = col;
 		sInstance.Append(i0);
 	}
@@ -240,7 +260,7 @@ void getHeightNoisesBoundsAccept( in float2 pos, out float terrainheight, out fl
 	
 	[loop] for (int i = 0; i < 12; i++) {
 		float2 p2 = pos/(0.25f*scales[i]);
-		noises[i] = noise2D(p2.x,p2.y);
+		noises[i] = (noise2D(p2.x,p2.y)/2)+0.5f;
 	}
 	
 	//Find the bottom left value of the quadrant we're assumed to be in
@@ -357,14 +377,10 @@ float2 getShiftedCoords(float2 p) {
 
 bool isAccepted(float2 pos, float tileInd) {
 
-	if (tileInd < MAX_ROAD_BIOME_INDEX) {
+ 	if (tileInd < MIN_ROAD_BIOME_INDEX || tileInd > MAX_ROAD_BIOME_INDEX) {
 		return 0;
 	}
-	else if (tileInd > 0) {
-
-	//else if (tileInd > FULL_BLOCKS) {
-		return 1;
-	}
+	
 	float2 pos1 = pos/1000;
 	float2 pos2 = pos/500;
 	// float dv = sqrt(pos2.x*pos2.x+pos2.y*pos2.y) + 0.5*noise2D(pos2.x,pos2.y);

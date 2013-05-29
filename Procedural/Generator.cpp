@@ -9,9 +9,9 @@
 #define DISTANT_DISPATCH_DIM (ALBNORM_MAP_RESOLUTION/DISTANT_CS_GROUP_DIM)
 
 #define CITY_CS_GROUP_DIM 16
-#define CITY_CS_TILE_DIM 64
-
-#define MIN_BUILDING_FOOTPRINT 16
+#define CITY_CS_TILE_DIM 128
+//Give or take...
+#define MAX_BUILDINGS_PER_TILE 9
 
 __declspec(align(16)) struct HeightMapCSCB {
 	DirectX::XMUINT2 bufferDim;
@@ -62,8 +62,8 @@ CityTile::CityTile( DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize, Draw
 	mPosZ = pPosZ;
 	mSize = pSize;
 	{
-		FLOAT numBuildings = pSize / MIN_BUILDING_FOOTPRINT;
-		numBuildings*=numBuildings;
+		FLOAT numBuildings = (pSize / CITY_CS_TILE_DIM);
+		numBuildings*=numBuildings * MAX_BUILDINGS_PER_TILE;
 
 		auto& ib = mInstanceBuffer;
 		ib.mBindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
@@ -97,7 +97,7 @@ void Generator::Generate(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dCont
 
 
 	if (mCityQueue.size() != 0) {
-		for (int i = 0; i < 1; i++) {
+		for (int i = 0; i < min(10,mCityQueue.size()); i++) {
 			ProcessCT(pd3dDevice,pd3dContext);
 		}
 	}

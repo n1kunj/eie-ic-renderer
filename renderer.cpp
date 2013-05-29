@@ -110,9 +110,11 @@ void Renderer::init()
 	ll->colour.x = 1.0f;
 	ll->colour.y = 1.0f;
 	ll->colour.z = 1.0f;
+	//ll->y = 86371600270.0f;
+	//ll->z = 86371600270.0f;
+	ll->x = 50000000000.0f;
+	ll->z = 111445532285.0f;
 	ll->y = 86371600270.0f;
-	ll->z = 86371600270.0f;
-	ll->x = 86371600270.0f;
 	mLightManager->addLight(ll);
 
 }

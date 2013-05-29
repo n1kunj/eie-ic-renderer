@@ -118,8 +118,8 @@ GBuffer PS( DS_OUTPUT input )
 	float3 albedo = texmap.xyz;
 
 	float3 normal = normalmap.xyz;
-	float specAmount = 2 * texmap.w;
-	float specPower = 128 * normalmap.w;
+	float specAmount = texmap.w;
+	float specPower = 64 * (normalmap.w + 1); //Format is packed between -1 and 1, need to unpack it here
 
 	normal = normalize(mul(normal,(float3x3)cMV));
 
