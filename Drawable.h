@@ -13,7 +13,6 @@ public:
 	virtual void Draw(ID3D11DeviceContext* pd3dContext) = 0;
 	virtual ~Drawable() {};
 	Drawable(const Drawable& copy);
-protected:
 	Camera* mCamera;
 private:
 };
@@ -24,7 +23,9 @@ public:
 	DrawableMesh* mMesh;
 	DrawableShader* mShader;
 
+	//Will frustum cull for you
 	void Draw(ID3D11DeviceContext* pd3dContext);
+	//You need to explicitly frustum cull when calling this
 	void DrawInstancedIndirect(ID3D11DeviceContext* pd3dContext);
 	static void DrawInstanced(ID3D11DeviceContext* pd3dContext, BasicDrawable* pDrawableList, UINT pCount);
 	

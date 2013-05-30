@@ -14,7 +14,7 @@
 
 #define FXAA_HLSL_4 1
 
-#define FXAA_PRESET 0
+#define FXAA_PRESET 3
 
 
 /*============================================================================

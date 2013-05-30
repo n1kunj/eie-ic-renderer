@@ -53,8 +53,6 @@ void BasicDrawable::DrawInstanced( ID3D11DeviceContext* pd3dContext, BasicDrawab
 }
 
 void BasicDrawable::DrawInstancedIndirect(ID3D11DeviceContext* pd3dContext) {
-	//if (mCamera->testFrustum(mState.mPosition,mState.mCoords, mState.getBoundingRadius()) == TRUE) {
-		mState.updateMatrices();
-		mShader->DrawInstancedIndirect(pd3dContext,mMesh,&mState,mCamera);
-	//}
+	mState.updateMatrices();
+	mShader->DrawInstancedIndirect(pd3dContext,mMesh,&mState,mCamera);
 }

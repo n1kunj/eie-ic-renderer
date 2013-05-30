@@ -4,6 +4,9 @@
 
 #define TILE_SIZE 128
 
+#define ROAD_WIDTH 9
+#define PAVE_WIDTH 14
+
 #define OVERLAP_SCALE 1.05f
 
 RWTexture2D<float4> albedoTex : register(u0);
@@ -112,10 +115,6 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 		}
 	}
 	
- 	const float roadWidth = 9;
-	const float paveWidth = 14;
-	const float nearRoadWidth = 20;
-	
 	//SpecPower is normalised between -1 and 1
 	//Then unpacked to between 0 and 128
 	int SpecPower = 128;
@@ -126,17 +125,13 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	float3 colour = 0;
 	float height = 0;
 	
-	if (roadDist < roadWidth) {
+	if (roadDist < ROAD_WIDTH) {
 		colour = float3(0.55,0.52,0.52);
 		height = 5.0f;
 	}
-	else if (roadDist < paveWidth) {
+	else if (roadDist < PAVE_WIDTH) {
 		height = 5.15f;
 		colour = float3(0.259,0.259,0.259);
-	}
-	else if (roadDist < nearRoadWidth) {
-		height = 5.15f;
-		colour = float3(0.90,0.90,0.90);
 	}
 	else {
 		colour = float3(0.90,0.90,0.90);
@@ -225,14 +220,6 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 
 	getHeightNoisesBoundsAccept(pos,terrainheight,noises,bounds,accept);
 	
-	float height = (noise2D(pos.x/100,pos.y/72)/2)+0.5f;
-	height = 30 + pow(height,6)*500;
-	
-	float3 col;
-	col.r = (noise2D(pos.x/1000,pos.y/725)/2)+0.5f;
-	col.g = (noise2D(pos.x/1000+900,pos.y/725-800)/2)+0.5f;
-	col.b = (noise2D(pos.x/1000-900,pos.y/725)/2+8000)+0.5f;
-	
 	uint numAccept = 0;
 	for (int i = 0; i < 4; i++) {
 		numAccept+=(accept[i] && accept[(i+1)%4]) ? 1 : 0;
@@ -241,16 +228,40 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 	if (numAccept <= 1) {
 		return;
 	}
+		
+	float3 col;
+	col.r = (noise2D(pos.x,pos.y)/2)+0.5f;
+	col.g = (noise2D(pos.x+900,pos.y-800)/2)+0.5f;
+	col.b = pow((noise2D(pos.x-900,pos.y+8000)/2)+0.5f,2);
 	
-//	float2 minFootprint = float2(
-//	float2 maxFootPrint = float2(45,45);
+	uint2 rn = poorRNG(pos);
+	rn = rn%3 + 1;
+	const float maxFootPrint = (TILE_SIZE - (PAVE_WIDTH*2))/2;
+	float2 fp = float2(maxFootPrint/rn.x,maxFootPrint/rn.y);
 	
-	for (int i = 0; i < 1; i++) {
-		Instance i0;
-		i0.mPos = float3(p1.x+TILE_SIZE/2,terrainheight-5 + (2*height/2),p1.y+TILE_SIZE/2);
-		i0.mSize = float3(45,height,45);
-		i0.mColour = col;
-		sInstance.Append(i0);
+	const float2 bl = float2(PAVE_WIDTH,PAVE_WIDTH);
+	
+	for (int i = 0; i < rn.x; i++) {
+		for (int j = 0; j < rn.y; j++) {
+			Instance i0;
+			
+			float3 p;
+			p.xz = p1 + bl + 2*fp * float2(i+0.5f,j+0.5f);
+			
+			float height = (noise2D(p.x/100,p.z/72)/2)+0.5f;
+			height = 15 + pow(height,2)*(500/(rn.x*rn.y));
+			
+			//p.x = p1.x+TILE_SIZE/2;
+			p.y = terrainheight-5 + height;
+			//p.z = p1.y+TILE_SIZE/2;
+			
+			i0.mPos = p;
+			
+			i0.mSize = float3(fp.x,height,fp.y);
+
+			i0.mColour = col;
+			sInstance.Append(i0);
+		}
 	}
 }
 
@@ -383,16 +394,10 @@ bool isAccepted(float2 pos, float tileInd) {
 	
 	float2 pos1 = pos/1000;
 	float2 pos2 = pos/500;
-	// float dv = sqrt(pos2.x*pos2.x+pos2.y*pos2.y) + 0.5*noise2D(pos2.x,pos2.y);
-	// float sv = abs(sin(dv));
-	// if (sv > 0.9) {
-		// return 1;
-	// }
 	float acc = 0;
-	//acc += noise2D(pos1.x,pos1.y) + 0.7f*noise2D(pos2.x,pos2.y);
 	acc+=(poorRNG(pos).x%128)/256.0f - 0.4f;
 	
-	bool accept = (acc>-0.3f) ? 1 : 0;
+	bool accept = (acc>-0.33f) ? 1 : 0;
 	return accept;
 }
 
@@ -407,15 +412,6 @@ uint2 poorRNG(float2 xy)
 {
 	uint m_z = asuint(asuint(xy.x) - xy.y);
 	uint m_w = asuint(asuint(xy.y) + xy.x);
-
-	//uint m_z = asuint(xy.x - xy.y);
-	//uint m_w = asuint(xy.y + xy.x);
-	
-	//m_z = ((m_z >> 16) ^ m_z) * 0x45d9f3b;
-	//m_w = ((m_w >> 16) ^ m_w) * 0x45d9f3b;
-	
-    //m_z = ((m_z >> 16) ^ m_w) * 0x45d9f3b;
-    //m_z = ((m_z >> 16) ^ m_z);
 	
     m_w = ((m_z >> 16) ^ m_w) * 0x45d9f3b;
     m_w = ((m_w >> 16) ^ m_w);

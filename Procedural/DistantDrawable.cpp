@@ -254,10 +254,22 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 			dt->mPosX = pPosX;
 			dt->mPosY = pPosY;
 			dt->mPosZ = pPosZ;
-	
+
 			//If unique, add to the generator. Else, it's already in there pending!
 			if (dt.unique()) {
 				pGenerator->InitialiseTile(dt);
+			}
+		};
+
+		auto TUFHP = [](DrawableState& pState, Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY, DOUBLE pPosZ) -> void {
+			auto& dt = pState.mDistantTile;
+			dt->mPosX = pPosX;
+			dt->mPosY = pPosY;
+			dt->mPosZ = pPosZ;
+
+			//If unique, add to the generator. Else, it's already in there pending!
+			if (dt.unique()) {
+				pGenerator->InitialiseTileHighPriority(dt);
 			}
 		};
 	
@@ -272,7 +284,15 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 		DOUBLE tileSize = pMinTileSize;
 		LodLevel<DistantTile>* prevLod = NULL;
 		for (UINT i = 0; i < mNumLods; i++) {
-			LodLevel<DistantTile>* ll = new LodLevel<DistantTile>(tileSize, mTileDimensionLength, OVERLAP_SCALE, mesh, shader, pCamera, pGenerator, prevLod, TCF, TUF, TDF, TUniqueF);
+			LodLevel<DistantTile>* ll;
+			if (i == mNumLods-1) {
+				ll = new LodLevel<DistantTile>(tileSize, mTileDimensionLength, OVERLAP_SCALE, mesh, shader, pCamera, pGenerator, prevLod, TCF, TUFHP, TDF, TUniqueF);
+			}
+			else {
+				ll = new LodLevel<DistantTile>(tileSize, mTileDimensionLength, OVERLAP_SCALE, mesh, shader, pCamera, pGenerator, prevLod, TCF, TUF, TDF, TUniqueF);
+			}
+
+
 	
 			mLods.push_back(ll);
 	
@@ -302,7 +322,9 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 		};
 
 		auto TDF = [](BasicDrawable& pDrawable, ID3D11DeviceContext* pd3dContext) -> void {
-			pDrawable.DrawInstancedIndirect(pd3dContext);
+			if (pDrawable.mCamera->testFrustum(pDrawable.mState.mPosition,pDrawable.mState.mCoords,2048)) {
+				pDrawable.DrawInstancedIndirect(pd3dContext);
+			}
 		};
 
 		auto TUniqueF = [](DrawableState& pState) -> BOOL {

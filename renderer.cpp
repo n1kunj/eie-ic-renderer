@@ -105,7 +105,7 @@ void Renderer::init()
 	}
 	//THE SUN
 	PointLight* ll = &mLightList[1023];
-	ll->ambient = 0.01f;
+	ll->ambient = 0.05f;
 	ll->attenuationEnd = FLT_MAX/10.0f;
 	ll->colour.x = 1.0f;
 	ll->colour.y = 1.0f;
