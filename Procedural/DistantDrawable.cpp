@@ -243,7 +243,6 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 
 		mLods.reserve(mNumLods);
 
-		//Fuck yeah lambdas, best goddamn things ever
 		auto TCF = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
 			pState.mDistantTile = std::shared_ptr<DistantTile>(new DistantTile(pPosX,pPosY,pPosZ,pTileSize));
 			pGenerator->InitialiseTileHighPriority(pState.mDistantTile);
@@ -286,14 +285,13 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 		for (UINT i = 0; i < mNumLods; i++) {
 			LodLevel<DistantTile>* ll;
 			if (i == mNumLods-1) {
+				//Base LOD needs to be created with a higher priority to prevent holes
 				ll = new LodLevel<DistantTile>(tileSize, mTileDimensionLength, OVERLAP_SCALE, mesh, shader, pCamera, pGenerator, prevLod, TCF, TUFHP, TDF, TUniqueF);
 			}
 			else {
 				ll = new LodLevel<DistantTile>(tileSize, mTileDimensionLength, OVERLAP_SCALE, mesh, shader, pCamera, pGenerator, prevLod, TCF, TUF, TDF, TUniqueF);
 			}
 
-
-	
 			mLods.push_back(ll);
 	
 			prevLod = ll;

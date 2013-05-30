@@ -18,7 +18,7 @@ float dot22(uint simpData, const float x, const float y) {
 
 StructuredBuffer<uint> simplexBuffer : register(t0);
 
-[call] float noise2D( float x, float y) {
+float noise2D( float x, float y) {
 	
 	// Noise contributions from the three corners
     float n0, n1, n2;

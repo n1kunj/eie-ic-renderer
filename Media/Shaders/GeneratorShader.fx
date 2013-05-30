@@ -63,7 +63,7 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 			uint groupIndex 		: SV_GroupIndex)
 {
 	//Takes into account extra values around the edges
-	int2 pixIndex = groupThreadID.xy - 1 + (CS_GROUP_DIM-2) * groupID;
+	int2 pixIndex = groupThreadID.xy - 1 + (CS_GROUP_DIM-2) * groupID.xy;
 	
 	float2 pos = (float2)pixIndex/(bufferDim-1) - 0.50f;
 	pos = pos * OVERLAP_SCALE * tileSize + coords;
@@ -139,7 +139,7 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	}
 	
 	//Water
-	if (terrainheight == 0) {
+	if (terrainheight == 0 && (!accept[0] && !accept[1] && !accept[2] && !accept[3])) {
 		colour = float3(0,0,0.5f);
 		height = 0.25f*(noises[5] + noises[9] + noises[10]);
 		SpecPower = 20;
@@ -165,31 +165,6 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 
 	float3 normal = normalize(cross(vb,va));
 	
-
-	
-/*  	const float3 vertical = float3(0,1,0);
-	float dotprod = dot(vertical,normal);
-	
-	
-	if (dotprod > 0.50f) {
-		colour = float3(1.0f,1.0f,1.0f);
-		SpecPower = 20;
-		SpecAmount = 0.75f;
-	}
-	else {
-		float2 colPos = pos/20.0f;
-		float3 colNoise;
-		colNoise.x = noise2D(colPos.x,colPos.y);
-		colNoise.y = noise2D(colPos.x+1000,colPos.y-1000);
-		colNoise.z = noise2D(colPos.x+10000,colPos.y-10000);
-		colNoise = (colNoise / 2) + 0.5f;
-		
-		const float3 rock1 = float3(0.63f,0.59f,0.70f);
-		const float3 rock2 = float3(0.70f,0.611f,0.588f);
-		
-		colour = lerp(rock1,rock2,colNoise);
-	} */
-	
 	if (all(groupThreadID.xy > 0) && all(groupThreadID.xy < CS_GROUP_DIM-1)) {
 		albedoTex[pixIndex.xy] = float4(colour,SpecAmount);
 		normalTex[pixIndex.xy] = float4(normal,SpecPower/64.0f - 1);
@@ -210,7 +185,7 @@ AppendStructuredBuffer<Instance> sInstance : register(u0);
 [numthreads(16, 16, 1)]
 void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 {
-	float2 p1 = TILE_SIZE*dispatchID - ((float)tileLength/2);
+	float2 p1 = TILE_SIZE * dispatchID.xy - ((float)tileLength/2);
 	float2 pos = tileCoords + p1;
 	
 	float terrainheight = 0;
@@ -221,7 +196,7 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 	getHeightNoisesBoundsAccept(pos,terrainheight,noises,bounds,accept);
 	
 	uint numAccept = 0;
-	for (int i = 0; i < 4; i++) {
+	for (uint i = 0; i < 4; i++) {
 		numAccept+=(accept[i] && accept[(i+1)%4]) ? 1 : 0;
 	}
 	
@@ -241,24 +216,26 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 	
 	const float2 bl = float2(PAVE_WIDTH,PAVE_WIDTH);
 	
-	for (int i = 0; i < rn.x; i++) {
-		for (int j = 0; j < rn.y; j++) {
+	float baseheight = (noise2D(p1.x/100,p1.y/72)/2)+0.5f;
+	baseheight = 15 + pow(baseheight,4)*(500);
+
+	for (uint i = 0; i < rn.x; i++) {
+		for (uint j = 0; j < rn.y; j++) {
+			if (i == 1 && j == 1 && rn.x == 3 && rn.y == 3) {
+				continue;
+			}
 			Instance i0;
 			
 			float3 p;
 			p.xz = p1 + bl + 2*fp * float2(i+0.5f,j+0.5f);
 			
-			float height = (noise2D(p.x/100,p.z/72)/2)+0.5f;
-			height = 15 + pow(height,2)*(500/(rn.x*rn.y));
+			float height = noise2D(p.x/120,p.z/98);
+			baseheight = baseheight + height * 0.3f * baseheight;
 			
-			//p.x = p1.x+TILE_SIZE/2;
-			p.y = terrainheight-5 + height;
-			//p.z = p1.y+TILE_SIZE/2;
+			p.y = terrainheight-5 + baseheight;
 			
 			i0.mPos = p;
-			
-			i0.mSize = float3(fp.x,height,fp.y);
-
+			i0.mSize = float3(fp.x,baseheight,fp.y);
 			i0.mColour = col;
 			sInstance.Append(i0);
 		}
@@ -287,37 +264,23 @@ void getHeightNoisesBoundsAccept( in float2 pos, out float terrainheight, out fl
 	
 	float2 pos2 = pos - float2(TILE_SIZE/2,TILE_SIZE/2);
 	
+	float tc = getTileCoeff(pos);
+	uint ind0 = floor(tc);
+	uint ind1 = ceil(tc);
+	float m = smoothstep(ind0,ind1,tc);
+	terrainheight = 0;
+	for (int i = 0; i < NOISE_ITERATIONS; i++) {
+		float c0 = coeffs[ind0][i];
+		float c1 = coeffs[ind1][i];
+		float mult = lerp(c0,c1,m);
+		terrainheight+=noises[i] * mult;
+	}
+	
 	float2 cCo[4];
 	cCo[0] = tilePos[2];
 	cCo[1] = (pos2.x - tilePos[2].x < 0) ? tilePos[1] : tilePos[3];
 	cCo[2] = (pos2.y - tilePos[2].y < 0) ? tilePos[4] : tilePos[0];
 	cCo[3] = float2(cCo[1].x,cCo[2].y);
-	
-	float2 uvs = smoothstep(0,TILE_SIZE,abs(pos2-cCo[0]));
-
-	float tileCoeff[4];
-	
-	[unroll] for (int i = 0; i < 4; i++) {
-		tileCoeff[i] = getTileCoeff(cCo[i]);
-	}
-	
-	[loop] for (int i = 0; i < 12; i++) {
-		float coe[4];
-		[loop] for (int j = 0; j < 4; j++) {
-			float ind = tileCoeff[j];
-			uint ind0 = floor(ind);
-			uint ind1 = ceil(ind);
-			float c0 = coeffs[ind0][i];
-			float c1 = coeffs[ind1][i];
-			float m = smoothstep(ind0,ind1,ind);
-			coe[j] = lerp(c0,c1,m);
-		}
-		float v1 = lerp(coe[0],coe[1],uvs.x);
-		float v2 = lerp(coe[2],coe[3],uvs.x);
-		float mult = lerp(v1,v2,uvs.y);
-		
-		terrainheight+=noises[i] * mult;
-	}
 	
 	float2 top = getShiftedCoords(tilePos[0]);
 	float2 left = getShiftedCoords(tilePos[1]);
@@ -345,6 +308,7 @@ void getHeightNoisesBoundsAccept( in float2 pos, out float terrainheight, out fl
 	bounds[1] = getShiftedCoords(bl + float2(TILE_SIZE,0));
 	bounds[2] = getShiftedCoords(bl + float2(TILE_SIZE,TILE_SIZE));
 	bounds[3] = getShiftedCoords(bl + float2(0,TILE_SIZE));
+	
 	
 	[unroll] for (int i = 0; i < 4; i++) {
 		accept[i] = isAccepted(bounds[i], getTileCoeff(bounds[i]));
@@ -406,7 +370,6 @@ float getTileCoeff(float2 pos) {
 	float n = (noise2D(pos.x/scale,pos.y/scale)/2)+0.5f;
 	return min(NUM_BIOMES-1,NUM_BIOMES*n);
 }
-
 
 uint2 poorRNG(float2 xy)
 {
