@@ -7,6 +7,11 @@
 //--------------------------------------------------------------------------------------
 HRESULT ShaderTools::CompileShaderFromFile( WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut )
 {
+	return CompileShaderFromFile(szFileName,szEntryPoint,szShaderModel,ppBlobOut,NULL);
+}
+
+HRESULT ShaderTools::CompileShaderFromFile( WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut, D3D_SHADER_MACRO* pDefines )
+{
 	HRESULT hr = S_OK;
 
 	// find the file
@@ -23,7 +28,7 @@ HRESULT ShaderTools::CompileShaderFromFile( WCHAR* szFileName, LPCSTR szEntryPoi
 #endif
 
 	ID3DBlob* pErrorBlob;
-	hr = D3DX11CompileFromFile( str, NULL, NULL, szEntryPoint, szShaderModel, 
+	hr = D3DX11CompileFromFile( str, pDefines, NULL, szEntryPoint, szShaderModel, 
 		dwShaderFlags, 0, NULL, ppBlobOut, &pErrorBlob, NULL );
 	if( FAILED(hr) )
 	{

@@ -188,6 +188,15 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 	float2 p1 = TILE_SIZE * dispatchID.xy - ((float)tileLength/2);
 	float2 pos = tileCoords + p1;
 	
+	float baseheight = (noise2D(pos.x/100,pos.y/72)/2)+0.5f;
+	baseheight = 15 + pow(baseheight,2)*(500);
+	
+	#ifdef CITY_PASS_LOW
+	if (baseheight < 50) {
+		return;
+	}
+	#endif
+	
 	float terrainheight = 0;
 	float noises[NOISE_ITERATIONS];
 	float2 bounds[4];
@@ -209,15 +218,17 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 	col.g = (noise2D(pos.x+900,pos.y-800)/2)+0.5f;
 	col.b = pow((noise2D(pos.x-900,pos.y+8000)/2)+0.5f,2);
 	
-	uint2 rn = poorRNG(pos);
-	rn = rn%3 + 1;
+	uint2 rn;
+	#if defined(CITY_PASS_LOW) || defined(CITY_PASS_MED)
+	rn = 1;
+	#else
+	rn = poorRNG(pos)%3 + 1;
+	#endif
+	
 	const float maxFootPrint = (TILE_SIZE - (PAVE_WIDTH*2))/2;
 	float2 fp = float2(maxFootPrint/rn.x,maxFootPrint/rn.y);
 	
 	const float2 bl = float2(PAVE_WIDTH,PAVE_WIDTH);
-	
-	float baseheight = (noise2D(p1.x/100,p1.y/72)/2)+0.5f;
-	baseheight = 15 + pow(baseheight,4)*(500);
 
 	for (uint i = 0; i < rn.x; i++) {
 		for (uint j = 0; j < rn.y; j++) {
@@ -229,15 +240,15 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 			float3 p;
 			p.xz = p1 + bl + 2*fp * float2(i+0.5f,j+0.5f);
 			
-			float height = noise2D(p.x/120,p.z/98);
-			baseheight = baseheight + height * 0.3f * baseheight;
-			
 			p.y = terrainheight-5 + baseheight;
 			
 			i0.mPos = p;
 			i0.mSize = float3(fp.x,baseheight,fp.y);
 			i0.mColour = col;
 			sInstance.Append(i0);
+			
+			float height = noise2D(p.x/120,p.z/98);
+			baseheight = baseheight + height * 0.3f * baseheight;
 		}
 	}
 }

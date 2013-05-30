@@ -24,18 +24,26 @@ public:
 	~DistantTile() {}
 };
 
+enum CityLodLevel {
+	CITY_LOD_LEVEL_HIGH = 0,
+	CITY_LOD_LEVEL_MED = 1,
+	CITY_LOD_LEVEL_LOW = 2
+};
+const UINT MAX_BUILDINGS_PER_TILE[] = {9,1,1};
+
 class CityTile {
 public:
 	DOUBLE mPosX;
 	DOUBLE mPosY;
 	DOUBLE mPosZ;
 	DOUBLE mSize;
+	CityLodLevel mCLL;
 
 	StructuredBuffer<InstanceData> mInstanceBuffer;
 	StructuredBuffer<UINT> mIndirectBuffer;
 	UINT mIndirectData[5];
 	//Position is the centre of the tile
-	CityTile(DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize, DrawableMesh* pMesh);
+	CityTile(DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize, DrawableMesh* pMesh, CityLodLevel pCLL);
 	~CityTile() {}
 };
 
@@ -47,7 +55,9 @@ private:
 	std::deque<CTPTR> mCityQueue;
 	boolean mCompiled;
 	ID3D11ComputeShader* mCSDistant;
-	ID3D11ComputeShader* mCSCity;
+	ID3D11ComputeShader* mCSCityHigh;
+	ID3D11ComputeShader* mCSCityMed;
+	ID3D11ComputeShader* mCSCityLow;
 	ID3D11Buffer* mCSCBDistant;
 	ID3D11Buffer* mCSCBCity;
 	MessageLogger* mLogger;
@@ -58,7 +68,9 @@ public:
 	HRESULT OnD3D11CreateDevice( ID3D11Device* pd3dDevice );
 	void OnD3D11DestroyDevice() {
 		SAFE_RELEASE(mCSDistant);
-		SAFE_RELEASE(mCSCity);
+		SAFE_RELEASE(mCSCityHigh);
+		SAFE_RELEASE(mCSCityMed);
+		SAFE_RELEASE(mCSCityLow);
 		SAFE_RELEASE(mCSCBDistant);
 		SAFE_RELEASE(mCSCBCity);
 		mCompiled = FALSE;

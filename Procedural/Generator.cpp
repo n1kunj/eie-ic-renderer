@@ -10,8 +10,6 @@
 
 #define CITY_CS_GROUP_DIM 16
 #define CITY_CS_TILE_DIM 128
-//Give or take...
-#define MAX_BUILDINGS_PER_TILE 9
 
 __declspec(align(16)) struct HeightMapCSCB {
 	DirectX::XMUINT2 bufferDim;
@@ -55,15 +53,17 @@ DistantTile::DistantTile(DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize)
 	mHeightMap.mDesc = desc;
 }
 
-CityTile::CityTile( DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize, DrawableMesh* pMesh)
+CityTile::CityTile( DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize, DrawableMesh* pMesh, CityLodLevel pCLL) : mCLL(pCLL)
 {
 	mPosX = pPosX;
 	mPosY = pPosY;
 	mPosZ = pPosZ;
 	mSize = pSize;
 	{
+
+
 		FLOAT numBuildings = (pSize / CITY_CS_TILE_DIM);
-		numBuildings*=numBuildings * MAX_BUILDINGS_PER_TILE;
+		numBuildings*=numBuildings * MAX_BUILDINGS_PER_TILE[mCLL];
 
 		auto& ib = mInstanceBuffer;
 		ib.mBindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
@@ -81,7 +81,7 @@ CityTile::CityTile( DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize, Draw
 		ib.mUsage = D3D11_USAGE_DEFAULT;
 		ib.mElements = 5;
 		ib.mMiscFlags = D3D11_RESOURCE_MISC_DRAWINDIRECT_ARGS;
-		
+
 		//Arguments for drawinstancedindexedindirect
 		mIndirectData[0] = pMesh->mNumIndices;
 		mIndirectData[1] = 0; //This will be updated later
@@ -202,11 +202,29 @@ void Generator::ComputeCity( ID3D11DeviceContext* pd3dContext, CityTile &pCT )
 	pd3dContext->CSSetConstantBuffers(0,1,&mCSCBCity);
 	pd3dContext->CSSetUnorderedAccessViews(0,1,&pCT.mInstanceBuffer.mUAV,0);
 	pd3dContext->CSSetShaderResources(0,1,&mSimplexBuffer.mSRV);
-	pd3dContext->CSSetShader(mCSCity,0,0);
+
+	switch (pCT.mCLL)
+	{
+	case CITY_LOD_LEVEL_HIGH: {
+		pd3dContext->CSSetShader(mCSCityHigh,0,0);
+		break;
+		}
+	case CITY_LOD_LEVEL_MED: {
+		pd3dContext->CSSetShader(mCSCityMed,0,0);
+		break;
+		}
+	case CITY_LOD_LEVEL_LOW: {
+		pd3dContext->CSSetShader(mCSCityLow,0,0);
+		break;
+		}
+	default: {
+		pd3dContext->CSSetShader(mCSCityLow,0,0);
+		break;
+		}
+	}
 
 	UINT dwidth = (pCT.mSize/CITY_CS_GROUP_DIM)/CITY_CS_TILE_DIM;
-	
-	//TODO: dispatch number
+
 	pd3dContext->Dispatch(dwidth,dwidth,1);
 
 	pd3dContext->CopyStructureCount(pCT.mIndirectBuffer.mBuffer,4,pCT.mInstanceBuffer.mUAV);
@@ -233,13 +251,32 @@ HRESULT Generator::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 		V_RELEASE_IF_RETURN(pCSBlob,pd3dDevice->CreateComputeShader( pCSBlob->GetBufferPointer(), pCSBlob->GetBufferSize(), NULL, &mCSDistant ));
 	}
 
+	//Create CSCityPass High
 	{
 		ID3DBlob* pCSBlob = NULL;
 		V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\GeneratorShader.fx", "CSCityPass", "cs_5_0", &pCSBlob ));
+		V_RELEASE_IF_RETURN(pCSBlob,pd3dDevice->CreateComputeShader( pCSBlob->GetBufferPointer(), pCSBlob->GetBufferSize(), NULL, &mCSCityHigh ));
+	}
+	//Create CSCityPass Med
+	{
+		D3D_SHADER_MACRO macros[2] = {
+			"CITY_PASS_MED","",
+			NULL,NULL
+		};
 
-		//Create the compute shader
-		//If fails, releases pCSBlob.
-		V_RELEASE_IF_RETURN(pCSBlob,pd3dDevice->CreateComputeShader( pCSBlob->GetBufferPointer(), pCSBlob->GetBufferSize(), NULL, &mCSCity ));
+		ID3DBlob* pCSBlob = NULL;
+		V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\GeneratorShader.fx", "CSCityPass", "cs_5_0", &pCSBlob, macros ));
+		V_RELEASE_IF_RETURN(pCSBlob,pd3dDevice->CreateComputeShader( pCSBlob->GetBufferPointer(), pCSBlob->GetBufferSize(), NULL, &mCSCityMed ));
+	}
+	//Create CSCityPass Low
+	{
+		D3D_SHADER_MACRO macros[2] = {
+			"CITY_PASS_LOW","",
+			NULL,NULL
+		};
+		ID3DBlob* pCSBlob = NULL;
+		V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\GeneratorShader.fx", "CSCityPass", "cs_5_0", &pCSBlob,macros ));
+		V_RELEASE_IF_RETURN(pCSBlob,pd3dDevice->CreateComputeShader( pCSBlob->GetBufferPointer(), pCSBlob->GetBufferSize(), NULL, &mCSCityLow ));
 	}
 
 	D3D11_BUFFER_DESC bd;
@@ -259,7 +296,7 @@ HRESULT Generator::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 	return S_OK;
 }
 
-Generator::Generator( MessageLogger* pLogger ) : mCompiled(FALSE),mCSDistant(NULL),mCSCity(NULL), mCSCBDistant(NULL), mCSCBCity(NULL), mLogger(pLogger), mSimplexInit(FALSE)
+Generator::Generator( MessageLogger* pLogger ) : mCompiled(FALSE),mCSDistant(NULL),mCSCityHigh(NULL), mCSCityMed(NULL), mCSCityLow(NULL), mCSCBDistant(NULL), mCSCBCity(NULL), mLogger(pLogger), mSimplexInit(FALSE)
 {
 
 	//if x0 > y0, use right 16 bits, else use left 16 bits
