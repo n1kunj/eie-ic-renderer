@@ -32,7 +32,9 @@ cbuffer CSPass1CSCB : register( b0 )
 #define NUM_BIOMES 9
 #define NOISE_ITERATIONS 12
 
-void getHeightNoisesBoundsAccept( in float2 pos, out float terrainHeight, out float noises[NOISE_ITERATIONS], out float2 bounds[4], out float boundInds[4], out bool accept[4], out float tileCoeff);
+void getNoisesBoundsAccept( in float2 pos, out float noises[NOISE_ITERATIONS], out float2 bounds[4], out bool accept[4]);
+
+void getTerrainInfo(in float2 pos, in float noises[NOISE_ITERATIONS], in bool accept[4], out float tileCoeff, out float terrainHeight, out float4 tileCols, out float2 tileSpec);
 
 static const float scales[NOISE_ITERATIONS] = {150000,30000,12800,640,320,
 	160,80,40,20,
@@ -91,32 +93,27 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	float2 pos = (float2)pixIndex/(bufferDim-1) - 0.50f;
 	pos = pos * OVERLAP_SCALE * tileSize + coords;
 	
-	float terrainheight;
 	float noises[NOISE_ITERATIONS];
 	float2 bounds[4];
-	float boundInds[4];
 	bool accept[4];
-	float tileCoeff;
 
-	getHeightNoisesBoundsAccept(pos,terrainheight,noises,bounds,boundInds,accept,tileCoeff);
+	getNoisesBoundsAccept(pos,noises,bounds,accept);
+	
+	float terrainHeight;
+	float tileCoeff;
+	float4 tileCols;
+	float2 tileSpec;
+
+	getTerrainInfo(pos, noises, accept, tileCoeff, terrainHeight, tileCols, tileSpec);
 	
 	uint numAccept = 0;
 	for (uint i = 0; i < 4; i++) {
 		numAccept+=accept[i] ? 1 : 0;
-	}
-	
-	uint tcr = round(tileCoeff);
-	float4 cols = colours[tcr];
-	
-	if (numAccept && !cols.a) {
-		tcr = tcr < tileCoeff ? tcr+1 : tcr-1;
-		cols = colours[tcr];
-	}
 	
 	float3 colour = 0;
 	float height = 0;
 	
-	if (cols.a || numAccept) {
+	if (tileCols.a || numAccept) {
 		uint diag = 0;
 		float roadDist = 9999999.0f;
 		bool doDiag = 0;
@@ -164,23 +161,22 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 			colour = float3(0.259,0.259,0.259);
 		}
 		else {
-			colour = cols.rgb;
+			colour = tileCols.rgb;
 			height = 5.15f;
 		}
 	}
 	else {
-		colour = cols.rgb;
+		colour = tileCols.rgb;
 	}
 	
-	float2 spa = specPowAmount[tcr];
 	//SpecPower is normalised between -1 and 1
 	//Then unpacked to between 0 and 128
-	int SpecPower = spa.x;
+	int SpecPower = tileSpec.x;
 	//SpecAmount is normalised between 0 and 1
 	//Then unpacked between 0 and 1
-	float SpecAmount = spa.y;
+	float SpecAmount = tileSpec.y;
 	
-	height+=terrainheight;
+	height+=terrainHeight;
 
 	//Calculate normals
 	sGroupHeights[groupThreadID.x][groupThreadID.y] = height;
@@ -231,14 +227,18 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 	}
 	#endif
 	
-	float terrainheight;
 	float noises[NOISE_ITERATIONS];
 	float2 bounds[4];
-	float boundInds[4];
 	bool accept[4];
-	float tileCoeff;
 
-	getHeightNoisesBoundsAccept(pos,terrainheight,noises,bounds,boundInds,accept,tileCoeff);
+	getNoisesBoundsAccept(pos,noises,bounds,accept);
+	
+	float terrainHeight;
+	float tileCoeff;
+	float4 tileCols;
+	float2 tileSpec;
+
+	getTerrainInfo(pos, noises, accept, tileCoeff, terrainHeight, tileCols, tileSpec);
 	
 	uint numAccept = 0;
 	for (uint i = 0; i < 4; i++) {
@@ -276,7 +276,7 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 			float3 p;
 			p.xz = p1 + bl + 2*fp * float2(i+0.5f,j+0.5f);
 			
-			p.y = terrainheight-5 + baseheight;
+			p.y = terrainHeight-5 + baseheight;
 			
 			i0.mPos = p;
 			i0.mSize = float3(fp.x,baseheight,fp.y);
@@ -291,7 +291,7 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 
 //*******UTILITY FUNCTIONS**********//
 
-void getHeightNoisesBoundsAccept( in float2 pos, out float terrainheight, out float noises[NOISE_ITERATIONS], out float2 bounds[4], out float boundInds[4], out bool accept[4], out float tileCoeff) {
+void getNoisesBoundsAccept( in float2 pos, out float noises[NOISE_ITERATIONS], out float2 bounds[4], out bool accept[4]) {
 	
 	[loop] for (int i = 0; i < 12; i++) {
 		float2 p2 = pos/(0.25f*scales[i]);
@@ -310,18 +310,6 @@ void getHeightNoisesBoundsAccept( in float2 pos, out float terrainheight, out fl
 	tilePos[4] = bl + float2(0,-TILE_SIZE);
 	
 	float2 pos2 = pos - float2(TILE_SIZE/2,TILE_SIZE/2);
-	
-	tileCoeff = getTileCoeff(pos);
-	uint ind0 = floor(tileCoeff);
-	uint ind1 = ceil(tileCoeff);
-	float m = smoothstep(ind0,ind1,tileCoeff);
-	terrainheight = 0;
-	for (int i = 0; i < NOISE_ITERATIONS; i++) {
-		float c0 = coeffs[ind0][i];
-		float c1 = coeffs[ind1][i];
-		float mult = lerp(c0,c1,m);
-		terrainheight+=noises[i] * mult;
-	}
 	
 	float2 cCo[4];
 	cCo[0] = tilePos[2];
@@ -357,12 +345,53 @@ void getHeightNoisesBoundsAccept( in float2 pos, out float terrainheight, out fl
 	bounds[3] = getShiftedCoords(bl + float2(0,TILE_SIZE));
 	
 	[unroll] for (int i = 0; i < 4; i++) {
-		boundInds[i] = getTileCoeff(bounds[i]);
-		accept[i] = isAccepted(bounds[i], boundInds[i]);
+		accept[i] = isAccepted(bounds[i], getTileCoeff(bounds[i]));
 	}
 }
 
-//void getTerrainHeight(in float noises[NOISE_ITERATIONS],
+void getTerrainInfo(in float2 pos, in float noises[NOISE_ITERATIONS], in bool accept[4], out float tileCoeff, out float terrainHeight, out float4 tileCols, out float2 tileSpec) {
+
+	uint numAccept = 0;
+	[unroll] for (uint i = 0; i < 4; i++) {
+		numAccept+=accept[i] ? 1 : 0;
+	}
+	
+	tileCoeff = getTileCoeff(pos);
+	uint tcr = round(tileCoeff);
+	uint tc2 = tcr < tileCoeff ? tcr+1 : tcr-1;
+	
+	float4 colr = colours[tcr];
+	float4 col2 = colours[tc2];
+	
+	//If there are roads and we're not in a road section, we need to change the coefficient to prevent interpolation
+	if (numAccept && !colr.a) {
+		tileCoeff = tc2;
+	}
+	//If the 2 coefficients are different, we need to prevent interpolation
+	else if (colr.a != col2.a) {
+		tileCoeff = tcr;
+	}
+	
+	float ss = smoothstep(tcr,tc2,tileCoeff);
+	
+	//Calculate the terrain height
+	terrainHeight = 0;
+	for (int i = 0; i < NOISE_ITERATIONS; i++) {
+		float c0 = coeffs[tcr][i];
+		float c1 = coeffs[tc2][i];
+		float mult = lerp(c0,c1,ss);
+		terrainHeight+=noises[i] * mult;
+	}
+	
+	//Calculate the tile colour and speculars
+	
+	tileCols = lerp(colr,col2,ss);
+	
+	float2 specr = specPowAmount[tcr];
+	float2 spec2 = specPowAmount[tc2];
+	
+	tileSpec = lerp(specr,spec2,ss);
+}
 
 float minDist( float2 l1, float2 l2, float2 p) {
 	float2 vec = l2-l1;
@@ -415,7 +444,8 @@ bool isAccepted(float2 pos, float tileInd) {
 
 float getTileCoeff(float2 pos) {
 	const float scale = 30000;
-	float n = (noise2D(pos.x/scale,pos.y/scale)/2)+0.5f;
+	//n>0 always
+	float n = (noise2D(pos.x/scale,pos.y/scale)/2)+0.501f;
 	return min(NUM_BIOMES-1,NUM_BIOMES*n);
 }
 
