@@ -55,9 +55,7 @@ private:
 	std::deque<CTPTR> mCityQueue;
 	boolean mCompiled;
 	ID3D11ComputeShader* mCSDistant;
-	ID3D11ComputeShader* mCSCityHigh;
-	ID3D11ComputeShader* mCSCityMed;
-	ID3D11ComputeShader* mCSCityLow;
+	ID3D11ComputeShader* mCSCity;
 	ID3D11Buffer* mCSCBDistant;
 	ID3D11Buffer* mCSCBCity;
 	MessageLogger* mLogger;
@@ -68,9 +66,7 @@ public:
 	HRESULT OnD3D11CreateDevice( ID3D11Device* pd3dDevice );
 	void OnD3D11DestroyDevice() {
 		SAFE_RELEASE(mCSDistant);
-		SAFE_RELEASE(mCSCityHigh);
-		SAFE_RELEASE(mCSCityMed);
-		SAFE_RELEASE(mCSCityLow);
+		SAFE_RELEASE(mCSCity);
 		SAFE_RELEASE(mCSCBDistant);
 		SAFE_RELEASE(mCSCBCity);
 		mCompiled = FALSE;

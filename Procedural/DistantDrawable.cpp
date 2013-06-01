@@ -330,7 +330,7 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 		};
 
 		auto TDF = [](DOUBLE pTileSize, BasicDrawable& pDrawable, ID3D11DeviceContext* pd3dContext) -> void {
-			if (pDrawable.mCamera->testFrustum(pDrawable.mState.mPosition,pDrawable.mState.mCoords,pTileSize)) {
+			if (pDrawable.mCamera->testFrustum(pDrawable.mState.mPosition,pDrawable.mState.mCoords,(FLOAT)pTileSize)) {
 				pDrawable.DrawInstancedIndirect(pd3dContext);
 			}
 		};

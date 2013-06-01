@@ -109,6 +109,7 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	uint numAccept = 0;
 	for (uint i = 0; i < 4; i++) {
 		numAccept+=accept[i] ? 1 : 0;
+	}
 	
 	float3 colour = 0;
 	float height = 0;
@@ -204,10 +205,15 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 
 //********CITY CS************//
 
+#define CITY_LOD_LEVEL_HIGH 0
+#define CITY_LOD_LEVEL_MED 1
+#define CITY_LOD_LEVEL_LOW 2
+
 cbuffer CSCityPassCB : register( b0 )
 {
 	int2 tileCoords;
 	uint tileLength;
+	uint lodLevel;
 }
 
 AppendStructuredBuffer<Instance> sInstance : register(u0);
@@ -220,12 +226,10 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 	
 	float baseheight = (noise2D(pos.x/100,pos.y/72)/2)+0.5f;
 	baseheight = 15 + pow(baseheight,2)*(500);
-	
-	#ifdef CITY_PASS_LOW
-	if (baseheight < 50) {
+
+	if (lodLevel == CITY_LOD_LEVEL_LOW && baseheight < 50) {
 		return;
 	}
-	#endif
 	
 	float noises[NOISE_ITERATIONS];
 	float2 bounds[4];
@@ -255,11 +259,12 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 	col.b = pow((noise2D(pos.x-900,pos.y+8000)/2)+0.5f,2);
 	
 	uint2 rn;
-	#if defined(CITY_PASS_LOW) || defined(CITY_PASS_MED)
-	rn = 1;
-	#else
-	rn = poorRNG(pos)%3 + 1;
-	#endif
+	if (lodLevel == CITY_LOD_LEVEL_LOW || lodLevel == CITY_LOD_LEVEL_MED) {
+		rn = 1;
+	}
+	else {
+		rn = poorRNG(pos)%3 + 1;
+	}
 	
 	const float maxFootPrint = (TILE_SIZE - (PAVE_WIDTH*2))/2;
 	float2 fp = float2(maxFootPrint/rn.x,maxFootPrint/rn.y);
@@ -293,7 +298,7 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 
 void getNoisesBoundsAccept( in float2 pos, out float noises[NOISE_ITERATIONS], out float2 bounds[4], out bool accept[4]) {
 	
-	[loop] for (int i = 0; i < 12; i++) {
+	[loop] for (int i = 0; i < NOISE_ITERATIONS; i++) {
 		float2 p2 = pos/(0.25f*scales[i]);
 		noises[i] = (noise2D(p2.x,p2.y)/2)+0.5f;
 	}

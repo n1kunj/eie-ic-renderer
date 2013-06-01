@@ -21,7 +21,7 @@ __declspec(align(16)) struct HeightMapCSCB {
 __declspec(align(16)) struct CityCSCB {
 	DirectX::XMINT2 coords;
 	UINT tileSize;
-	UINT padding0;
+	UINT lodLevel;
 };
 
 DistantTile::DistantTile(DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize) {
@@ -62,7 +62,7 @@ CityTile::CityTile( DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize, Draw
 	{
 
 
-		FLOAT numBuildings = (pSize / CITY_CS_TILE_DIM);
+		DOUBLE numBuildings = (pSize / CITY_CS_TILE_DIM);
 		numBuildings*=numBuildings * MAX_BUILDINGS_PER_TILE[mCLL];
 
 		auto& ib = mInstanceBuffer;
@@ -196,34 +196,17 @@ void Generator::ComputeCity( ID3D11DeviceContext* pd3dContext, CityTile &pCT )
 	pd3dContext->Map(mCSCBCity,0,D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
 	CityCSCB* cscb = (CityCSCB*)MappedResource.pData;
 	cscb->coords = DirectX::XMINT2((INT)pCT.mPosX,(INT)pCT.mPosZ);
-	cscb->tileSize = pCT.mSize;
+	cscb->tileSize = (UINT)pCT.mSize;
+	cscb->lodLevel = (UINT)pCT.mCLL;
 	pd3dContext->Unmap(mCSCBCity,0);
 
 	pd3dContext->CSSetConstantBuffers(0,1,&mCSCBCity);
 	pd3dContext->CSSetUnorderedAccessViews(0,1,&pCT.mInstanceBuffer.mUAV,0);
 	pd3dContext->CSSetShaderResources(0,1,&mSimplexBuffer.mSRV);
 
-	switch (pCT.mCLL)
-	{
-	case CITY_LOD_LEVEL_HIGH: {
-		pd3dContext->CSSetShader(mCSCityHigh,0,0);
-		break;
-		}
-	case CITY_LOD_LEVEL_MED: {
-		pd3dContext->CSSetShader(mCSCityMed,0,0);
-		break;
-		}
-	case CITY_LOD_LEVEL_LOW: {
-		pd3dContext->CSSetShader(mCSCityLow,0,0);
-		break;
-		}
-	default: {
-		pd3dContext->CSSetShader(mCSCityLow,0,0);
-		break;
-		}
-	}
+	pd3dContext->CSSetShader(mCSCity,0,0);
 
-	UINT dwidth = (pCT.mSize/CITY_CS_GROUP_DIM)/CITY_CS_TILE_DIM;
+	UINT dwidth = (UINT)(pCT.mSize/CITY_CS_GROUP_DIM)/CITY_CS_TILE_DIM;
 
 	pd3dContext->Dispatch(dwidth,dwidth,1);
 
@@ -255,28 +238,7 @@ HRESULT Generator::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 	{
 		ID3DBlob* pCSBlob = NULL;
 		V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\GeneratorShader.fx", "CSCityPass", "cs_5_0", &pCSBlob ));
-		V_RELEASE_IF_RETURN(pCSBlob,pd3dDevice->CreateComputeShader( pCSBlob->GetBufferPointer(), pCSBlob->GetBufferSize(), NULL, &mCSCityHigh ));
-	}
-	//Create CSCityPass Med
-	{
-		D3D_SHADER_MACRO macros[2] = {
-			"CITY_PASS_MED","",
-			NULL,NULL
-		};
-
-		ID3DBlob* pCSBlob = NULL;
-		V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\GeneratorShader.fx", "CSCityPass", "cs_5_0", &pCSBlob, macros ));
-		V_RELEASE_IF_RETURN(pCSBlob,pd3dDevice->CreateComputeShader( pCSBlob->GetBufferPointer(), pCSBlob->GetBufferSize(), NULL, &mCSCityMed ));
-	}
-	//Create CSCityPass Low
-	{
-		D3D_SHADER_MACRO macros[2] = {
-			"CITY_PASS_LOW","",
-			NULL,NULL
-		};
-		ID3DBlob* pCSBlob = NULL;
-		V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\GeneratorShader.fx", "CSCityPass", "cs_5_0", &pCSBlob,macros ));
-		V_RELEASE_IF_RETURN(pCSBlob,pd3dDevice->CreateComputeShader( pCSBlob->GetBufferPointer(), pCSBlob->GetBufferSize(), NULL, &mCSCityLow ));
+		V_RELEASE_IF_RETURN(pCSBlob,pd3dDevice->CreateComputeShader( pCSBlob->GetBufferPointer(), pCSBlob->GetBufferSize(), NULL, &mCSCity ));
 	}
 
 	D3D11_BUFFER_DESC bd;
@@ -296,7 +258,7 @@ HRESULT Generator::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 	return S_OK;
 }
 
-Generator::Generator( MessageLogger* pLogger ) : mCompiled(FALSE),mCSDistant(NULL),mCSCityHigh(NULL), mCSCityMed(NULL), mCSCityLow(NULL), mCSCBDistant(NULL), mCSCBCity(NULL), mLogger(pLogger), mSimplexInit(FALSE)
+Generator::Generator( MessageLogger* pLogger ) : mCompiled(FALSE),mCSDistant(NULL),mCSCity(NULL), mCSCBDistant(NULL), mCSCBCity(NULL), mLogger(pLogger), mSimplexInit(FALSE)
 {
 
 	//if x0 > y0, use right 16 bits, else use left 16 bits
