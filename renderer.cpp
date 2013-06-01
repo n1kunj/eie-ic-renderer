@@ -78,6 +78,7 @@ void Renderer::OnD3D11DestroyDevice()
 	mDSSRV.OnD3D11DestroyDevice();
 	mLightingCSFBSB.OnD3D11DestroyDevice();
 	mLightListCSSB.OnD3D11DestroyDevice();
+	mGenerator->OnD3D11DestroyDevice();
 
 	SAFE_RELEASE(mDSStateDefault);
 	SAFE_RELEASE(mDSStateStencilCull);
@@ -300,7 +301,9 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 		pd3dImmediateContext->RSSetState(mRasterizerStateDefault);
 	}
 
-	mGenerator->Generate(pd3dDevice, pd3dImmediateContext, 1);
+	//Runtime millis should be max of 15% of the frametime
+
+	mGenerator->Generate(pd3dDevice, pd3dImmediateContext,fElapsedTime * 0.15f);
 
 	ID3D11RenderTargetView* backBuffer = DXUTGetD3D11RenderTargetView();
 	ID3D11DepthStencilView* dsv = mDSV.mDSV;

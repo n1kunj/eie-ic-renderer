@@ -92,27 +92,32 @@ CityTile::CityTile( DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize, Draw
 }
 
 
-void Generator::Generate(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, UINT pMaxRuntimeMillis) {
-
-
-
-	if (mCityQueue.size() != 0) {
+void Generator::Generate( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, FLOAT pMaxRuntimeSeconds )
+{
+	if (mCityQueueHP.size() != 0) {
+		for (int i = 0; i < min(10,mCityQueueHP.size()); i++) {
+			ProcessCT(pd3dDevice,pd3dContext,mCityQueueHP);
+		}
+	}
+	else if (mTextureQueueHP.size() != 0) {
+		for (int i = 0; i < 1; i++) {
+			ProcessDT(pd3dDevice,pd3dContext,mTextureQueueHP);
+		}
+	}
+	else if (mCityQueue.size() != 0) {
 		for (int i = 0; i < min(10,mCityQueue.size()); i++) {
-			ProcessCT(pd3dDevice,pd3dContext);
+			ProcessCT(pd3dDevice,pd3dContext,mCityQueue);
 		}
 	}
 	else if (mTextureQueue.size() != 0) {
 		for (int i = 0; i < 1; i++) {
-			ProcessDT(pd3dDevice,pd3dContext);
+			ProcessDT(pd3dDevice,pd3dContext,mTextureQueue);
 		}
-	}
-	else {
-		return;
 	}
 }
 
-void Generator::ProcessDT(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext) {
-	DTPTR &first = mTextureQueue.front();
+void Generator::ProcessDT(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, std::deque<DTPTR> &pDTqueue) {
+	DTPTR &first = pDTqueue.front();
 
 	if (first.unique()) {
 		first.reset();
@@ -128,12 +133,12 @@ void Generator::ProcessDT(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dCon
 		pd3dContext->GenerateMips(first->mAlbedoMap.mSRV);
 		pd3dContext->GenerateMips(first->mNormalMap.mSRV);
 	}
-	mTextureQueue.pop_front();
+	pDTqueue.pop_front();
 }
 
-void Generator::ProcessCT( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext )
+void Generator::ProcessCT( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, std::deque<CTPTR> &pCTqueue)
 {
-	CTPTR &first = mCityQueue.front();
+	CTPTR &first = pCTqueue.front();
 
 	if (first.unique()) {
 		first.reset();
@@ -143,7 +148,7 @@ void Generator::ProcessCT( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dCo
 		first->mIndirectBuffer.CreateBuffer(pd3dDevice,first->mIndirectData);
 		ComputeCity(pd3dContext,*first);
 	}
-	mCityQueue.pop_front();
+	pCTqueue.pop_front();
 }
 
 void Generator::ComputeTextures(ID3D11DeviceContext* pd3dContext, DistantTile &pDT )

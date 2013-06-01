@@ -55,17 +55,19 @@ static const float coeffs[NUM_BIOMES][NOISE_ITERATIONS] = {
 {0,0,0,0,0,0.25,0,0,0,0.25,0.25,0},
 };
 
+#define CITY_COEFF 0
+
 //r,g,b,city
 static const float4 colours[NUM_BIOMES] = {
-float4(0,0,0.5,0),
-float4(0,0,0.5,0),
-float4(0.9,0.9,0.9,1),
-float4(0.9,0.9,0.9,1),
-float4(0.9,0.9,0.9,1),
-float4(0.9,0.9,0.9,1),
-float4(0.9,0.9,0.9,1),
-float4(0,0,0.5,0),
-float4(0,0,0.5,0),
+float4(0,0,0.5,1),
+float4(0,0,0.5,1),
+float4(0.9,0.9,0.9,0),
+float4(0.9,0.9,0.9,0),
+float4(0.9,0.9,0.9,0),
+float4(0.9,0.9,0.9,0),
+float4(0.9,0.9,0.9,0),
+float4(0,0,0.5,1),
+float4(0,0,0.5,1),
 };
 
 static const float2 specPowAmount[NUM_BIOMES] = {
@@ -114,7 +116,7 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	float3 colour = 0;
 	float height = 0;
 	
-	if (tileCols.a || numAccept) {
+	if (tileCols.a==CITY_COEFF || numAccept) {
 		uint diag = 0;
 		float roadDist = 9999999.0f;
 		bool doDiag = 0;
@@ -225,7 +227,7 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 	float2 pos = tileCoords + p1;
 	
 	float baseheight = (noise2D(pos.x/100,pos.y/72)/2)+0.5f;
-	baseheight = 15 + pow(baseheight,2)*(500);
+	baseheight = 15 + pow(baseheight,4)*(450);
 
 	if (lodLevel == CITY_LOD_LEVEL_LOW && baseheight < 50) {
 		return;
@@ -369,7 +371,7 @@ void getTerrainInfo(in float2 pos, in float noises[NOISE_ITERATIONS], in bool ac
 	float4 col2 = colours[tc2];
 	
 	//If there are roads and we're not in a road section, we need to change the coefficient to prevent interpolation
-	if (numAccept && !colr.a) {
+	if (numAccept && (colr.a != CITY_COEFF)) {
 		tileCoeff = tc2;
 	}
 	//If the 2 coefficients are different, we need to prevent interpolation
@@ -434,7 +436,7 @@ float2 getShiftedCoords(float2 p) {
 
 bool isAccepted(float2 pos, float tileInd) {
 	float4 cols = colours[(uint)round(tileInd)];
-	if (cols.a == 0) {
+	if (cols.a != CITY_COEFF) {
 		return 0;
 	}
 	

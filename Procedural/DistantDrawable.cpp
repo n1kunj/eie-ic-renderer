@@ -245,6 +245,11 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 
 		auto TCF = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
 			pState.mDistantTile = std::shared_ptr<DistantTile>(new DistantTile(pPosX,pPosY,pPosZ,pTileSize));
+			pGenerator->InitialiseTile(pState.mDistantTile);
+		};
+
+		auto TCFHP = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
+			pState.mDistantTile = std::shared_ptr<DistantTile>(new DistantTile(pPosX,pPosY,pPosZ,pTileSize));
 			pGenerator->InitialiseTileHighPriority(pState.mDistantTile);
 		};
 	
@@ -286,7 +291,7 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 			LodLevel<DistantTile>* ll;
 			if (i == mNumLods-1) {
 				//Base LOD needs to be created with a higher priority to prevent holes
-				ll = new LodLevel<DistantTile>(tileSize, mTileDimensionLength, OVERLAP_SCALE, mesh, shader, pCamera, pGenerator, prevLod, TCF, TUFHP, TDF, TUniqueF);
+				ll = new LodLevel<DistantTile>(tileSize, mTileDimensionLength, OVERLAP_SCALE, mesh, shader, pCamera, pGenerator, prevLod, TCFHP, TUFHP, TDF, TUniqueF);
 			}
 			else {
 				ll = new LodLevel<DistantTile>(tileSize, mTileDimensionLength, OVERLAP_SCALE, mesh, shader, pCamera, pGenerator, prevLod, TCF, TUF, TDF, TUniqueF);
@@ -304,7 +309,7 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 
 		auto TCFLow = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
 			pState.mCityTile = std::shared_ptr<CityTile>(new CityTile(pPosX,pPosY,pPosZ,pTileSize,pMesh,CITY_LOD_LEVEL_LOW));
-			pGenerator->InitialiseTile(pState.mCityTile);
+			pGenerator->InitialiseTileHighPriority(pState.mCityTile);
 		};
 
 		auto TCFMed = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
@@ -326,6 +331,18 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 			//If unique, add to the generator. Else, it's already in there pending!
 			if (dt.unique()) {
 				pGenerator->InitialiseTile(dt);
+			}
+		};
+
+		auto TUFHP = [](DrawableState& pState, Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY, DOUBLE pPosZ) -> void {
+			auto& dt = pState.mCityTile;
+			dt->mPosX = pPosX;
+			dt->mPosY = pPosY;
+			dt->mPosZ = pPosZ;
+
+			//If unique, add to the generator. Else, it's already in there pending!
+			if (dt.unique()) {
+				pGenerator->InitialiseTileHighPriority(dt);
 			}
 		};
 
@@ -359,7 +376,7 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 
 		cityTileDim*=2;
 
-		mCityLods.push_back(new LodLevel<CityTile>(cityTileDim, (UINT)dimension, 1.0f/cityTileDim, cityMesh, cityShader, pCamera, pGenerator, mCityLods[1], TCFLow, TUF, TDF, TUniqueF));
+		mCityLods.push_back(new LodLevel<CityTile>(cityTileDim, (UINT)dimension, 1.0f/cityTileDim, cityMesh, cityShader, pCamera, pGenerator, mCityLods[1], TCFLow, TUFHP, TDF, TUniqueF));
 	}
 }
 

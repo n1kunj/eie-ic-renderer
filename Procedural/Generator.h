@@ -52,7 +52,9 @@ typedef std::shared_ptr<CityTile> CTPTR;
 class Generator {
 private:
 	std::deque<DTPTR> mTextureQueue;
+	std::deque<DTPTR> mTextureQueueHP;
 	std::deque<CTPTR> mCityQueue;
+	std::deque<CTPTR> mCityQueueHP;
 	boolean mCompiled;
 	ID3D11ComputeShader* mCSDistant;
 	ID3D11ComputeShader* mCSCity;
@@ -72,32 +74,35 @@ public:
 		mCompiled = FALSE;
 		mSimplexInit = FALSE;
 		mSimplexBuffer.OnD3D11DestroyDevice();
+		mTextureQueue.clear();
+		mTextureQueueHP.clear();
+		mCityQueue.clear();
+		mCityQueueHP.clear();
 	}
 
 	Generator(MessageLogger* pLogger);
 	~Generator() {
 		OnD3D11DestroyDevice();
-		mTextureQueue.clear();
 	}
 
 	void InitialiseTile(DTPTR const& pDistantTile) {
 		mTextureQueue.push_back(pDistantTile);
 	}
 	void InitialiseTileHighPriority(DTPTR const& pDistantTile) {
-		mTextureQueue.push_front(pDistantTile);
+		mTextureQueueHP.push_back(pDistantTile);
 	}
 	void InitialiseTile(CTPTR const& pCityTile) {
 		mCityQueue.push_back(pCityTile);
 	}
 	void InitialiseTileHighPriority(CTPTR const& pCityTile) {
-		mCityQueue.push_front(pCityTile);
+		mCityQueueHP.push_back(pCityTile);
 	}
 
-	void Generate(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, UINT pMaxRuntimeMillis);
+	void Generate(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, FLOAT pMaxRuntimeSeconds);
 
 private:
-	void ProcessDT(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext);
-	void ProcessCT(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext);
+	void ProcessDT(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, std::deque<DTPTR> &pDTqueue);
+	void ProcessCT(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, std::deque<CTPTR> &pCTqueue);
 	void ComputeTextures(ID3D11DeviceContext* pd3dContext, DistantTile &pDT );
 
 	void InitialiseSimplex( ID3D11DeviceContext* pd3dContext );
