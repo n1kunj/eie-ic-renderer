@@ -303,7 +303,7 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 
 	//Runtime millis should be max of 15% of the frametime
 
-	mGenerator->Generate(pd3dDevice, pd3dImmediateContext,fElapsedTime * 0.15f);
+	mGenerator->Generate(pd3dDevice, pd3dImmediateContext,fElapsedTime * 0.05f);
 
 	ID3D11RenderTargetView* backBuffer = DXUTGetD3D11RenderTargetView();
 	ID3D11DepthStencilView* dsv = mDSV.mDSV;

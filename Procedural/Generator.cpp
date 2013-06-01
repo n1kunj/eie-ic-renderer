@@ -60,8 +60,6 @@ CityTile::CityTile( DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize, Draw
 	mPosZ = pPosZ;
 	mSize = pSize;
 	{
-
-
 		DOUBLE numBuildings = (pSize / CITY_CS_TILE_DIM);
 		numBuildings*=numBuildings * MAX_BUILDINGS_PER_TILE[mCLL];
 
@@ -94,29 +92,55 @@ CityTile::CityTile( DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize, Draw
 
 void Generator::Generate( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, FLOAT pMaxRuntimeSeconds )
 {
-	if (mCityQueueHP.size() != 0) {
-		for (int i = 0; i < min(10,mCityQueueHP.size()); i++) {
-			ProcessCT(pd3dDevice,pd3dContext,mCityQueueHP);
-		}
+	FLOAT elapsedTime = 0;
+
+	//Load in everything right at the start
+	if (mInitialLoad) {
+		elapsedTime = -FLT_MAX;
+		mInitialLoad = FALSE;
 	}
-	else if (mTextureQueueHP.size() != 0) {
-		for (int i = 0; i < 1; i++) {
-			ProcessDT(pd3dDevice,pd3dContext,mTextureQueueHP);
+
+	while (elapsedTime < pMaxRuntimeSeconds) {
+		if (mTextureQueueHP.size() != 0) {
+			elapsedTime += ProcessDT(pd3dDevice,pd3dContext,mTextureQueueHP);
 		}
-	}
-	else if (mCityQueue.size() != 0) {
-		for (int i = 0; i < min(10,mCityQueue.size()); i++) {
-			ProcessCT(pd3dDevice,pd3dContext,mCityQueue);
+		else if (mCityQueueHP.size() != 0) {
+			elapsedTime += ProcessCT(pd3dDevice,pd3dContext,mCityQueueHP);
 		}
-	}
-	else if (mTextureQueue.size() != 0) {
-		for (int i = 0; i < 1; i++) {
-			ProcessDT(pd3dDevice,pd3dContext,mTextureQueue);
+		else if (mCityQueue.size() != 0) {
+			elapsedTime += ProcessCT(pd3dDevice,pd3dContext,mCityQueue);
+		}
+		else if (mTextureQueue.size() != 0) {
+			elapsedTime += ProcessDT(pd3dDevice,pd3dContext,mTextureQueue);
+		}
+		else {
+			return;
 		}
 	}
 }
 
-void Generator::ProcessDT(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, std::deque<DTPTR> &pDTqueue) {
+FLOAT Generator::ProcessDT(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, std::deque<DTPTR> &pDTqueue) {
+
+	static bool newQuery = TRUE;
+	static FLOAT sEstTime = 0;
+
+	if (dtDisjoint == NULL) {
+		D3D11_QUERY_DESC qdesc;
+		qdesc.Query = D3D11_QUERY_TIMESTAMP_DISJOINT;
+		qdesc.MiscFlags = 0;
+		pd3dDevice->CreateQuery(&qdesc, &dtDisjoint);
+
+		qdesc.Query = D3D11_QUERY_TIMESTAMP;
+		pd3dDevice->CreateQuery(&qdesc, &dtStart);
+		pd3dDevice->CreateQuery(&qdesc, &dtEnd);
+
+	}
+
+	if (newQuery) {
+		pd3dContext->Begin(dtDisjoint);
+		pd3dContext->End(dtStart);
+	}
+
 	DTPTR &first = pDTqueue.front();
 
 	if (first.unique()) {
@@ -134,10 +158,54 @@ void Generator::ProcessDT(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dCon
 		pd3dContext->GenerateMips(first->mNormalMap.mSRV);
 	}
 	pDTqueue.pop_front();
+
+	if (newQuery) {
+		pd3dContext->End(dtEnd);
+		pd3dContext->End(dtDisjoint);
+		newQuery = false;
+	}
+
+	D3D11_QUERY_DATA_TIMESTAMP_DISJOINT djData;
+
+	if (pd3dContext->GetData(dtDisjoint, &djData, sizeof(djData),0) == S_OK) {
+		UINT64 end;
+		UINT64 start;
+		while( S_OK != pd3dContext->GetData(dtEnd, &end, sizeof(UINT64), 0)){}
+
+		while( S_OK != pd3dContext->GetData(dtStart, &start, sizeof(UINT64),0)){}
+
+		FLOAT time = ((FLOAT)(end-start))/djData.Frequency;
+		sEstTime = 0.8f * sEstTime + 0.2f * time;
+
+		newQuery = true;
+	}
+
+	return sEstTime;
 }
 
-void Generator::ProcessCT( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, std::deque<CTPTR> &pCTqueue)
+FLOAT Generator::ProcessCT( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, std::deque<CTPTR> &pCTqueue)
 {
+	static bool newQuery = TRUE;
+	static FLOAT sEstTime = 0;
+
+	if (ctDisjoint == NULL) {
+		D3D11_QUERY_DESC qdesc;
+		qdesc.Query = D3D11_QUERY_TIMESTAMP_DISJOINT;
+		qdesc.MiscFlags = 0;
+		pd3dDevice->CreateQuery(&qdesc, &ctDisjoint);
+
+		qdesc.Query = D3D11_QUERY_TIMESTAMP;
+		pd3dDevice->CreateQuery(&qdesc, &ctStart);
+		pd3dDevice->CreateQuery(&qdesc, &ctEnd);
+
+	}
+
+	if (newQuery) {
+		pd3dContext->Begin(ctDisjoint);
+		pd3dContext->End(ctStart);
+	}
+
+
 	CTPTR &first = pCTqueue.front();
 
 	if (first.unique()) {
@@ -149,6 +217,29 @@ void Generator::ProcessCT( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dCo
 		ComputeCity(pd3dContext,*first);
 	}
 	pCTqueue.pop_front();
+
+	if (newQuery) {
+		pd3dContext->End(ctEnd);
+		pd3dContext->End(ctDisjoint);
+		newQuery = false;
+	}
+
+	D3D11_QUERY_DATA_TIMESTAMP_DISJOINT djData;
+
+	if (pd3dContext->GetData(ctDisjoint, &djData, sizeof(djData),0) == S_OK) {
+		UINT64 end;
+		UINT64 start;
+		while( S_OK != pd3dContext->GetData(ctEnd, &end, sizeof(UINT64), 0)){}
+
+		while( S_OK != pd3dContext->GetData(ctStart, &start, sizeof(UINT64),0)){}
+
+		FLOAT time = ((FLOAT)(end-start))/djData.Frequency;
+		sEstTime = 0.8f * sEstTime + 0.2f * time;
+
+		newQuery = true;
+	}
+
+	return sEstTime;
 }
 
 void Generator::ComputeTextures(ID3D11DeviceContext* pd3dContext, DistantTile &pDT )
@@ -263,8 +354,15 @@ HRESULT Generator::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 	return S_OK;
 }
 
-Generator::Generator( MessageLogger* pLogger ) : mCompiled(FALSE),mCSDistant(NULL),mCSCity(NULL), mCSCBDistant(NULL), mCSCBCity(NULL), mLogger(pLogger), mSimplexInit(FALSE)
+Generator::Generator( MessageLogger* pLogger ) : mCompiled(FALSE),mCSDistant(NULL),mCSCity(NULL), mCSCBDistant(NULL), mCSCBCity(NULL), mLogger(pLogger), mSimplexInit(FALSE), mInitialLoad(FALSE)
 {
+	dtDisjoint = NULL;
+	dtStart = NULL;
+	dtEnd = NULL;
+
+	ctDisjoint = NULL;
+	ctStart = NULL;
+	ctEnd = NULL;
 
 	//if x0 > y0, use right 16 bits, else use left 16 bits
 	UINT i1 = 0;

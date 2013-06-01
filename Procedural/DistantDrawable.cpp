@@ -231,6 +231,8 @@ private:
 
 DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager, MeshManager* pMeshManager, Generator* pGenerator, UINT pTileDimensionLength, UINT pNumLods, DOUBLE pMinTileSize) : Drawable(pCamera)
 {
+	pGenerator->setInitialLoad();
+
 	{
 		//Initialise terrain
 

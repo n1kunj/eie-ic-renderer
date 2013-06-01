@@ -53,8 +53,16 @@ class Generator {
 private:
 	std::deque<DTPTR> mTextureQueue;
 	std::deque<DTPTR> mTextureQueueHP;
+	ID3D11Query* dtDisjoint;
+	ID3D11Query* dtStart;
+	ID3D11Query* dtEnd;
+
 	std::deque<CTPTR> mCityQueue;
 	std::deque<CTPTR> mCityQueueHP;
+	ID3D11Query* ctDisjoint;
+	ID3D11Query* ctStart;
+	ID3D11Query* ctEnd;
+
 	boolean mCompiled;
 	ID3D11ComputeShader* mCSDistant;
 	ID3D11ComputeShader* mCSCity;
@@ -64,6 +72,7 @@ private:
 	UINT mSimplex2DLUT[256][256];
 	StructuredBuffer<UINT> mSimplexBuffer;
 	BOOL mSimplexInit;
+	BOOL mInitialLoad;
 public:
 	HRESULT OnD3D11CreateDevice( ID3D11Device* pd3dDevice );
 	void OnD3D11DestroyDevice() {
@@ -71,6 +80,15 @@ public:
 		SAFE_RELEASE(mCSCity);
 		SAFE_RELEASE(mCSCBDistant);
 		SAFE_RELEASE(mCSCBCity);
+
+		SAFE_RELEASE(dtDisjoint);
+		SAFE_RELEASE(dtStart);
+		SAFE_RELEASE(dtEnd);
+
+		SAFE_RELEASE(ctDisjoint);
+		SAFE_RELEASE(ctStart);
+		SAFE_RELEASE(ctEnd);
+
 		mCompiled = FALSE;
 		mSimplexInit = FALSE;
 		mSimplexBuffer.OnD3D11DestroyDevice();
@@ -97,12 +115,15 @@ public:
 	void InitialiseTileHighPriority(CTPTR const& pCityTile) {
 		mCityQueueHP.push_back(pCityTile);
 	}
+	void setInitialLoad() {
+		mInitialLoad = TRUE;
+	}
 
 	void Generate(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, FLOAT pMaxRuntimeSeconds);
 
 private:
-	void ProcessDT(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, std::deque<DTPTR> &pDTqueue);
-	void ProcessCT(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, std::deque<CTPTR> &pCTqueue);
+	FLOAT ProcessDT(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, std::deque<DTPTR> &pDTqueue);
+	FLOAT ProcessCT(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, std::deque<CTPTR> &pCTqueue);
 	void ComputeTextures(ID3D11DeviceContext* pd3dContext, DistantTile &pDT );
 
 	void InitialiseSimplex( ID3D11DeviceContext* pd3dContext );
