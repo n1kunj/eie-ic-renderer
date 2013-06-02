@@ -361,7 +361,7 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 		DrawableShader* cityShader = pShaderManager->getDrawableShader("GBufferShader");
 		DrawableMesh* cityMesh = pMeshManager->getDrawableMesh("CubeMesh");
 
-		float cityTileDim = 4096*2;
+		float cityTileDim = 4096;
 
 		DOUBLE dimension = (pMinTileSize * pow(2,mNumLods-1) * mTileDimensionLength)/cityTileDim;
 

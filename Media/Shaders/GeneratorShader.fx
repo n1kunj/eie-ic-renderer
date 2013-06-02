@@ -220,7 +220,7 @@ cbuffer CSCityPassCB : register( b0 )
 
 AppendStructuredBuffer<Instance> sInstance : register(u0);
 
-[numthreads(16, 16, 1)]
+[numthreads(8, 8, 1)]
 void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 {
 	float2 p1 = TILE_SIZE * dispatchID.xy - ((float)tileLength/2);
@@ -228,10 +228,6 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 	
 	float baseheight = (noise2D(pos.x/100,pos.y/72)/2)+0.5f;
 	baseheight = 15 + pow(baseheight,4)*(450);
-
-	if (lodLevel == CITY_LOD_LEVEL_LOW && baseheight < 50) {
-		return;
-	}
 	
 	float noises[NOISE_ITERATIONS];
 	float2 bounds[4];
@@ -260,39 +256,58 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 	col.g = (noise2D(pos.x+900,pos.y-800)/2)+0.5f;
 	col.b = pow((noise2D(pos.x-900,pos.y+8000)/2)+0.5f,2);
 	
-	uint2 rn;
-	if (lodLevel == CITY_LOD_LEVEL_LOW || lodLevel == CITY_LOD_LEVEL_MED) {
-		rn = 1;
-	}
-	else {
-		rn = poorRNG(pos)%3 + 1;
-	}
+	uint2 rn = poorRNG(pos)%3 + 1;
 	
 	const float maxFootPrint = (TILE_SIZE - (PAVE_WIDTH*2))/2;
 	float2 fp = float2(maxFootPrint/rn.x,maxFootPrint/rn.y);
 	
 	const float2 bl = float2(PAVE_WIDTH,PAVE_WIDTH);
+	
+	float maxHeight = 0;
 
 	for (uint i = 0; i < rn.x; i++) {
 		for (uint j = 0; j < rn.y; j++) {
 			if (i == 1 && j == 1 && rn.x == 3 && rn.y == 3) {
 				continue;
 			}
-			Instance i0;
-			
+						
 			float3 p;
 			p.xz = p1 + bl + 2*fp * float2(i+0.5f,j+0.5f);
 			
+			float2 pos2 = tileCoords + p.xz;
+			uint2 rnh = poorRNG(float2(pos2.x/120,pos2.y/98));
+			float height = ( ((int)((rnh.x + rnh.y)%1024)) - 512)/512.0f;
+			baseheight = baseheight + height * 0.15f * baseheight;
+			
 			p.y = terrainHeight-5 + baseheight;
 			
-			i0.mPos = p;
-			i0.mSize = float3(fp.x,baseheight,fp.y);
-			i0.mColour = col;
-			sInstance.Append(i0);
+			maxHeight = max(maxHeight,baseheight);
 			
-			float height = noise2D(p.x/120,p.z/98);
-			baseheight = baseheight + height * 0.3f * baseheight;
+			[branch] if (lodLevel == CITY_LOD_LEVEL_HIGH) {
+				Instance i0;
+				i0.mPos = p;
+				i0.mSize = float3(fp.x,baseheight,fp.y);
+				i0.mColour = col;
+				sInstance.Append(i0);
+			}
 		}
+	}
+	if (lodLevel != CITY_LOD_LEVEL_HIGH) {
+	
+		if (lodLevel == CITY_LOD_LEVEL_LOW && maxHeight < 200) {
+			return;
+		}
+	
+		fp = float2(maxFootPrint,maxFootPrint);
+		float3 p;
+		p.xz = p1 + bl + 2*fp * float2(0.5f,0.5f);	
+		p.y = terrainHeight-5 + maxHeight;
+	
+		Instance i0;
+		i0.mPos = p;
+		i0.mSize = float3(fp.x,maxHeight,fp.y);
+		i0.mColour = col;
+		sInstance.Append(i0);
 	}
 }
 

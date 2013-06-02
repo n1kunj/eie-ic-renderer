@@ -119,6 +119,15 @@ public:
 		mInitialLoad = TRUE;
 	}
 
+	BOOL hasGeneratables() {
+		size_t sum = 0;
+		sum+=mTextureQueue.size();
+		sum+=mTextureQueueHP.size();
+		sum+=mCityQueue.size();
+		sum+=mCityQueueHP.size();
+		return (BOOL)sum;
+	}
+
 	void Generate(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, FLOAT pMaxRuntimeSeconds);
 
 private:
