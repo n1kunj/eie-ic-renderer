@@ -130,22 +130,36 @@ void Camera::update(DXGI_SURFACE_DESC pSurfaceDesc)
 
 	XMVECTOR fpbr = fpc - farUpVec + farRightVec;
 
-	mNearNormal = mLookVector;
-	mFarNormal = -mLookVector;
+	mNearPlane = mLookVector;
+	mNearPlane = XMVectorSetW(mNearPlane,fabs(XMVectorGetX(XMVector3Dot(npbr,mNearPlane))));
+
+	mFarPlane = -mLookVector;
+	mFarPlane = XMVectorSetW(mFarPlane,fabs(XMVectorGetX(XMVector3Dot(fptl,mFarPlane))));
 
 	XMVECTOR ltv = nptl - fptl;
 	XMVECTOR rbv = fpbr - npbr;
 
-	mLeftNormal = XMVector3Normalize(XMVector3Cross(mActualUp,ltv));
+	mLeftPlane = XMVector3Normalize(XMVector3Cross(mActualUp,ltv));
+	mLeftPlane = XMVectorSetW(mLeftPlane,fabs(XMVectorGetX(XMVector3Dot(fptl,mLeftPlane))));
 
-	mRightNormal = XMVector3Normalize(XMVector3Cross(mActualUp,rbv));
+	mRightPlane = XMVector3Normalize(XMVector3Cross(mActualUp,rbv));
+	mRightPlane = XMVectorSetW(mRightPlane,fabs(XMVectorGetX(XMVector3Dot(npbr,mRightPlane))));
 
-	mTopNormal = XMVector3Normalize(XMVector3Cross(rightVec,ltv));
+	mTopPlane = XMVector3Normalize(XMVector3Cross(rightVec,ltv));
+	mTopPlane = XMVectorSetW(mTopPlane,fabs(XMVectorGetX(XMVector3Dot(fptl,mTopPlane))));
 
-	mBottomNormal = XMVector3Normalize(XMVector3Cross(rightVec,rbv));
+	mBottomPlane = XMVector3Normalize(XMVector3Cross(rightVec,rbv));
+	mBottomPlane = XMVectorSetW(mBottomPlane,fabs(XMVectorGetX(XMVector3Dot(npbr,mBottomPlane))));
 
 	mLeftTopNearPoint = nptl;
 	mRightBottomFarPoint = fpbr;
+
+	mNearPlaneAbs = XMVectorAbs(mNearPlane);
+	mFarPlaneAbs = XMVectorAbs(mFarPlane);
+	mLeftPlaneAbs = XMVectorAbs(mLeftPlane);
+	mRightPlaneAbs = XMVectorAbs(mRightPlane);
+	mTopPlaneAbs = XMVectorAbs(mTopPlane);
+	mBottomPlaneAbs = XMVectorAbs(mBottomPlane);
 
 }
 
@@ -446,21 +460,21 @@ BOOL Camera::testFrustum( XMFLOAT3 pPos, XMINT3 pCoords, FLOAT pSphereRadius ) c
 
 	XMVECTOR ltn = pos - mLeftTopNearPoint;
 
-	FLOAT test1 = XMVectorGetX(XMVector3Dot(ltn,mNearNormal));
+	FLOAT test1 = XMVectorGetX(XMVector3Dot(ltn,mNearPlane));
 	if (test1 < 0) {
 		if (test1 + pSphereRadius < 0) {
 			return FALSE;
 		}
 	}
 
-	FLOAT test2 = XMVectorGetX(XMVector3Dot(ltn,mLeftNormal));
+	FLOAT test2 = XMVectorGetX(XMVector3Dot(ltn,mLeftPlane));
 	if (test2 < 0) {
 		if (test2 + pSphereRadius < 0) {
 			return FALSE;
 		}
 	}
 
-	FLOAT test3 = XMVectorGetX(XMVector3Dot(ltn,mTopNormal));
+	FLOAT test3 = XMVectorGetX(XMVector3Dot(ltn,mTopPlane));
 	if (test3 < 0) {
 		if (test3 + pSphereRadius < 0) {
 			return FALSE;
@@ -469,26 +483,56 @@ BOOL Camera::testFrustum( XMFLOAT3 pPos, XMINT3 pCoords, FLOAT pSphereRadius ) c
 
 	XMVECTOR rbf = pos - mRightBottomFarPoint;
 
-	FLOAT test4 = XMVectorGetX(XMVector3Dot(rbf,mRightNormal));
+	FLOAT test4 = XMVectorGetX(XMVector3Dot(rbf,mRightPlane));
 	if (test4 < 0) {
 		if (test4 + pSphereRadius < 0) {
 			return FALSE;
 		}
 	}
 
-	FLOAT test5 = XMVectorGetX(XMVector3Dot(rbf,mBottomNormal));
+	FLOAT test5 = XMVectorGetX(XMVector3Dot(rbf,mBottomPlane));
 	if (test5 < 0) {
 		if (test5 + pSphereRadius < 0) {
 			return FALSE;
 		}
 	}
 
-	FLOAT test6 = XMVectorGetX(XMVector3Dot(rbf,mFarNormal));
+	FLOAT test6 = XMVectorGetX(XMVector3Dot(rbf,mFarPlane));
 	if (test6 < 0) {
 		if (test6 + pSphereRadius < 0) {
 			return FALSE;
 		}
 	}
 
+	return TRUE;
+}
+
+BOOL Camera::testFrustumAABB( DirectX::XMFLOAT3 pPos, DirectX::XMINT3 pCoords, DirectX::XMFLOAT3 pLenXYZ ) const
+{
+	XMVECTOR pos = XMVectorSet(pPos.x + (pCoords.x - mCoords.x),
+		pPos.y + (pCoords.y - mCoords.y),
+		pPos.z + (pCoords.z - mCoords.z),0.0f);
+
+	XMVECTOR size = XMLoadFloat3(&pLenXYZ);
+
+	XMVECTOR planes[6] = {mNearPlane,mFarPlane,mLeftPlane,mRightPlane,mTopPlane,mBottomPlane};
+
+	XMVECTOR planeAbss[6] = {mNearPlaneAbs, mFarPlaneAbs,mLeftPlaneAbs,mRightPlaneAbs,mTopPlaneAbs,mBottomPlaneAbs};
+
+	for (int i = 0; i < 6; i++) {
+		XMVECTOR &plane = planes[i];
+		XMVECTOR &planeAbs = planeAbss[i];
+
+		float d = XMVectorGetX(XMVector3Dot(pos,plane));
+
+		float r = XMVectorGetX(XMVector3Dot(size,planeAbs));
+
+		float d_p_r = d + r + XMVectorGetW(plane);
+
+		if (d_p_r < 0) {
+			return FALSE;
+		}
+
+	}
 	return TRUE;
 }

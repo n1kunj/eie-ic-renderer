@@ -280,7 +280,12 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 		};
 	
 		auto TDF = [](DOUBLE pTileSize, BasicDrawable& pDrawable, ID3D11DeviceContext* pd3dContext) -> void {
-			pDrawable.Draw(pd3dContext);
+			pDrawable.DrawNoCull(pd3dContext);
+
+			auto aabb = DirectX::XMFLOAT3((FLOAT)pTileSize/2,1000,(FLOAT)pTileSize/2);
+			if (pDrawable.mCamera->testFrustumAABB(pDrawable.mState.mPosition,pDrawable.mState.mCoords,aabb)) {
+				pDrawable.DrawNoCull(pd3dContext);
+			}
 		};
 
 		auto TUniqueF = [](DrawableState& pState) -> BOOL {
@@ -309,9 +314,9 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 	{
 		//Initialise city
 
-		auto TCFLow = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
-			pState.mCityTile = std::shared_ptr<CityTile>(new CityTile(pPosX,pPosY,pPosZ,pTileSize,pMesh,CITY_LOD_LEVEL_LOW));
-			pGenerator->InitialiseTileHighPriority(pState.mCityTile);
+		auto TCFHigh = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
+			pState.mCityTile = std::shared_ptr<CityTile>(new CityTile(pPosX,pPosY,pPosZ,pTileSize,pMesh,CITY_LOD_LEVEL_HIGH));
+			pGenerator->InitialiseTile(pState.mCityTile);
 		};
 
 		auto TCFMed = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
@@ -319,9 +324,18 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 			pGenerator->InitialiseTile(pState.mCityTile);
 		};
 
-		auto TCFHigh = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
-			pState.mCityTile = std::shared_ptr<CityTile>(new CityTile(pPosX,pPosY,pPosZ,pTileSize,pMesh,CITY_LOD_LEVEL_HIGH));
+		auto TCFLow = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
+			pState.mCityTile = std::shared_ptr<CityTile>(new CityTile(pPosX,pPosY,pPosZ,pTileSize,pMesh,CITY_LOD_LEVEL_LOW));
 			pGenerator->InitialiseTile(pState.mCityTile);
+		};
+
+		auto TCFXLow = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
+			pState.mCityTile = std::shared_ptr<CityTile>(new CityTile(pPosX,pPosY,pPosZ,pTileSize,pMesh,CITY_LOD_LEVEL_XLOW));
+			pGenerator->InitialiseTile(pState.mCityTile);
+		};
+		auto TCFXXLow = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
+			pState.mCityTile = std::shared_ptr<CityTile>(new CityTile(pPosX,pPosY,pPosZ,pTileSize,pMesh,CITY_LOD_LEVEL_XXLOW));
+			pGenerator->InitialiseTileHighPriority(pState.mCityTile);
 		};
 
 		auto TUF = [](DrawableState& pState, Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY, DOUBLE pPosZ) -> void {
@@ -349,7 +363,8 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 		};
 
 		auto TDF = [](DOUBLE pTileSize, BasicDrawable& pDrawable, ID3D11DeviceContext* pd3dContext) -> void {
-			if (pDrawable.mCamera->testFrustum(pDrawable.mState.mPosition,pDrawable.mState.mCoords,(FLOAT)pTileSize)) {
+			auto aabb = DirectX::XMFLOAT3((FLOAT)pTileSize/2,1000,(FLOAT)pTileSize/2);
+			if (pDrawable.mCamera->testFrustumAABB(pDrawable.mState.mPosition,pDrawable.mState.mCoords,aabb)) {
 				pDrawable.DrawInstancedIndirect(pd3dContext);
 			}
 		};
@@ -361,14 +376,14 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 		DrawableShader* cityShader = pShaderManager->getDrawableShader("GBufferShader");
 		DrawableMesh* cityMesh = pMeshManager->getDrawableMesh("CubeMesh");
 
-		float cityTileDim = 4096;
+		float cityTileDim = 8192;
 
 		DOUBLE dimension = (pMinTileSize * pow(2,mNumLods-1) * mTileDimensionLength)/cityTileDim;
 
 		//Ensure dimension is even
 		dimension = ceil(dimension/2) * 2;
 
-		cityTileDim/=4;
+		cityTileDim/=16;
 
 		mCityLods.push_back(new LodLevel<CityTile>(cityTileDim, (UINT)dimension, 1.0f/cityTileDim, cityMesh, cityShader, pCamera, pGenerator, NULL, TCFHigh, TUF, TDF, TUniqueF));
 
@@ -378,7 +393,15 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 
 		cityTileDim*=2;
 
-		mCityLods.push_back(new LodLevel<CityTile>(cityTileDim, (UINT)dimension, 1.0f/cityTileDim, cityMesh, cityShader, pCamera, pGenerator, mCityLods[1], TCFLow, TUFHP, TDF, TUniqueF));
+		mCityLods.push_back(new LodLevel<CityTile>(cityTileDim, (UINT)dimension, 1.0f/cityTileDim, cityMesh, cityShader, pCamera, pGenerator, mCityLods[1], TCFLow, TUF, TDF, TUniqueF));
+
+		cityTileDim*=2;
+
+		mCityLods.push_back(new LodLevel<CityTile>(cityTileDim, (UINT)dimension, 1.0f/cityTileDim, cityMesh, cityShader, pCamera, pGenerator, mCityLods[2], TCFXLow, TUF, TDF, TUniqueF));
+
+		cityTileDim*=2;
+
+		mCityLods.push_back(new LodLevel<CityTile>(cityTileDim, (UINT)dimension, 1.0f/cityTileDim, cityMesh, cityShader, pCamera, pGenerator, mCityLods[3], TCFXXLow, TUFHP, TDF, TUniqueF));
 	}
 }
 

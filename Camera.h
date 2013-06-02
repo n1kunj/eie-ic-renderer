@@ -34,6 +34,7 @@ public:
 	void update(DXGI_SURFACE_DESC pSurfaceDesc);
 	void updateWindowDimensions();
 	BOOL testFrustum( DirectX::XMFLOAT3 pPos, DirectX::XMINT3 pCoords, FLOAT pSphereRadius ) const;
+	BOOL testFrustumAABB( DirectX::XMFLOAT3 pPos, DirectX::XMINT3 pCoords, DirectX::XMFLOAT3 pLenXYZ ) const;
 
 	LRESULT MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool* pbNoFurtherProcessing,
 		void* pUserContext );
@@ -56,12 +57,19 @@ public:
 private:
 	DirectX::XMVECTOR mActualUp;
 
-	DirectX::XMVECTOR mNearNormal;
-	DirectX::XMVECTOR mFarNormal;
-	DirectX::XMVECTOR mLeftNormal;
-	DirectX::XMVECTOR mRightNormal;
-	DirectX::XMVECTOR mTopNormal;
-	DirectX::XMVECTOR mBottomNormal;
+	DirectX::XMVECTOR mNearPlane;
+	DirectX::XMVECTOR mFarPlane;
+	DirectX::XMVECTOR mLeftPlane;
+	DirectX::XMVECTOR mRightPlane;
+	DirectX::XMVECTOR mTopPlane;
+	DirectX::XMVECTOR mBottomPlane;
+
+	DirectX::XMVECTOR mNearPlaneAbs;
+	DirectX::XMVECTOR mFarPlaneAbs;
+	DirectX::XMVECTOR mLeftPlaneAbs;
+	DirectX::XMVECTOR mRightPlaneAbs;
+	DirectX::XMVECTOR mTopPlaneAbs;
+	DirectX::XMVECTOR mBottomPlaneAbs;
 
 	DirectX::XMVECTOR mLeftTopNearPoint;
 	DirectX::XMVECTOR mRightBottomFarPoint;

@@ -210,6 +210,8 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 #define CITY_LOD_LEVEL_HIGH 0
 #define CITY_LOD_LEVEL_MED 1
 #define CITY_LOD_LEVEL_LOW 2
+#define CITY_LOD_LEVEL_XLOW 3
+#define CITY_LOD_LEVEL_XXLOW 4
 
 cbuffer CSCityPassCB : register( b0 )
 {
@@ -220,7 +222,7 @@ cbuffer CSCityPassCB : register( b0 )
 
 AppendStructuredBuffer<Instance> sInstance : register(u0);
 
-[numthreads(8, 8, 1)]
+[numthreads(4, 4, 1)]
 void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 {
 	float2 p1 = TILE_SIZE * dispatchID.xy - ((float)tileLength/2);
@@ -292,9 +294,15 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 			}
 		}
 	}
-	if (lodLevel != CITY_LOD_LEVEL_HIGH) {
+	[branch] if (lodLevel != CITY_LOD_LEVEL_HIGH) {
 	
-		if (lodLevel == CITY_LOD_LEVEL_LOW && maxHeight < 200) {
+		if (lodLevel >= CITY_LOD_LEVEL_LOW && maxHeight < 50) {
+			return;
+		}
+		if (lodLevel >= CITY_LOD_LEVEL_XLOW && maxHeight < 100) {
+			return;
+		}
+		if (lodLevel >= CITY_LOD_LEVEL_XXLOW && maxHeight < 200) {
 			return;
 		}
 	
@@ -317,7 +325,7 @@ void getNoisesBoundsAccept( in float2 pos, out float noises[NOISE_ITERATIONS], o
 	
 	[loop] for (int i = 0; i < NOISE_ITERATIONS; i++) {
 		float2 p2 = pos/(0.25f*scales[i]);
-		noises[i] = (noise2D(p2.x,p2.y)/2)+0.5f;
+		[call] noises[i] = (noise2D(p2.x,p2.y)/2)+0.5f;
 	}
 	
 	//Find the bottom left value of the quadrant we're assumed to be in

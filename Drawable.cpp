@@ -13,6 +13,13 @@ void BasicDrawable::Draw(ID3D11DeviceContext* pd3dContext)
 	}
 }
 
+void BasicDrawable::DrawNoCull( ID3D11DeviceContext* pd3dContext )
+{
+	mState.updateMatrices();
+	mShader->DrawMesh(pd3dContext,mMesh,&mState,mCamera);
+}
+
+
 BasicDrawable::BasicDrawable(DrawableMesh* pMesh, DrawableShader* pShader, Camera* pCamera)
 	: mState(), mMesh(pMesh), mShader(pShader), Drawable(pCamera)
 {
