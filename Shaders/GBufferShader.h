@@ -177,7 +177,6 @@ private:
 		vscb->VP = XMMatrixTranspose(pCamera->mViewProjectionMatrix);
 		const XMINT3& mCrds = pState->mCoords;
 		const XMINT3& cCrds = pCamera->mCoords;
-		//Not used in draw indirect
 		vscb->Offset = XMINT3(mCrds.x - cCrds.x,
 			mCrds.y - cCrds.y,
 			mCrds.z - cCrds.z);

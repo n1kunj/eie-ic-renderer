@@ -212,8 +212,10 @@ FLOAT Generator::ProcessCT( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dC
 		first.reset();
 	}
 	else {
-		first->mInstanceBuffer.CreateBuffer(pd3dDevice);
-		first->mIndirectBuffer.CreateBuffer(pd3dDevice,first->mIndirectData);
+		if (first->mInstanceBuffer.mBuffer == NULL) {
+			first->mInstanceBuffer.CreateBuffer(pd3dDevice);
+			first->mIndirectBuffer.CreateBuffer(pd3dDevice,first->mIndirectData);
+		}
 		ComputeCity(pd3dContext,*first);
 	}
 	pCTqueue.pop_front();
@@ -297,7 +299,8 @@ void Generator::ComputeCity( ID3D11DeviceContext* pd3dContext, CityTile &pCT )
 	pd3dContext->Unmap(mCSCBCity,0);
 
 	pd3dContext->CSSetConstantBuffers(0,1,&mCSCBCity);
-	pd3dContext->CSSetUnorderedAccessViews(0,1,&pCT.mInstanceBuffer.mUAV,0);
+	const UINT count = 0;
+	pd3dContext->CSSetUnorderedAccessViews(0,1,&pCT.mInstanceBuffer.mUAV,&count);
 	pd3dContext->CSSetShaderResources(0,1,&mSimplexBuffer.mSRV);
 
 	pd3dContext->CSSetShader(mCSCity,0,0);
