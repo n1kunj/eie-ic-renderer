@@ -188,7 +188,7 @@ void LightingCS(uint3 groupId 			: SV_GroupID,
 		}
 	}
 	
-	float fogEnd = 120000;
+	float fogEnd = 400000;
 	float fogStart = 0000;
 	
 	if (all(screenPix.xy < bufferDim.xy)) {
@@ -196,7 +196,8 @@ void LightingCS(uint3 groupId 			: SV_GroupID,
 			//WriteSample(screenPix.xy,bufferDim.xy, float4(lightCount.xxx/512.0f, 0.0f));
 			float3 fogCol = float3( 0.329f, 0.608f, 0.722f);
 			float fogFactor = saturate((fogEnd - length(gbViewPos))/(fogEnd - fogStart));
-			fogFactor = sqrt(fogFactor);
+			//fogFactor = sqrt(fogFactor);
+			fogFactor = 1;
 			//fogFactor=pow(fogFactor,0.75f);
 			pixVal = lerp(fogCol,pixVal,fogFactor);
 			WriteSample(screenPix.xy,bufferDim.xy, float4(pixVal, 0.0f));

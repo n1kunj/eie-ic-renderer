@@ -75,6 +75,10 @@ private:
 	StructuredBuffer<UINT> mSimplexBuffer;
 	BOOL mSimplexInit;
 	BOOL mInitialLoad;
+	ID3D11ShaderResourceView* mBaseTex;
+	ID3D11ShaderResourceView* mHeightTex;
+	ID3D11ShaderResourceView* mRoadTex;
+	ID3D11ShaderResourceView* mCityTex;
 public:
 	HRESULT OnD3D11CreateDevice( ID3D11Device* pd3dDevice );
 	void OnD3D11DestroyDevice() {
@@ -90,6 +94,11 @@ public:
 		SAFE_RELEASE(ctDisjoint);
 		SAFE_RELEASE(ctStart);
 		SAFE_RELEASE(ctEnd);
+
+		SAFE_RELEASE(mBaseTex);
+		SAFE_RELEASE(mHeightTex);
+		SAFE_RELEASE(mRoadTex);
+		SAFE_RELEASE(mCityTex);
 
 		mCompiled = FALSE;
 		mSimplexInit = FALSE;
@@ -139,6 +148,9 @@ private:
 
 	void InitialiseSimplex( ID3D11DeviceContext* pd3dContext );
 	void ComputeCity(ID3D11DeviceContext* pd3dContext, CityTile &pCT);
+
+	static HRESULT createTexture(WCHAR* szFileName, ID3D11Device* pd3dDevice,ID3D11ShaderResourceView** pSRV);
+	HRESULT InitTextures(ID3D11Device* pd3dDevice);
 };
 
 #endif

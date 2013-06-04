@@ -13,6 +13,12 @@ RWTexture2D<float4> albedoTex : register(u0);
 RWTexture2D<float4> normalTex : register(u1);
 RWTexture2D<float> heightTex : register(u2);
 
+Texture2D<float3> baseTex : register(t1);
+Texture2D<float3> heightTexMap : register(t2);
+Texture2D<float3> roadMap : register(t3);
+Texture2D<float3> cityMap : register(t4);
+SamplerState sDefault : register(s0);
+
 uint2 poorRNG(float2 xy);
 float minDist(float2 l1, float2 l2, float2 p);
 
@@ -172,6 +178,14 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 		colour = tileCols.rgb;
 	}
 	
+	float scalex = 1000000;
+	float scaley = scalex * (3190 / 2824);
+	float2 scale = float2(-scalex,scaley);
+	float2 scale2 = scale/2;
+	float2 cpos = (pos + scale2)/scale;
+	
+	colour.rgb = baseTex.SampleLevel(sDefault,cpos,0);
+	
 	//SpecPower is normalised between -1 and 1
 	//Then unpacked to between 0 and 128
 	int SpecPower = tileSpec.x;
@@ -225,11 +239,12 @@ AppendStructuredBuffer<Instance> sInstance : register(u0);
 [numthreads(4, 4, 1)]
 void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 {
+	//return;
 	float2 p1 = TILE_SIZE * dispatchID.xy - ((float)tileLength/2);
 	float2 pos = tileCoords + p1;
 	
 	float baseheight = (noise2D(pos.x/100,pos.y/72)/2)+0.5f;
-	baseheight = 15 + pow(baseheight,4)*(450);
+	baseheight = 10 + pow(baseheight,10)*(300);
 	
 	float noises[NOISE_ITERATIONS];
 	float2 bounds[4];
@@ -257,6 +272,9 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 	col.r = (noise2D(pos.x,pos.y)/2)+0.5f;
 	col.g = (noise2D(pos.x+900,pos.y-800)/2)+0.5f;
 	col.b = pow((noise2D(pos.x-900,pos.y+8000)/2)+0.5f,2);
+	
+	//col.rgb = baseTex.SampleLevel(sDefault,float2(0.5f,0.5f),0);
+
 	
 	uint2 rn = poorRNG(pos)%3 + 1;
 	
@@ -374,6 +392,23 @@ void getNoisesBoundsAccept( in float2 pos, out float noises[NOISE_ITERATIONS], o
 	bounds[2] = getShiftedCoords(bl + float2(TILE_SIZE,TILE_SIZE));
 	bounds[3] = getShiftedCoords(bl + float2(0,TILE_SIZE));
 	
+	float scalex = 1000000;
+	float scaley = scalex * (3190 / 2824);
+	float2 scale = float2(-scalex,scaley);
+	float2 scale2 = scale/2;
+	float2 cpos = (pos + scale2)/scale;
+	float3 roadwater = roadMap.SampleLevel(sDefault,cpos,0);
+	float3 city = cityMap.SampleLevel(sDefault,cpos,0);
+	
+	float coeff;
+	if (roadwater.b) {
+		coeff = 1;
+	}
+	else {
+		float intensity = (city.r + city.g + city.b)/3.0f;
+		coeff = intensity > 0.4f ? 0 : 1;
+	}
+	
 	[unroll] for (int i = 0; i < 4; i++) {
 		accept[i] = isAccepted(bounds[i], getTileCoeff(bounds[i]));
 	}
@@ -412,6 +447,14 @@ void getTerrainInfo(in float2 pos, in float noises[NOISE_ITERATIONS], in bool ac
 		float mult = lerp(c0,c1,ss);
 		terrainHeight+=noises[i] * mult;
 	}
+	
+	float scalex = 1000000;
+	float scaley = scalex * (3190 / 2824);
+	float2 scale = float2(-scalex,scaley);
+	float2 scale2 = scale/2;
+	float2 cpos = (pos + scale2)/scale;
+	terrainHeight += 2000 * heightTexMap.SampleLevel(sDefault,cpos,0).r;
+
 	
 	//Calculate the tile colour and speculars
 	

@@ -304,7 +304,7 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 
 	//Runtime millis should be max of 5% of the frametime
 	if (mGenerator->hasGeneratables()) {
-		FLOAT runTime = savedFrameTime * 0.05f;
+		FLOAT runTime = savedFrameTime * 0.15f;
 		mGenerator->Generate(pd3dDevice, pd3dImmediateContext,runTime);
 	}
 	else {

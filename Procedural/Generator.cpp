@@ -1,6 +1,7 @@
 #include "DXUT.h"
 #include "Generator.h"
 #include "../Utils/ShaderTools.h"
+#include "SDKmisc.h"
 #include "simplexnoise.h"
 
 #define ALBNORM_MAP_RESOLUTION 256
@@ -269,15 +270,18 @@ void Generator::ComputeTextures(ID3D11DeviceContext* pd3dContext, DistantTile &p
 		pDT.mNormalMap.mUAV,pDT.mHeightMap.mUAV};
 
 	pd3dContext->CSSetUnorderedAccessViews(0,3,uavs,0);
-	pd3dContext->CSSetShaderResources(0,1,&mSimplexBuffer.mSRV);
+
+	ID3D11ShaderResourceView* srvs[5] = {mSimplexBuffer.mSRV,mBaseTex,mHeightTex,mRoadTex,mCityTex};
+
+	pd3dContext->CSSetShaderResources(0,5,srvs);
 
 	pd3dContext->CSSetShader(mCSDistant,0,0);
 	pd3dContext->Dispatch(DISTANT_DISPATCH_DIM,DISTANT_DISPATCH_DIM,1);
 
 	ID3D11UnorderedAccessView* nulluavs[3] = {NULL,NULL,NULL};
 	pd3dContext->CSSetUnorderedAccessViews(0,3,nulluavs,0);
-	ID3D11ShaderResourceView* nullsrv[1] = {NULL};
-	pd3dContext->CSSetShaderResources(0,1,nullsrv);
+	ID3D11ShaderResourceView* nullsrv[5] = {NULL,NULL,NULL,NULL,NULL};
+	pd3dContext->CSSetShaderResources(0,5,nullsrv);
 }
 
 void Generator::ComputeCity( ID3D11DeviceContext* pd3dContext, CityTile &pCT )
@@ -301,7 +305,10 @@ void Generator::ComputeCity( ID3D11DeviceContext* pd3dContext, CityTile &pCT )
 	pd3dContext->CSSetConstantBuffers(0,1,&mCSCBCity);
 	const UINT count = 0;
 	pd3dContext->CSSetUnorderedAccessViews(0,1,&pCT.mInstanceBuffer.mUAV,&count);
-	pd3dContext->CSSetShaderResources(0,1,&mSimplexBuffer.mSRV);
+	
+	ID3D11ShaderResourceView* srvs[5] = {mSimplexBuffer.mSRV,mBaseTex,mHeightTex,mRoadTex,mCityTex};
+
+	pd3dContext->CSSetShaderResources(0,5,srvs);
 
 	pd3dContext->CSSetShader(mCSCity,0,0);
 
@@ -313,8 +320,8 @@ void Generator::ComputeCity( ID3D11DeviceContext* pd3dContext, CityTile &pCT )
 
 	ID3D11UnorderedAccessView* nulluavs[1] = {NULL};
 	pd3dContext->CSSetUnorderedAccessViews(0,1,nulluavs,0);
-	ID3D11ShaderResourceView* nullsrv[1] = {NULL};
-	pd3dContext->CSSetShaderResources(0,1,nullsrv);
+	ID3D11ShaderResourceView* nullsrv[5] = {NULL,NULL,NULL,NULL,NULL};
+	pd3dContext->CSSetShaderResources(0,5,nullsrv);
 }
 
 
@@ -353,11 +360,13 @@ HRESULT Generator::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 
 	mSimplexBuffer.CreateBuffer(pd3dDevice);
 
+	InitTextures(pd3dDevice);
+
 	mCompiled = TRUE;
 	return S_OK;
 }
 
-Generator::Generator( MessageLogger* pLogger ) : mCompiled(FALSE),mCSDistant(NULL),mCSCity(NULL), mCSCBDistant(NULL), mCSCBCity(NULL), mLogger(pLogger), mSimplexInit(FALSE), mInitialLoad(FALSE)
+Generator::Generator( MessageLogger* pLogger ) : mCompiled(FALSE),mCSDistant(NULL),mCSCity(NULL), mCSCBDistant(NULL), mCSCBCity(NULL), mLogger(pLogger), mSimplexInit(FALSE), mInitialLoad(FALSE), mBaseTex(NULL), mHeightTex(NULL), mRoadTex(NULL), mCityTex(NULL)
 {
 	dtDisjoint = NULL;
 	dtStart = NULL;
@@ -419,4 +428,30 @@ void Generator::InitialiseSimplex( ID3D11DeviceContext* pd3dContext )
 	}
 	mSimplexBuffer.Unmap(pd3dContext);
 	mSimplexInit = TRUE;
+
+}
+
+HRESULT Generator::InitTextures( ID3D11Device* pd3dDevice )
+{
+	HRESULT hr;
+	V_RETURN(createTexture(L"Textures\\satTexture.dds",pd3dDevice,&mBaseTex));
+	V_RETURN(createTexture(L"Textures\\HeightMap.dds",pd3dDevice,&mHeightTex));
+	V_RETURN(createTexture(L"Textures\\waterRoads.dds",pd3dDevice,&mRoadTex));
+	V_RETURN(createTexture(L"Textures\\cityDensity.dds",pd3dDevice,&mCityTex));
+
+	return hr;
+}
+
+HRESULT Generator::createTexture( WCHAR* szFileName, ID3D11Device* pd3dDevice,ID3D11ShaderResourceView** pSRV )
+{
+	HRESULT hr;
+	WCHAR str[MAX_PATH];
+	V_RETURN( DXUTFindDXSDKMediaFileCch( str, MAX_PATH, szFileName ) );
+
+	ID3D11Resource* resource = NULL;
+	hr = D3DX11CreateTextureFromFile(pd3dDevice,str, 0, 0, &resource, 0);
+
+	pd3dDevice->CreateShaderResourceView(resource,0,pSRV);
+	SAFE_RELEASE(resource);
+	return S_OK;
 }

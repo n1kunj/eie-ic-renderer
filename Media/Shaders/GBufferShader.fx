@@ -118,8 +118,8 @@ GBuffer PS_INSTANCED( PS_INPUT_INSTANCED input )
 	output.mNormSpec = float4(EncodeSphereMap(input.mNorm),cSpecAmount,cSpecPower);
 	output.mAlbedo = float4(input.mColour,1.0f);
 	float3 wp = input.mWorldPos;
-	float check = checker(wp.xy/20);
-	output.mAlbedo.rgb *= check;
+	//float check = checker(wp.xy/20);
+	//output.mAlbedo.rgb *= check;
 	
 	return output;
 }

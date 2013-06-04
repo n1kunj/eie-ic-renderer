@@ -380,6 +380,8 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 
 		DOUBLE dimension = (pMinTileSize * pow(2,mNumLods-1) * mTileDimensionLength)/cityTileDim;
 
+		dimension = min(dimension,32);
+
 		//Ensure dimension is even
 		dimension = ceil(dimension/2) * 2;
 
