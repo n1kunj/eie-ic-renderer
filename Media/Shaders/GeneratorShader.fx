@@ -9,6 +9,8 @@
 
 #define OVERLAP_SCALE 1.05f
 
+#define MAX_BUILDING_TERRAIN_HEIGHT 1000
+
 RWTexture2D<float4> albedoTex : register(u0);
 RWTexture2D<float4> normalTex : register(u1);
 RWTexture2D<float> heightTex : register(u2);
@@ -18,6 +20,13 @@ Texture2D<float3> heightTexMap : register(t2);
 Texture2D<float3> roadMap : register(t3);
 Texture2D<float3> cityMap : register(t4);
 SamplerState sDefault : register(s0);
+
+struct terrainData {
+float3 mBaseTex;
+float3 mHeightTex;
+float3 mRoadMap;
+float3 mCityMap;
+};
 
 uint2 poorRNG(float2 xy);
 float minDist(float2 l1, float2 l2, float2 p);
@@ -38,9 +47,11 @@ cbuffer CSPass1CSCB : register( b0 )
 #define NUM_BIOMES 9
 #define NOISE_ITERATIONS 12
 
-void getNoisesBoundsAccept( in float2 pos, out float noises[NOISE_ITERATIONS], out float2 bounds[4], out bool accept[4]);
+terrainData loadTexMaps(in float2 pos);
 
-void getTerrainInfo(in float2 pos, in float noises[NOISE_ITERATIONS], in bool accept[4], out float tileCoeff, out float terrainHeight, out float4 tileCols, out float2 tileSpec);
+void getNoisesBoundsAccept( in float2 pos, in terrainData td, out float noises[NOISE_ITERATIONS], out float2 bounds[4], out bool accept[4]);
+
+void getTerrainInfo(in float2 pos, in terrainData td, in float noises[NOISE_ITERATIONS], in bool accept[4], out float tileCoeff, out float terrainHeight, out float4 tileCols, out float2 tileSpec);
 
 static const float scales[NOISE_ITERATIONS] = {150000,30000,12800,640,320,
 	160,80,40,20,
@@ -101,18 +112,20 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	float2 pos = (float2)pixIndex/(bufferDim-1) - 0.50f;
 	pos = pos * OVERLAP_SCALE * tileSize + coords;
 	
+	terrainData tData = loadTexMaps(pos);
+
 	float noises[NOISE_ITERATIONS];
 	float2 bounds[4];
 	bool accept[4];
 
-	getNoisesBoundsAccept(pos,noises,bounds,accept);
+	getNoisesBoundsAccept(pos,tData,noises,bounds,accept);
 	
 	float terrainHeight;
 	float tileCoeff;
 	float4 tileCols;
 	float2 tileSpec;
 
-	getTerrainInfo(pos, noises, accept, tileCoeff, terrainHeight, tileCols, tileSpec);
+	getTerrainInfo(pos, tData, noises, accept, tileCoeff, terrainHeight, tileCols, tileSpec);
 	
 	uint numAccept = 0;
 	for (uint i = 0; i < 4; i++) {
@@ -122,7 +135,7 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	float3 colour = 0;
 	float height = 0;
 	
-	if (tileCols.a==CITY_COEFF || numAccept) {
+	if (numAccept && tileSize <= 4096 && terrainHeight < MAX_BUILDING_TERRAIN_HEIGHT) {
 		uint diag = 0;
 		float roadDist = 9999999.0f;
 		bool doDiag = 0;
@@ -177,14 +190,6 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 	else {
 		colour = tileCols.rgb;
 	}
-	
-	float scalex = 1000000;
-	float scaley = scalex * (3190 / 2824);
-	float2 scale = float2(-scalex,scaley);
-	float2 scale2 = scale/2;
-	float2 cpos = (pos + scale2)/scale;
-	
-	colour.rgb = baseTex.SampleLevel(sDefault,cpos,0);
 	
 	//SpecPower is normalised between -1 and 1
 	//Then unpacked to between 0 and 128
@@ -243,21 +248,30 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 	float2 p1 = TILE_SIZE * dispatchID.xy - ((float)tileLength/2);
 	float2 pos = tileCoords + p1;
 	
-	float baseheight = (noise2D(pos.x/100,pos.y/72)/2)+0.5f;
-	baseheight = 10 + pow(baseheight,10)*(300);
-	
+	terrainData tData = loadTexMaps(pos);
+
 	float noises[NOISE_ITERATIONS];
 	float2 bounds[4];
 	bool accept[4];
 
-	getNoisesBoundsAccept(pos,noises,bounds,accept);
+	getNoisesBoundsAccept(pos,tData,noises,bounds,accept);
 	
 	float terrainHeight;
 	float tileCoeff;
 	float4 tileCols;
 	float2 tileSpec;
 
-	getTerrainInfo(pos, noises, accept, tileCoeff, terrainHeight, tileCols, tileSpec);
+	getTerrainInfo(pos, tData, noises, accept, tileCoeff, terrainHeight, tileCols, tileSpec);
+	
+	if (terrainHeight > MAX_BUILDING_TERRAIN_HEIGHT) {
+		return;
+	}
+
+	const float minBuildingHeight = 15;
+	const float maxBuildingHeight = 450 * tileCoeff;
+	
+	float baseheight = (noise2D(pos.x/100,pos.y/72)/2)+0.5f;
+	baseheight = minBuildingHeight + pow(baseheight,6)*(maxBuildingHeight);
 	
 	uint numAccept = 0;
 	for (uint i = 0; i < 4; i++) {
@@ -272,9 +286,6 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 	col.r = (noise2D(pos.x,pos.y)/2)+0.5f;
 	col.g = (noise2D(pos.x+900,pos.y-800)/2)+0.5f;
 	col.b = pow((noise2D(pos.x-900,pos.y+8000)/2)+0.5f,2);
-	
-	//col.rgb = baseTex.SampleLevel(sDefault,float2(0.5f,0.5f),0);
-
 	
 	uint2 rn = poorRNG(pos)%3 + 1;
 	
@@ -314,13 +325,13 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 	}
 	[branch] if (lodLevel != CITY_LOD_LEVEL_HIGH) {
 	
-		if (lodLevel >= CITY_LOD_LEVEL_LOW && maxHeight < 50) {
+		if (lodLevel >= CITY_LOD_LEVEL_LOW && maxHeight < maxBuildingHeight/8 + minBuildingHeight) {
 			return;
 		}
-		if (lodLevel >= CITY_LOD_LEVEL_XLOW && maxHeight < 100) {
+		if (lodLevel >= CITY_LOD_LEVEL_XLOW && maxHeight < maxBuildingHeight/4 + minBuildingHeight) {
 			return;
 		}
-		if (lodLevel >= CITY_LOD_LEVEL_XXLOW && maxHeight < 200) {
+		if (lodLevel >= CITY_LOD_LEVEL_XXLOW && maxHeight < maxBuildingHeight/2 + minBuildingHeight) {
 			return;
 		}
 	
@@ -339,7 +350,23 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 
 //*******UTILITY FUNCTIONS**********//
 
-void getNoisesBoundsAccept( in float2 pos, out float noises[NOISE_ITERATIONS], out float2 bounds[4], out bool accept[4]) {
+terrainData loadTexMaps(in float2 pos) {
+	float scalex = 4000000;
+	float scaley = scalex * (3190 / 2824);
+	float2 scale = float2(-scalex,scaley);
+	float2 scale2 = scale/2;
+	float2 cpos = (pos + scale2)/scale;
+	
+	terrainData tData;
+	tData.mBaseTex = baseTex.SampleLevel(sDefault,cpos,0);
+	tData.mHeightTex = 2*heightTexMap.SampleLevel(sDefault,cpos,0);
+	tData.mRoadMap = roadMap.SampleLevel(sDefault,cpos,0);
+	tData.mCityMap = cityMap.SampleLevel(sDefault,cpos,0);
+	
+	return tData;
+}
+
+void getNoisesBoundsAccept( in float2 pos, in terrainData td, out float noises[NOISE_ITERATIONS], out float2 bounds[4], out bool accept[4]) {
 	
 	[loop] for (int i = 0; i < NOISE_ITERATIONS; i++) {
 		float2 p2 = pos/(0.25f*scales[i]);
@@ -391,37 +418,41 @@ void getNoisesBoundsAccept( in float2 pos, out float noises[NOISE_ITERATIONS], o
 	bounds[1] = getShiftedCoords(bl + float2(TILE_SIZE,0));
 	bounds[2] = getShiftedCoords(bl + float2(TILE_SIZE,TILE_SIZE));
 	bounds[3] = getShiftedCoords(bl + float2(0,TILE_SIZE));
-	
-	float scalex = 1000000;
-	float scaley = scalex * (3190 / 2824);
-	float2 scale = float2(-scalex,scaley);
-	float2 scale2 = scale/2;
-	float2 cpos = (pos + scale2)/scale;
-	float3 roadwater = roadMap.SampleLevel(sDefault,cpos,0);
-	float3 city = cityMap.SampleLevel(sDefault,cpos,0);
-	
+		
 	float coeff;
-	if (roadwater.b) {
-		coeff = 1;
+	if (td.mRoadMap.b > 0.25f) {
+		coeff = 0;
 	}
 	else {
+		float3 city = td.mCityMap;
 		float intensity = (city.r + city.g + city.b)/3.0f;
-		coeff = intensity > 0.4f ? 0 : 1;
+		coeff = intensity;
 	}
 	
 	[unroll] for (int i = 0; i < 4; i++) {
-		accept[i] = isAccepted(bounds[i], getTileCoeff(bounds[i]));
+		accept[i] = isAccepted(bounds[i], coeff);
 	}
 }
 
-void getTerrainInfo(in float2 pos, in float noises[NOISE_ITERATIONS], in bool accept[4], out float tileCoeff, out float terrainHeight, out float4 tileCols, out float2 tileSpec) {
+void getTerrainInfo(in float2 pos, in terrainData td, in float noises[NOISE_ITERATIONS], in bool accept[4], out float tileCoeff, out float terrainHeight, out float4 tileCols, out float2 tileSpec) {
 
 	uint numAccept = 0;
 	[unroll] for (uint i = 0; i < 4; i++) {
 		numAccept+=accept[i] ? 1 : 0;
 	}
 	
-	tileCoeff = getTileCoeff(pos);
+	float coeff;
+	if (td.mRoadMap.b > 0.25f) {
+		coeff = 0;
+	}
+	else {
+		float3 city = td.mCityMap;
+		float intensity = (city.r + city.g + city.b)/3.0f;
+		coeff = intensity;
+	}
+	tileCoeff = coeff;
+	
+/* 	tileCoeff = getTileCoeff(pos);
 	uint tcr = round(tileCoeff);
 	uint tc2 = tcr < tileCoeff ? tcr+1 : tcr-1;
 	
@@ -437,33 +468,60 @@ void getTerrainInfo(in float2 pos, in float noises[NOISE_ITERATIONS], in bool ac
 		tileCoeff = tcr;
 	}
 	
-	float ss = smoothstep(tcr,tc2,tileCoeff);
+	float ss = smoothstep(tcr,tc2,tileCoeff); */
+
+	//Calculate the tile colour and speculars
+	tileCols.rgb = td.mBaseTex;
+	tileCols.a = 0;
 	
-	//Calculate the terrain height
-	terrainHeight = 0;
-	for (int i = 0; i < NOISE_ITERATIONS; i++) {
-		float c0 = coeffs[tcr][i];
-		float c1 = coeffs[tc2][i];
-		float mult = lerp(c0,c1,ss);
-		terrainHeight+=noises[i] * mult;
+	tileSpec = float2(128,0.1f);
+	
+	if (td.mRoadMap.b > 0.25f) {
+		tileCols.rgb = lerp(tileCols.rgb,float3(0,0,0.5f),2*td.mRoadMap.b);
+		tileSpec = (20,1);
 	}
 	
-	float scalex = 1000000;
-	float scaley = scalex * (3190 / 2824);
-	float2 scale = float2(-scalex,scaley);
-	float2 scale2 = scale/2;
-	float2 cpos = (pos + scale2)/scale;
-	terrainHeight += 2000 * heightTexMap.SampleLevel(sDefault,cpos,0).r;
+	//Calculate the terrain height
+	terrainHeight = 1500 * td.mHeightTex.r;
+	float heightFactor = max(0,1 - 2.0f*td.mRoadMap.b);
+	terrainHeight*=heightFactor;
+	
+	 for (int i = 0; i < NOISE_ITERATIONS; i++) {
+		//float c0 = coeffs[tcr][i];
+		//float c1 = coeffs[tc2][i];
+		//float mult = lerp(c0,c1,ss);
+		float mult = 0.25f;
+		terrainHeight+=noises[i] * mult;
+	} 
 
+}
+
+float2 getShiftedCoords(float2 p) {
+	return p;
+	//float rn = (float)(poorRNG(p)%100)/100.0f;
+	//return p + TILE_SIZE * pow(rn*0.50f,2);
+}
+
+bool isAccepted(float2 pos, float tileInd) {
 	
-	//Calculate the tile colour and speculars
+	if (tileInd == 0) {
+		return 0;
+	}
 	
-	tileCols = lerp(colr,col2,ss);
-	
-	float2 specr = specPowAmount[tcr];
-	float2 spec2 = specPowAmount[tc2];
-	
-	tileSpec = lerp(specr,spec2,ss);
+	float2 pos1 = pos/1000;
+	float2 pos2 = pos/500;
+	float acc = 0;
+	acc+=(poorRNG(pos).x%128)/256.0f;
+	float accval = 0.2f * (1 - tileInd);
+	bool accept = (acc>accval) ? 1 : 0;
+	return accept;
+}
+
+float getTileCoeff(float2 pos) {
+	const float scale = 30000;
+	//n>0 always
+	float n = (noise2D(pos.x/scale,pos.y/scale)/2)+0.501f;
+	return min(NUM_BIOMES-1,NUM_BIOMES*n);
 }
 
 float minDist( float2 l1, float2 l2, float2 p) {
@@ -492,34 +550,6 @@ bool isLeftOf(float2 a, float2 b, float2 p) {
 	float2 AB = b-a;
 	float2 AP = p-b;
 	return clamp(sign(AB.x*AP.y-AB.y*AP.x),0,1);
-}
-
-float2 getShiftedCoords(float2 p) {
-	return p;
-	//float rn = (float)(poorRNG(p)%100)/100.0f;
-	//return p + TILE_SIZE * pow(rn*0.50f,2);
-}
-
-bool isAccepted(float2 pos, float tileInd) {
-	float4 cols = colours[(uint)round(tileInd)];
-	if (cols.a != CITY_COEFF) {
-		return 0;
-	}
-	
-	float2 pos1 = pos/1000;
-	float2 pos2 = pos/500;
-	float acc = 0;
-	acc+=(poorRNG(pos).x%128)/256.0f - 0.4f;
-	
-	bool accept = (acc>-0.33f) ? 1 : 0;
-	return accept;
-}
-
-float getTileCoeff(float2 pos) {
-	const float scale = 30000;
-	//n>0 always
-	float n = (noise2D(pos.x/scale,pos.y/scale)/2)+0.501f;
-	return min(NUM_BIOMES-1,NUM_BIOMES*n);
 }
 
 uint2 poorRNG(float2 xy)
