@@ -75,6 +75,7 @@ private:
 	StructuredBuffer<UINT> mSimplexBuffer;
 	BOOL mSimplexInit;
 	BOOL mInitialLoad;
+	UINT64 mFrameNumber;
 public:
 	HRESULT OnD3D11CreateDevice( ID3D11Device* pd3dDevice );
 	void OnD3D11DestroyDevice() {

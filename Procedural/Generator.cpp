@@ -114,15 +114,17 @@ void Generator::Generate( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dCon
 			elapsedTime += ProcessDT(pd3dDevice,pd3dContext,mTextureQueue);
 		}
 		else {
-			return;
+			break;
 		}
 	}
+	mFrameNumber++;
 }
 
 FLOAT Generator::ProcessDT(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, std::deque<DTPTR> &pDTqueue) {
 
 	static bool newQuery = TRUE;
-	static FLOAT sEstTime = 0;
+	static FLOAT sEstTime = 0.1f;
+	static UINT64 sQueryFrame = 0;
 
 	if (dtDisjoint == NULL) {
 		D3D11_QUERY_DESC qdesc;
@@ -139,6 +141,7 @@ FLOAT Generator::ProcessDT(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dCo
 	if (newQuery) {
 		pd3dContext->Begin(dtDisjoint);
 		pd3dContext->End(dtStart);
+		sQueryFrame = mFrameNumber+1;
 	}
 
 	DTPTR &first = pDTqueue.front();
@@ -165,19 +168,24 @@ FLOAT Generator::ProcessDT(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dCo
 		newQuery = false;
 	}
 
-	D3D11_QUERY_DATA_TIMESTAMP_DISJOINT djData;
+	UINT64 end;
+	if (sQueryFrame <= mFrameNumber) {
+		if ( S_OK == pd3dContext->GetData(ctEnd, &end, sizeof(UINT64), 0)) {
+			D3D11_QUERY_DATA_TIMESTAMP_DISJOINT djData;
+			if (S_OK == pd3dContext->GetData(ctDisjoint, &djData, sizeof(djData),0)){
+				UINT64 start;
+				if ( S_OK == pd3dContext->GetData(ctStart, &start, sizeof(UINT64),0)){
 
-	if (pd3dContext->GetData(dtDisjoint, &djData, sizeof(djData),0) == S_OK) {
-		UINT64 end;
-		UINT64 start;
-		while( S_OK != pd3dContext->GetData(dtEnd, &end, sizeof(UINT64), 0)){}
+					FLOAT time = ((FLOAT)(end-start))/djData.Frequency;
+					sEstTime = 0.8f * sEstTime + 0.2f * time;
 
-		while( S_OK != pd3dContext->GetData(dtStart, &start, sizeof(UINT64),0)){}
-
-		FLOAT time = ((FLOAT)(end-start))/djData.Frequency;
-		sEstTime = 0.8f * sEstTime + 0.2f * time;
-
-		newQuery = true;
+					newQuery = true;
+				}
+			}
+		}
+		else {
+			sQueryFrame = mFrameNumber + 1;
+		}
 	}
 
 	return sEstTime;
@@ -186,7 +194,8 @@ FLOAT Generator::ProcessDT(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dCo
 FLOAT Generator::ProcessCT( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, std::deque<CTPTR> &pCTqueue)
 {
 	static bool newQuery = TRUE;
-	static FLOAT sEstTime = 0;
+	static FLOAT sEstTime = 0.1f;
+	static UINT64 sQueryFrame = 0;
 
 	if (ctDisjoint == NULL) {
 		D3D11_QUERY_DESC qdesc;
@@ -203,6 +212,7 @@ FLOAT Generator::ProcessCT( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dC
 	if (newQuery) {
 		pd3dContext->Begin(ctDisjoint);
 		pd3dContext->End(ctStart);
+		sQueryFrame = mFrameNumber+1;
 	}
 
 
@@ -226,19 +236,24 @@ FLOAT Generator::ProcessCT( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dC
 		newQuery = false;
 	}
 
-	D3D11_QUERY_DATA_TIMESTAMP_DISJOINT djData;
+	UINT64 end;
+	if (sQueryFrame <= mFrameNumber) {
+		if ( S_OK == pd3dContext->GetData(ctEnd, &end, sizeof(UINT64), 0)) {
+			D3D11_QUERY_DATA_TIMESTAMP_DISJOINT djData;
+			if (S_OK == pd3dContext->GetData(ctDisjoint, &djData, sizeof(djData),0)){
+				UINT64 start;
+				if ( S_OK == pd3dContext->GetData(ctStart, &start, sizeof(UINT64),0)){
 
-	if (pd3dContext->GetData(ctDisjoint, &djData, sizeof(djData),0) == S_OK) {
-		UINT64 end;
-		UINT64 start;
-		while( S_OK != pd3dContext->GetData(ctEnd, &end, sizeof(UINT64), 0)){}
+					FLOAT time = ((FLOAT)(end-start))/djData.Frequency;
+					sEstTime = 0.8f * sEstTime + 0.2f * time;
 
-		while( S_OK != pd3dContext->GetData(ctStart, &start, sizeof(UINT64),0)){}
-
-		FLOAT time = ((FLOAT)(end-start))/djData.Frequency;
-		sEstTime = 0.8f * sEstTime + 0.2f * time;
-
-		newQuery = true;
+					newQuery = true;
+				}
+			}
+		}
+		else {
+			sQueryFrame = mFrameNumber + 1;
+		}
 	}
 
 	return sEstTime;
@@ -357,7 +372,7 @@ HRESULT Generator::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 	return S_OK;
 }
 
-Generator::Generator( MessageLogger* pLogger ) : mCompiled(FALSE),mCSDistant(NULL),mCSCity(NULL), mCSCBDistant(NULL), mCSCBCity(NULL), mLogger(pLogger), mSimplexInit(FALSE), mInitialLoad(FALSE)
+Generator::Generator( MessageLogger* pLogger ) : mCompiled(FALSE),mCSDistant(NULL),mCSCity(NULL), mCSCBDistant(NULL), mCSCBCity(NULL), mLogger(pLogger), mSimplexInit(FALSE), mInitialLoad(FALSE), mFrameNumber(0)
 {
 	dtDisjoint = NULL;
 	dtStart = NULL;

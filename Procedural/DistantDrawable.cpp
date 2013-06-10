@@ -14,7 +14,7 @@ typedef void (*TileCreatorFunc)(DrawableState& pState,Generator* pGenerator, DOU
 
 typedef void (*TileUpdaterFunc)(DrawableState& pState, Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY, DOUBLE pPosZ);
 
-typedef void (*TileDrawerFunc)(DOUBLE pTileSize, BasicDrawable& pDrawable, ID3D11DeviceContext* pd3dContext);
+typedef void (*TileDrawerFunc)(BasicDrawable& pDrawable, ID3D11DeviceContext* pd3dContext);
 
 typedef BOOL (*TileUniqueFunc)(DrawableState& pState);
 
@@ -188,8 +188,14 @@ private:
 
 		BasicDrawable& d = mTiles[index];
 
+		auto aabb = DirectX::XMFLOAT3((FLOAT)mTileSize/2,1500,(FLOAT)mTileSize/2);
+
+		if (!mCamera->testFrustumAABB(d.mState.mPosition,d.mState.mCoords,aabb)) {
+			return;
+		}
+
 		if (mHigherLevel == NULL) {
-			mTDF(mTileSize,d,pd3dContext);
+			mTDF(d,pd3dContext);
 		}
 		else {
 			INT x0 = 2*offsetX;
@@ -207,7 +213,7 @@ private:
 			INT maxZ = soz + hlhtd - 1;
 
 			if (x0 < minX || x1 > maxX || z0 < minZ || z1 > maxZ) {
-				mTDF(mTileSize,d,pd3dContext);
+				mTDF(d,pd3dContext);
 				return;
 			}
 
@@ -223,7 +229,7 @@ private:
 				mHigherLevel->DrawRecursiveAtPos(x1,z1,pd3dContext);
 			}
 			else {
-				mTDF(mTileSize,d,pd3dContext);
+				mTDF(d,pd3dContext);
 			}
 		}
 	}
@@ -279,13 +285,8 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 			}
 		};
 	
-		auto TDF = [](DOUBLE pTileSize, BasicDrawable& pDrawable, ID3D11DeviceContext* pd3dContext) -> void {
+		auto TDF = [](BasicDrawable& pDrawable, ID3D11DeviceContext* pd3dContext) -> void {
 			pDrawable.DrawNoCull(pd3dContext);
-
-			auto aabb = DirectX::XMFLOAT3((FLOAT)pTileSize/2,1000,(FLOAT)pTileSize/2);
-			if (pDrawable.mCamera->testFrustumAABB(pDrawable.mState.mPosition,pDrawable.mState.mCoords,aabb)) {
-				pDrawable.DrawNoCull(pd3dContext);
-			}
 		};
 
 		auto TUniqueF = [](DrawableState& pState) -> BOOL {
@@ -362,11 +363,8 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 			}
 		};
 
-		auto TDF = [](DOUBLE pTileSize, BasicDrawable& pDrawable, ID3D11DeviceContext* pd3dContext) -> void {
-			auto aabb = DirectX::XMFLOAT3((FLOAT)pTileSize/2,1500,(FLOAT)pTileSize/2);
-			if (pDrawable.mCamera->testFrustumAABB(pDrawable.mState.mPosition,pDrawable.mState.mCoords,aabb)) {
-				pDrawable.DrawInstancedIndirect(pd3dContext);
-			}
+		auto TDF = [](BasicDrawable& pDrawable, ID3D11DeviceContext* pd3dContext) -> void {
+			pDrawable.DrawInstancedIndirect(pd3dContext);
 		};
 
 		auto TUniqueF = [](DrawableState& pState) -> BOOL {
