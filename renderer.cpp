@@ -91,19 +91,19 @@ void Renderer::init()
 {
 	mLogger->log(L"Renderer Initialisation");
 
-	for (int i = 0; i < 1023; i++) {
-		PointLight* ll = &mLightList[i];
-		ll->ambient = 0.001f;
-		ll->attenuationEnd = ((float)rand()/(float)RAND_MAX) * 5 + 5;
-		ll->colour.x = ((float)rand()/(float)RAND_MAX) * 3;
-		ll->colour.y = ((float)rand()/(float)RAND_MAX) * 3;
-		ll->colour.z = ((float)rand()/(float)RAND_MAX) * 3;
+	//for (int i = 0; i < 1023; i++) {
+	//	PointLight* ll = &mLightList[i];
+	//	ll->ambient = 0.001f;
+	//	ll->attenuationEnd = ((float)rand()/(float)RAND_MAX) * 5 + 5;
+	//	ll->colour.x = ((float)rand()/(float)RAND_MAX) * 3;
+	//	ll->colour.y = ((float)rand()/(float)RAND_MAX) * 3;
+	//	ll->colour.z = ((float)rand()/(float)RAND_MAX) * 3;
 
-		ll->x = ((double)rand()/(double)RAND_MAX) * 100 - 50;
-		ll->y = ((double)rand()/(double)RAND_MAX) * 100 - 50;
-		ll->z = ((double)rand()/(double)RAND_MAX) * 100 - 50;
-		mLightManager->addLight(ll);
-	}
+	//	ll->x = ((double)rand()/(double)RAND_MAX) * 100 - 50;
+	//	ll->y = ((double)rand()/(double)RAND_MAX) * 100 - 50;
+	//	ll->z = ((double)rand()/(double)RAND_MAX) * 100 - 50;
+	//	mLightManager->addLight(ll);
+	//}
 	//THE SUN
 	PointLight* ll = &mLightList[1023];
 	ll->ambient = 0.05f;
@@ -111,11 +111,12 @@ void Renderer::init()
 	ll->colour.x = 1.0f;
 	ll->colour.y = 1.0f;
 	ll->colour.z = 1.0f;
-	//ll->y = 86371600270.0f;
-	//ll->z = 86371600270.0f;
 	ll->x = 50000000000.0f;
 	ll->z = 111445532285.0f;
 	ll->y = 86371600270.0f;
+	//ll->x = 100000000000;
+	//ll->z = 150000000000.0f;
+	//ll->y = 10000000000.0f;
 	mLightManager->addLight(ll);
 
 }

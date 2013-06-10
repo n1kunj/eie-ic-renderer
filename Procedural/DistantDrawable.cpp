@@ -188,7 +188,7 @@ private:
 
 		BasicDrawable& d = mTiles[index];
 
-		auto aabb = DirectX::XMFLOAT3((FLOAT)mTileSize/2,1500,(FLOAT)mTileSize/2);
+		auto aabb = DirectX::XMFLOAT3((FLOAT)mTileSize/2,3000,(FLOAT)mTileSize/2);
 
 		if (!mCamera->testFrustumAABB(d.mState.mPosition,d.mState.mCoords,aabb)) {
 			return;

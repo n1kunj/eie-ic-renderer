@@ -6,7 +6,10 @@ end
 
 reset()
 
-distDr = DistantDrawable(CAMERA,SHADERMAN,MESHMAN,GENERATOR,4,9,256);
+distDr = DistantDrawable(CAMERA,SHADERMAN,MESHMAN,GENERATOR,4,9,300);
+--distDr = DistantDrawable(CAMERA,SHADERMAN,MESHMAN,GENERATOR,16,7,256);
+--distDr = DistantDrawable(CAMERA,SHADERMAN,MESHMAN,GENERATOR,4,1,2048*32);
+
 
 DRAWMAN:addDrawable(distDr)
 

@@ -4,8 +4,11 @@
 
 #define TILE_SIZE 128
 
-#define ROAD_WIDTH 9
-#define PAVE_WIDTH 14
+#define ROAD_WIDTH 10
+#define BUILD_WIDTH 17
+#define PAVE_WIDTH 30
+
+#define PI 3.14159265f
 
 #define OVERLAP_SCALE 1.05f
 
@@ -268,27 +271,31 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 	if (numAccept <= 1) {
 		return;
 	}
+	
+	float rot = 0.25f * noise2D(pos.x/1000.0f,pos.y/1000.0f);
+	//rot = 0;
+	
+	uint2 prng = poorRNG(pos);
 		
 	float3 col;
-	col.r = (noise2D(pos.x,pos.y)/2)+0.5f;
-	col.g = (noise2D(pos.x+900,pos.y-800)/2)+0.5f;
-	col.b = pow((noise2D(pos.x-900,pos.y+8000)/2)+0.5f,2);
+	// col.r = (noise2D(pos.x,pos.y)/2)+0.5f;
+	// col.g = (noise2D(pos.x+900,pos.y-800)/2)+0.5f;
+	// col.b = pow((noise2D(pos.x-900,pos.y+8000)/2)+0.5f,2);
+	col.r = 0.1f + 0.5f * ((prng.x)%256 / 256.0f);
+	col.g = col.r * (75 + prng.y%25)/100.0f;
+	col.b = col.r * (75 + prng.x%25)/100.0f;
 	
-	uint2 rn = poorRNG(pos)%3 + 1;
+	uint2 rn = prng%4 + 1;
 	
-	const float maxFootPrint = (TILE_SIZE - (PAVE_WIDTH*2))/2;
+	const float maxFootPrint = (TILE_SIZE - (BUILD_WIDTH*2))/2;
 	float2 fp = float2(maxFootPrint/rn.x,maxFootPrint/rn.y);
 	
-	const float2 bl = float2(PAVE_WIDTH,PAVE_WIDTH);
+	const float2 bl = float2(BUILD_WIDTH,BUILD_WIDTH);
 	
 	float maxHeight = 0;
 
 	for (uint i = 0; i < rn.x; i++) {
 		for (uint j = 0; j < rn.y; j++) {
-			if (i == 1 && j == 1 && rn.x == 3 && rn.y == 3) {
-				continue;
-			}
-						
 			float3 p;
 			p.xz = p1 + bl + 2*fp * float2(i+0.5f,j+0.5f);
 			
@@ -306,6 +313,7 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 				i0.mPos = p;
 				i0.mSize = float3(fp.x,baseheight,fp.y);
 				i0.mColour = col;
+				i0.mRotY = rot;
 				sInstance.Append(i0);
 			}
 		}
@@ -331,6 +339,7 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 		i0.mPos = p;
 		i0.mSize = float3(fp.x,maxHeight,fp.y);
 		i0.mColour = col;
+		i0.mRotY = rot;
 		sInstance.Append(i0);
 	}
 }

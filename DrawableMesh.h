@@ -19,6 +19,7 @@ struct InstanceData
 	DirectX::XMFLOAT3 POSITION;
 	DirectX::XMFLOAT3 SIZE;
 	DirectX::XMFLOAT3 COLOUR;
+	FLOAT ROTY;
 };
 
 //const UINT InstanceDataStride = sizeof(InstanceData);

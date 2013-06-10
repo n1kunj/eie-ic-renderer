@@ -1,6 +1,7 @@
 struct GBuffer
 {
     float4 mNormSpec : SV_Target0;
+	//if Alpha == 0 Then the pixel is unlit (i.e it emits light), else light as normal
     float4 mAlbedo : SV_Target1;
 };
 
@@ -27,4 +28,5 @@ struct Instance {
 	float3 mPos;
 	float3 mSize;
 	float3 mColour;
+	float mRotY;
 };

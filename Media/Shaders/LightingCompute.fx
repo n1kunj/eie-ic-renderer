@@ -67,9 +67,12 @@ void LightingCS(uint3 groupId 			: SV_GroupID,
 	float4 norSpec = norSpecTex.Load(screenPix);
 	
 	float3 gbAlbedo = albedoTex.Load(screenPix).xyz;
+	float gbLit = albedoTex.Load(screenPix).w;
 	float3 gbNormal = DecodeSphereMap(norSpec.xy);
 	float gbSpecAmount = norSpec.z;
-	float gbSpecExp = norSpec.w;
+	float gbSpecExp = max(0.1f,norSpec.w);
+	//	float gbSpecExp = 0;
+
 	float3 gbViewPos = calculateViewPos(screenPix.xy, bufferDim, rawDepth);
 	
 	//Outside of screen pixels break tiling
@@ -156,39 +159,47 @@ void LightingCS(uint3 groupId 			: SV_GroupID,
 	
 	uint lightCount = sTileNumLights;
 	
-	float3 pixVal = float3(0,0,0);
-	
-	for (int i = 0; i < lightCount; i++) {
-		PointLight pl = lightBuffer[sTileLightIndices[i]];
-		
-		float3 lightVec = gbViewPos - pl.viewPos;
+	float3 pixVal;
 
-		float lightDist = length(lightVec);
-		lightVec = normalize(lightVec);
-		float diffuse = dot(gbNormal, -lightVec);
+	if (gbLit) {
+		pixVal = float3(0,0,0);
 		
-		float ambient = pl.ambient;
-		
-		float attenEnd = pl.attenEnd;
-		
-		float lightFactor = 0.0f;
-		if (attenEnd > lightDist) {
-			lightFactor = 1 - sqrt(lightDist/attenEnd);
-		}
-		float3 lightColour = gbAlbedo * pl.colour;
-		
-		pixVal+=ambient * lightFactor * lightColour;
-		if (diffuse > 0 && lightFactor > 0.0f) {
-			float3 cameraVec = normalize(-gbViewPos);
+		for (int i = 0; i < lightCount; i++) {
+			PointLight pl = lightBuffer[sTileLightIndices[i]];
+			
+			float3 lightVec = gbViewPos - pl.viewPos;
 
-			float3 reflected = reflect(lightVec, gbNormal);
-			float rdotv = max(0.0f, dot(reflected,cameraVec));
-			float specular = pow(rdotv, gbSpecExp);
-			pixVal += ((diffuse + specular*gbSpecAmount) * lightFactor) * lightColour;
+			float lightDist = length(lightVec);
+			lightVec = normalize(lightVec);
+			float diffuse = dot(gbNormal, -lightVec);
+			
+			float ambient = pl.ambient;
+			
+			float attenEnd = pl.attenEnd;
+			
+			float lightFactor = 0.0f;
+			if (attenEnd > lightDist) {
+				lightFactor = 1 - sqrt(lightDist/attenEnd);
+			}
+			float3 lightColour = gbAlbedo * pl.colour;
+			
+			pixVal+=ambient * lightFactor * lightColour;
+			if (diffuse > 0 && lightFactor > 0.0f) {
+				float3 cameraVec = normalize(-gbViewPos);
+
+				float3 reflected = reflect(lightVec, gbNormal);
+				float rdotv = max(0.0f, dot(reflected,cameraVec));
+				float specular = pow(rdotv, gbSpecExp);
+				pixVal += ((diffuse + specular*gbSpecAmount) * lightFactor) * lightColour;
+			}
 		}
 	}
+	else {
+		pixVal = gbAlbedo;
+	}
+	pixVal = clamp(pixVal,0,1);
 	
-	float fogEnd = 120000;
+	float fogEnd = 150000;
 	float fogStart = 0000;
 	
 	if (all(screenPix.xy < bufferDim.xy)) {

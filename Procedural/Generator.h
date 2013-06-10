@@ -31,7 +31,7 @@ enum CityLodLevel {
 	CITY_LOD_LEVEL_XLOW = 3,
 	CITY_LOD_LEVEL_XXLOW = 4
 };
-const UINT MAX_BUILDINGS_PER_TILE[] = {9,1,1,1,1};
+const UINT MAX_BUILDINGS_PER_TILE[] = {16,1,1,1,1};
 
 class CityTile {
 public:
