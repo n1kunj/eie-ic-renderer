@@ -37,7 +37,9 @@ private:
 	ID3D11PixelShader* mInstancedPS;
 	ID3D11Buffer* mVSConstantBuffer;
 	ID3D11Buffer* mPSConstantBuffer;
-
+	Texture2D mBuildingTexture;
+	boolean mNeedMipMap;
+	ID3D11SamplerState* mAnisotropicSampler;
 public:
 	void OnD3D11DestroyDevice() {
 		SAFE_RELEASE(mVertexShader);
@@ -48,11 +50,13 @@ public:
 		SAFE_RELEASE(mVertexLayout);
 		SAFE_RELEASE(mVSConstantBuffer);
 		SAFE_RELEASE(mPSConstantBuffer);
+		mBuildingTexture.OnD3D11DestroyDevice();
+		SAFE_RELEASE(mAnisotropicSampler);
 		mCompiled = FALSE;
 	}
 
 	GBufferShader() : DrawableShader(L"GBufferShader"),mCompiled(FALSE),mVertexLayout(NULL),mInstancedVS(NULL),mInstancedVL(NULL),
-		mVertexShader(NULL),mPixelShader(NULL),mVSConstantBuffer(NULL),mPSConstantBuffer(NULL),mInstancedPS(NULL) {}
+		mVertexShader(NULL),mPixelShader(NULL),mVSConstantBuffer(NULL),mPSConstantBuffer(NULL),mInstancedPS(NULL),mNeedMipMap(FALSE),mAnisotropicSampler(NULL) {}
 
 	GBufferShader::~GBufferShader()
 	{
@@ -123,6 +127,77 @@ public:
 			V_RETURN(pd3dDevice->CreateBuffer( &bd, NULL, &mPSConstantBuffer ));
 		}
 
+		//Create the sampler state
+		{
+			CD3D11_SAMPLER_DESC desc = CD3D11_SAMPLER_DESC(CD3D11_DEFAULT());
+			desc.Filter = D3D11_FILTER_ANISOTROPIC;
+			desc.MaxAnisotropy = 8;
+			desc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+			desc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+			pd3dDevice->CreateSamplerState(&desc,&mAnisotropicSampler);
+		}
+
+		{
+			const UINT width = 256;
+			const UINT height = 256;
+			const UINT mipLevels = 9;
+
+			//Create city texture
+			D3D11_TEXTURE2D_DESC desc;
+			::ZeroMemory (&desc, sizeof (desc));
+			desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+			desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+			desc.CPUAccessFlags = 0;
+			desc.ArraySize = 1;
+			desc.Height = height;
+			desc.Width = width;
+			desc.MipLevels = 0;
+			desc.SampleDesc.Count = 1;
+			desc.SampleDesc.Quality = 0;
+			desc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
+			mBuildingTexture.mDesc = desc;
+			struct rgba {
+				UINT8 r;
+				UINT8 g;
+				UINT8 b;
+				UINT8 a;
+			};
+
+			rgba tex[width][height];
+
+			for (int i = 0; i < width; i++) {
+				for (int j = 0; j < height; j++) {
+					if (i > (width)/4 && j > (height)/4) {
+						tex[i][j].r = 0;
+						tex[i][j].g = 0;
+						tex[i][j].b = 0;
+						tex[i][j].a = 0;
+					}
+					else {
+
+						tex[i][j].r = 255;
+						tex[i][j].g = 255;
+						tex[i][j].b = 255;
+						tex[i][j].a = 255;
+					}
+
+				}
+			}
+
+			D3D11_SUBRESOURCE_DATA data[mipLevels];
+			UINT num = width;
+			for (int i = 0; i < mipLevels; i++) {
+				data[i].pSysMem = tex;
+				data[i].SysMemPitch = num * sizeof(rgba);
+				data[i].SysMemSlicePitch = num*num*sizeof(rgba);
+				num/=2;
+			}
+
+
+			mBuildingTexture.CreateTexture(pd3dDevice,data);
+			mNeedMipMap = TRUE;
+		}
+
 
 		mCompiled = TRUE;
 		return S_OK;
@@ -152,6 +227,11 @@ public:
 
 		assert(pState->mCityTile != NULL);
 
+		if (mNeedMipMap) {
+			pd3dContext->GenerateMips(mBuildingTexture.mSRV);
+			mNeedMipMap = FALSE;
+		}
+
 		setupShader(pd3dContext,pMesh,pState,pCamera);
 
 		pd3dContext->IASetInputLayout( mInstancedVL );
@@ -160,7 +240,12 @@ public:
 		CityTile& ct = *pState->mCityTile;
 		pd3dContext->VSSetShaderResources(0,1,&ct.mInstanceBuffer.mSRV);
 
+		pd3dContext->PSSetShaderResources(0,1,&mBuildingTexture.mSRV);
+		pd3dContext->PSSetSamplers(0,1,&mAnisotropicSampler);
+
 		pd3dContext->DrawIndexedInstancedIndirect(ct.mIndirectBuffer.mBuffer,0);
+
+		cleanupShader(pd3dContext);
 
 	}
 private:

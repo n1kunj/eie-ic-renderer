@@ -165,21 +165,21 @@ FLOAT Generator::ProcessDT(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dCo
 	if (newQuery) {
 		pd3dContext->End(dtEnd);
 		pd3dContext->End(dtDisjoint);
-		newQuery = false;
+		newQuery = FALSE;
 	}
 
-	UINT64 end;
-	if (sQueryFrame <= mFrameNumber) {
-		if ( S_OK == pd3dContext->GetData(ctEnd, &end, sizeof(UINT64), 0)) {
+	if (sQueryFrame <= mFrameNumber && !newQuery) {
+		UINT64 end;
+		if ( S_OK == pd3dContext->GetData(dtEnd, &end, sizeof(UINT64), 0)) {
 			D3D11_QUERY_DATA_TIMESTAMP_DISJOINT djData;
-			if (S_OK == pd3dContext->GetData(ctDisjoint, &djData, sizeof(djData),0)){
+			if (S_OK == pd3dContext->GetData(dtDisjoint, &djData, sizeof(djData),0)){
 				UINT64 start;
-				if ( S_OK == pd3dContext->GetData(ctStart, &start, sizeof(UINT64),0)){
+				if ( S_OK == pd3dContext->GetData(dtStart, &start, sizeof(UINT64),0)){
 
 					FLOAT time = ((FLOAT)(end-start))/djData.Frequency;
 					sEstTime = 0.8f * sEstTime + 0.2f * time;
 
-					newQuery = true;
+					newQuery = TRUE;
 				}
 			}
 		}
@@ -233,11 +233,11 @@ FLOAT Generator::ProcessCT( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dC
 	if (newQuery) {
 		pd3dContext->End(ctEnd);
 		pd3dContext->End(ctDisjoint);
-		newQuery = false;
+		newQuery = FALSE;
 	}
 
-	UINT64 end;
-	if (sQueryFrame <= mFrameNumber) {
+	if (sQueryFrame <= mFrameNumber && !newQuery) {
+		UINT64 end;
 		if ( S_OK == pd3dContext->GetData(ctEnd, &end, sizeof(UINT64), 0)) {
 			D3D11_QUERY_DATA_TIMESTAMP_DISJOINT djData;
 			if (S_OK == pd3dContext->GetData(ctDisjoint, &djData, sizeof(djData),0)){

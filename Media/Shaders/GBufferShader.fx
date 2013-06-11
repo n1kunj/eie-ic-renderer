@@ -95,15 +95,33 @@ GBuffer PS( PS_INPUT input )
 	return output;
 }
 
+Texture2D<float4> tAlbedo : register(t0);
+SamplerState sAnisotropic : register(s0);
+
 GBuffer PS_INSTANCED( PS_INPUT_INSTANCED input )
 {
 	GBuffer output;
-	//output.mNormSpec = float4(EncodeSphereMap(input.mNorm),0,128);
 
 	output.mNormSpec = float4(EncodeSphereMap(input.mNorm),cSpecAmount,cSpecPower);
+	
 	output.mAlbedo = float4(input.mColour,1.0f);
 	float3 wp = input.mWorldPos;
-	//output.mAlbedo.r = 1.0f;
+	
+	float2 uv = float2(wp.x + wp.z,wp.y)/4.0f;
+	
+	float4 texmap = tAlbedo.Sample(sAnisotropic,uv);
+	//output.mAlbedo*= float4(texmap.xyz,1);
+	output.mAlbedo.xyz = lerp(float3(1,1,1),input.mColour,texmap.a);
+	output.mAlbedo.a = texmap.a;
+	
+	//if (! (dot(input.mNorm,float3(0,1,0)) > 0.95f)) {
+		// if (texmap.a < 0.25) {
+			// output.mAlbedo = float4(texmap.xyz,0);
+		// }
+		// else {
+			// output.mAlbedo = float4(texmap.xyz,1);
+		// }
+	//}
 	
 	return output;
 }

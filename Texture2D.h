@@ -14,8 +14,12 @@ public:
 	Texture2D() : mTexture(NULL), mRTV(NULL), mSRV(NULL), mUAV(NULL) {}
 
 	void CreateTexture(ID3D11Device* pd3dDevice) {
+		CreateTexture(pd3dDevice,NULL);
+	}
+
+	void CreateTexture(ID3D11Device* pd3dDevice, const D3D11_SUBRESOURCE_DATA* pSubResourceData) {
 		OnD3D11DestroyDevice();
-		pd3dDevice->CreateTexture2D(&mDesc,0,&mTexture);
+		pd3dDevice->CreateTexture2D(&mDesc,pSubResourceData,&mTexture);
 		if (mDesc.BindFlags & D3D11_BIND_RENDER_TARGET) {
 			pd3dDevice->CreateRenderTargetView(mTexture, 0, &mRTV);
 		}
