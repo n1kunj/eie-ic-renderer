@@ -72,6 +72,7 @@ void Renderer::OnD3D11DestroyDevice()
 	mProxyTexture.OnD3D11DestroyDevice();
 	mGBuffer[0].OnD3D11DestroyDevice();
 	mGBuffer[1].OnD3D11DestroyDevice();
+	mGBuffer[2].OnD3D11DestroyDevice();
 	mDepthStencil.OnD3D11DestroyDevice();
 	mDSV.OnD3D11DestroyDevice();
 	mDSVRO.OnD3D11DestroyDevice();
@@ -108,15 +109,18 @@ void Renderer::init()
 	PointLight* ll = &mLightList[1023];
 	ll->ambient = 0.05f;
 	ll->attenuationEnd = FLT_MAX/10.0f;
-	ll->colour.x = 1.0f;
-	ll->colour.y = 1.0f;
-	ll->colour.z = 1.0f;
-	ll->x = 50000000000.0f;
-	ll->z = 111445532285.0f;
-	ll->y = 86371600270.0f;
-	//ll->x = 100000000000;
-	//ll->z = 150000000000.0f;
-	//ll->y = 10000000000.0f;
+	//ll->colour.x = 1.0f;
+	//ll->colour.y = 1.0f;
+	//ll->colour.z = 1.0f;
+	ll->colour.x = 0.1f;
+	ll->colour.y = 0.1f;
+	ll->colour.z = 0.1f;
+	//ll->x = 50000000000.0f;
+	//ll->z = 111445532285.0f;
+	//ll->y = 86371600270.0f;
+	ll->x = 100000000000;
+	ll->z = 150000000000.0f;
+	ll->y = 10000000000.0f;
 	mLightManager->addLight(ll);
 
 }
@@ -206,6 +210,9 @@ HRESULT Renderer::OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, const DXGI_
 
 		mGBuffer[1].mDesc = desc;
 		mGBuffer[1].CreateTexture(pd3dDevice);
+
+		mGBuffer[2].mDesc = desc;
+		mGBuffer[2].CreateTexture(pd3dDevice);
 
 		desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 		mGBuffer[0].mDesc = desc;
@@ -320,13 +327,13 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 	pd3dImmediateContext->ClearDepthStencilView( dsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0, 0 );
 
 	//Set, then draw all objects into the GBuffer
-	ID3D11RenderTargetView* rtvs[2] = {mGBuffer[0].mRTV,mGBuffer[1].mRTV};
-	pd3dImmediateContext->OMSetRenderTargets(2, rtvs, dsv);
+	ID3D11RenderTargetView* rtvs[3] = {mGBuffer[0].mRTV,mGBuffer[1].mRTV,mGBuffer[2].mRTV};
+	pd3dImmediateContext->OMSetRenderTargets(3, rtvs, dsv);
 	mDrawableManager.Draw(pd3dImmediateContext);
 
 	//Make the runtime happy
-	ID3D11RenderTargetView* rtvs2[2] = {NULL,NULL};
-	pd3dImmediateContext->OMSetRenderTargets(2,rtvs2,dsv);
+	ID3D11RenderTargetView* rtvs2[3] = {NULL,NULL,NULL};
+	pd3dImmediateContext->OMSetRenderTargets(3,rtvs2,dsv);
 
 	pd3dImmediateContext->RSSetState(mRasterizerStateDefault);
 
@@ -335,7 +342,7 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 	UINT numLights = 0;
 	numLights = mLightManager->updateLightBuffer(pd3dImmediateContext,mCamera,&mLightListCSSB);
 
-	ID3D11ShaderResourceView* GBufferSRVs[4] = {mGBuffer[0].mSRV,mGBuffer[1].mSRV,mDSSRV.mSRV,mLightListCSSB.mSRV};
+	ID3D11ShaderResourceView* GBufferSRVs[5] = {mGBuffer[0].mSRV,mGBuffer[1].mSRV,mGBuffer[2].mSRV,mDSSRV.mSRV,mLightListCSSB.mSRV};
 
 	//Set read only DS and proxy output texture
 	//We set this here to prevent the runtime from complaining

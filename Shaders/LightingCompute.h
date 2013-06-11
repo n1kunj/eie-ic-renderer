@@ -46,13 +46,13 @@ public:
 		OnD3D11DestroyDevice();
 	}
 
-	void Compute(ID3D11DeviceContext* pd3dContext, ID3D11ShaderResourceView* pSRV[4], StructuredBuffer<LightingCSFB>* pSB, Camera* pCamera,UINT pNumLights)
+	void Compute(ID3D11DeviceContext* pd3dContext, ID3D11ShaderResourceView* pSRV[5], StructuredBuffer<LightingCSFB>* pSB, Camera* pCamera,UINT pNumLights)
 	{
 		if (!mCompiled) {
 			return;
 		}
 		using namespace DirectX;
-		pd3dContext->CSSetShaderResources(0,4,pSRV);
+		pd3dContext->CSSetShaderResources(0,5,pSRV);
 
 		UINT width = DXUTGetDXGIBackBufferSurfaceDesc()->Width;
 		UINT height = DXUTGetDXGIBackBufferSurfaceDesc()->Height;
@@ -87,8 +87,8 @@ public:
 
 		pd3dContext->Dispatch(dispatchWidth, dispatchHeight, 1);
 
-		ID3D11ShaderResourceView* srvs[4] = {NULL,NULL,NULL,NULL};
-		pd3dContext->CSSetShaderResources(0,4,srvs);
+		ID3D11ShaderResourceView* srvs[5] = {NULL,NULL,NULL,NULL,NULL};
+		pd3dContext->CSSetShaderResources(0,5,srvs);
 		ID3D11UnorderedAccessView* uavs[1] = {NULL};
 		pd3dContext->CSSetUnorderedAccessViews(0,1,uavs,0);
 	}

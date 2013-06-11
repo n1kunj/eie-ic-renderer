@@ -28,7 +28,9 @@ float4 LightingPS(LightingVSOutput input) : SV_TARGET {
 	float depth = depthTex.Load(pix_pos);
 	if (depth == 1.0f) {
 	//Skybox
-		return float4( 0.329f, 0.608f, 0.722f, 1.0f );
+		return float4( 0.01f, 0.01f, 0.01f, 1.0f );
+
+		//return float4( 0.329f, 0.608f, 0.722f, 1.0f );
 	}
 	uint offset = (input.Pos.x - 0.5) + (input.Pos.y - 0.5) * bufferDim.x;
 	float4 litSample = UnpackRGBA16(litTex[offset]);

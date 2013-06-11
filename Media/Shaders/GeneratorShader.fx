@@ -272,18 +272,18 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 		return;
 	}
 	
-	float rot = 0.25f * noise2D(pos.x/1000.0f,pos.y/1000.0f);
+	float rot = 0.15f * noise2D(pos.x/1000.0f,pos.y/1000.0f);
 	//rot = 0;
 	
 	uint2 prng = poorRNG(pos);
 		
 	float3 col;
-	// col.r = (noise2D(pos.x,pos.y)/2)+0.5f;
-	// col.g = (noise2D(pos.x+900,pos.y-800)/2)+0.5f;
-	// col.b = pow((noise2D(pos.x-900,pos.y+8000)/2)+0.5f,2);
-	col.r = 0.1f + 0.5f * ((prng.x)%256 / 256.0f);
-	col.g = col.r * (75 + prng.y%25)/100.0f;
-	col.b = col.r * (75 + prng.x%25)/100.0f;
+	col.r = (noise2D(pos.x,pos.y)/2)+0.5f;
+	col.g = (noise2D(pos.x+900,pos.y-800)/2)+0.5f;
+	col.b = pow((noise2D(pos.x-900,pos.y+8000)/2)+0.5f,2);
+	// col.r = 0.1f + 0.5f * ((prng.x)%256 / 256.0f);
+	// col.g = col.r * (75 + prng.y%25)/100.0f;
+	// col.b = col.r * (75 + prng.x%25)/100.0f;
 	
 	uint2 rn = prng%4 + 1;
 	

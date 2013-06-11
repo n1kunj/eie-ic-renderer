@@ -125,6 +125,7 @@ GBuffer PS( DS_OUTPUT input )
 
 	output.mAlbedo = float4(albedo,1.0f);
 	output.mNormSpec = float4(EncodeSphereMap(normal),specAmount,specPower);
+	output.mEmittance = float4(0,0,0,1);
 	
 	return output;
 }

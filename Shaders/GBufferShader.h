@@ -145,7 +145,7 @@ public:
 			//Create city texture
 			D3D11_TEXTURE2D_DESC desc;
 			::ZeroMemory (&desc, sizeof (desc));
-			desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+			desc.Format = DXGI_FORMAT_R8G8_UNORM;
 			desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
 			desc.CPUAccessFlags = 0;
 			desc.ArraySize = 1;
@@ -156,31 +156,34 @@ public:
 			desc.SampleDesc.Quality = 0;
 			desc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
 			mBuildingTexture.mDesc = desc;
-			struct rgba {
+
+			struct r8g8{
 				UINT8 r;
 				UINT8 g;
-				UINT8 b;
-				UINT8 a;
 			};
 
-			rgba tex[width][height];
+			r8g8 tex[width][height];
 
 			for (int i = 0; i < width; i++) {
 				for (int j = 0; j < height; j++) {
-					if (i > (width)/4 && j > (height)/4) {
-						tex[i][j].r = 0;
-						tex[i][j].g = 0;
-						tex[i][j].b = 0;
-						tex[i][j].a = 0;
+					//if (i > (width)/4 && j > (height*3)/4) {
+					if (i%8 > 3 && j%8 > 3) {
+						tex[i][j].r = 255;
 					}
 					else {
-
-						tex[i][j].r = 255;
-						tex[i][j].g = 255;
-						tex[i][j].b = 255;
-						tex[i][j].a = 255;
+						tex[i][j].r = 0;
 					}
+				}
+			}
 
+			for (int i = 0; i < width; i++) {
+				for (int j = 0; j < height; j++) {
+					if (tex[i][j].r == 255) {
+						tex[i][j].g = 128;
+					}
+					else {
+						tex[i][j].g = 0;
+					}
 				}
 			}
 
@@ -188,8 +191,8 @@ public:
 			UINT num = width;
 			for (int i = 0; i < mipLevels; i++) {
 				data[i].pSysMem = tex;
-				data[i].SysMemPitch = num * sizeof(rgba);
-				data[i].SysMemSlicePitch = num*num*sizeof(rgba);
+				data[i].SysMemPitch = num * sizeof(r8g8);
+				data[i].SysMemSlicePitch = num*num*sizeof(r8g8);
 				num/=2;
 			}
 

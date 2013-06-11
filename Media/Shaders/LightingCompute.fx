@@ -49,8 +49,9 @@ groupshared uint sTileNumLights;
 
 Texture2D<float4> norSpecTex : register(t0);
 Texture2D<float4> albedoTex : register(t1);
-Texture2D<float> depthTex : register(t2);
-StructuredBuffer<PointLight> lightBuffer : register(t3);
+Texture2D<float4> emittanceTex : register(t2);
+Texture2D<float> depthTex : register(t3);
+StructuredBuffer<PointLight> lightBuffer : register(t4);
 RWStructuredBuffer<uint2> gFrameBuffer : register(u0);
 
 
@@ -67,11 +68,11 @@ void LightingCS(uint3 groupId 			: SV_GroupID,
 	float4 norSpec = norSpecTex.Load(screenPix);
 	
 	float3 gbAlbedo = albedoTex.Load(screenPix).xyz;
-	float gbLit = albedoTex.Load(screenPix).w;
+	float4 emitTex = emittanceTex.Load(screenPix);
+	float3 gbEmit = emitTex.xyz/emitTex.w;
 	float3 gbNormal = DecodeSphereMap(norSpec.xy);
 	float gbSpecAmount = norSpec.z;
 	float gbSpecExp = max(0.1f,norSpec.w);
-	//	float gbSpecExp = 0;
 
 	float3 gbViewPos = calculateViewPos(screenPix.xy, bufferDim, rawDepth);
 	
@@ -159,56 +160,52 @@ void LightingCS(uint3 groupId 			: SV_GroupID,
 	
 	uint lightCount = sTileNumLights;
 	
-	float3 pixVal;
-
-	if (gbLit) {
-		pixVal = float3(0,0,0);
+	float3 pixVal = gbEmit;
 		
-		for (int i = 0; i < lightCount; i++) {
-			PointLight pl = lightBuffer[sTileLightIndices[i]];
-			
-			float3 lightVec = gbViewPos - pl.viewPos;
+	for (int i = 0; i < lightCount; i++) {
+		PointLight pl = lightBuffer[sTileLightIndices[i]];
+		
+		float3 lightVec = gbViewPos - pl.viewPos;
 
-			float lightDist = length(lightVec);
-			lightVec = normalize(lightVec);
-			float diffuse = dot(gbNormal, -lightVec);
-			
-			float ambient = pl.ambient;
-			
-			float attenEnd = pl.attenEnd;
-			
-			float lightFactor = 0.0f;
-			if (attenEnd > lightDist) {
-				lightFactor = 1 - sqrt(lightDist/attenEnd);
-			}
-			float3 lightColour = gbAlbedo * pl.colour;
-			
-			pixVal+=ambient * lightFactor * lightColour;
-			if (diffuse > 0 && lightFactor > 0.0f) {
-				float3 cameraVec = normalize(-gbViewPos);
+		float lightDist = length(lightVec);
+		lightVec = normalize(lightVec);
+		float diffuse = dot(gbNormal, -lightVec);
+		
+		float ambient = pl.ambient;
+		
+		float attenEnd = pl.attenEnd;
+		
+		float lightFactor = 0.0f;
+		if (attenEnd > lightDist) {
+			lightFactor = 1 - sqrt(lightDist/attenEnd);
+		}
+		float3 lightColour = gbAlbedo * pl.colour;
+		
+		pixVal+=ambient * lightFactor * lightColour;
+		if (diffuse > 0 && lightFactor > 0.0f) {
+			float3 cameraVec = normalize(-gbViewPos);
 
-				float3 reflected = reflect(lightVec, gbNormal);
-				float rdotv = max(0.0f, dot(reflected,cameraVec));
-				float specular = pow(rdotv, gbSpecExp);
-				pixVal += ((diffuse + specular*gbSpecAmount) * lightFactor) * lightColour;
-			}
+			float3 reflected = reflect(lightVec, gbNormal);
+			float rdotv = max(0.0f, dot(reflected,cameraVec));
+			float specular = pow(rdotv, gbSpecExp);
+			pixVal += ((diffuse + specular*gbSpecAmount) * lightFactor) * lightColour;
 		}
 	}
-	else {
-		pixVal = gbAlbedo;
-	}
+
 	pixVal = clamp(pixVal,0,1);
 	
-	float fogEnd = 150000;
-	float fogStart = 0000;
+	float fogEnd = 120000;
+	float fogStart = 10000;
 	
 	if (all(screenPix.xy < bufferDim.xy)) {
 		if (rawDepth != 1.0f) {
 			//WriteSample(screenPix.xy,bufferDim.xy, float4(lightCount.xxx/512.0f, 0.0f));
-			float3 fogCol = float3( 0.329f, 0.608f, 0.722f);
+			//float3 fogCol = float3( 0.329f, 0.608f, 0.722f);
+			float3 fogCol = float3( 0.01f, 0.01f, 0.01f);
+
 			float fogFactor = saturate((fogEnd - length(gbViewPos))/(fogEnd - fogStart));
-			fogFactor = sqrt(fogFactor);
-			//fogFactor=pow(fogFactor,0.75f);
+			//fogFactor = sqrt(fogFactor);
+			fogFactor=pow(fogFactor,0.25);
 			pixVal = lerp(fogCol,pixVal,fogFactor);
 			WriteSample(screenPix.xy,bufferDim.xy, float4(pixVal, 0.0f));
 		}

@@ -31,6 +31,7 @@ struct PS_INPUT_INSTANCED
 {
     float4 mPos : SV_POSITION;
 	float3 mWorldPos : POSITION0;
+	float3 mWorldNorm : NORMAL1;
     float3 mNorm : NORMAL0;
 	float3 mColour : COLOUR0;
 };
@@ -74,13 +75,10 @@ PS_INPUT_INSTANCED VS_INSTANCED( VS_INPUT input, uint index : SV_InstanceID)
 	
 	pos.xyz = mul(pos.xyz,rotmat);
 	
-	pos.xyz+=i0.mPos;
-	
-
-	pos.xyz+=cOffset;
-
+	pos.xyz+=i0.mPos + cOffset;
 	
 	output.mPos = mul(pos,cVP);
+	output.mWorldNorm = input.mNorm.xyz;
 	output.mNorm = normalize(mul(input.mNorm,(float3x3)cMV)).xyz;
 	output.mColour = i0.mColour;
     return output;
@@ -91,11 +89,11 @@ GBuffer PS( PS_INPUT input )
 	GBuffer output;
 	output.mNormSpec = float4(EncodeSphereMap(input.mNorm),cSpecAmount,cSpecPower);
 	output.mAlbedo = float4(cAlbedo,1.0f);
-	
+	output.mEmittance = float4(0,0,0,1);
 	return output;
 }
 
-Texture2D<float4> tAlbedo : register(t0);
+Texture2D<float2> tEmittance : register(t0);
 SamplerState sAnisotropic : register(s0);
 
 GBuffer PS_INSTANCED( PS_INPUT_INSTANCED input )
@@ -104,24 +102,26 @@ GBuffer PS_INSTANCED( PS_INPUT_INSTANCED input )
 
 	output.mNormSpec = float4(EncodeSphereMap(input.mNorm),cSpecAmount,cSpecPower);
 	
-	output.mAlbedo = float4(input.mColour,1.0f);
 	float3 wp = input.mWorldPos;
 	
-	float2 uv = float2(wp.x + wp.z,wp.y)/4.0f;
+	float2 uv = float2(wp.x + wp.z,wp.y)/400.0f;
+	uv.x*=(0.5f + input.mColour.r*0.5f);
+	uv.y*=(0.5f + input.mColour.g*0.5f);
 	
-	float4 texmap = tAlbedo.Sample(sAnisotropic,uv);
-	//output.mAlbedo*= float4(texmap.xyz,1);
-	output.mAlbedo.xyz = lerp(float3(1,1,1),input.mColour,texmap.a);
-	output.mAlbedo.a = texmap.a;
+	float2 texmap = tEmittance.Sample(sAnisotropic,uv);
+
+	output.mAlbedo = float4(input.mColour,1);
+//	output.mAlbedo = float4(0.3,0.3,0.3,1);
+
 	
-	//if (! (dot(input.mNorm,float3(0,1,0)) > 0.95f)) {
-		// if (texmap.a < 0.25) {
-			// output.mAlbedo = float4(texmap.xyz,0);
-		// }
-		// else {
-			// output.mAlbedo = float4(texmap.xyz,1);
-		// }
-	//}
+	output.mEmittance = float4(0,0,0,0.3f);
+
+	if (!(dot(input.mWorldNorm,float3(0,1,0)) > 0.95f)) {
+		output.mAlbedo.xyz = lerp(output.mAlbedo.xyz,float3(0,0,0),texmap.x);
+		//output.mEmittance.xyz = float3(1,1,0.5f) * texmap.y;
+				output.mEmittance.xyz = input.mColour * texmap.y;
+
+	}
 	
 	return output;
 }

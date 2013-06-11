@@ -2,6 +2,7 @@ struct GBuffer
 {
     float4 mNormSpec : SV_Target0;
     float4 mAlbedo : SV_Target1;
+	float4 mEmittance : SV_Target2;
 };
 
 float2 EncodeSphereMap(float3 n)

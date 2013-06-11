@@ -52,7 +52,7 @@ public:
 	Generator* mGenerator;
 
 	Texture2D mProxyTexture;
-	Texture2D mGBuffer[2];
+	Texture2D mGBuffer[3];
 	Depth2D mDepthStencil;
 	Depth2DDSV mDSV;
 	Depth2DDSV mDSVRO;
