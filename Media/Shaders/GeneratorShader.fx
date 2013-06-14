@@ -4,9 +4,9 @@
 
 #define TILE_SIZE 128
 
-#define ROAD_WIDTH 10
-#define BUILD_WIDTH 17
-#define PAVE_WIDTH 30
+#define ROAD_WIDTH 12
+#define BUILD_WIDTH 23
+#define PAVE_WIDTH 35
 
 #define PI 3.14159265f
 
@@ -47,8 +47,7 @@ static const float coeffs[NUM_BIOMES][NOISE_ITERATIONS] = {
 /* {2048,512,128,64,32,16,8,4,2,1,0.5f,0.25f},
 {768,376,128,64,32,16,8,4,2,1,0.5f,0.25f},
 {512,128,64,32,16,8,4,2,1,0.5f,0.25f,0.125f}, */
-{0,0,0,0,0,0.25,0,0,0,0.25,0.25,0},
-{0,0,0,0,0,0.25,0,0,0,0.25,0.25,0},
+{0,0,2,1,0.5,0.5,0.5,0.5,0.5,0.5,0.25,0.25},
 
 {64,0,0,0,0,0,0,0,0,0,0,0},//
 {128,0,0,0,0,0,0,0,0,0,0,0},//
@@ -62,16 +61,16 @@ static const float coeffs[NUM_BIOMES][NOISE_ITERATIONS] = {
 // {2048,512,128,64,32,16,8,4,2,1,0.5f,0.25f},
 // {0,0,0,0,0,0.25,0,0,0,0.25,0.25,0},
 
-{0,0,0,0,0,0.25,0,0,0,0.25,0.25,0},
-{0,0,0,0,0,0.25,0,0,0,0.25,0.25,0},
+{0,0,2,1,0.5,0.5,0.5,0.5,0.5,0.5,0.25,0.25},
+{0,0,2,1,0.5,0.5,0.5,0.5,0.5,0.5,0.25,0.25},
+{0,0,2,1,0.5,0.5,0.5,0.5,0.5,0.5,0.25,0.25},
 };
 
 #define CITY_COEFF 0
 
 //r,g,b,city
 static const float4 colours[NUM_BIOMES] = {
-float4(0,0,0.5,1),
-float4(0,0,0.5,1),
+ float4(0,0,0.5,1),
 
 float4(0.9,0.9,0.9,0),
 float4(0.9,0.9,0.9,0),
@@ -86,17 +85,19 @@ float4(0.9,0.9,0.9,0),
 // float4(0.5,0.5,0.5,1),
 
 float4(0,0,0.5,1),
-float4(0,0,0.5,1),
+float4(0,0,0.4,1),
+float4(0,0,0.3,1),
 };
 
 static const float2 specPowAmount[NUM_BIOMES] = {
+
 float2(20,1),
+float2(128,0.1f),
+float2(128,0.1f),
+float2(128,0.1f),
+float2(128,0.1f),
+float2(128,0.1f),
 float2(20,1),
-float2(128,0.1f),
-float2(128,0.1f),
-float2(128,0.1f),
-float2(128,0.1f),
-float2(128,0.1f),
 float2(20,1),
 float2(20,1),
 };
@@ -244,11 +245,13 @@ AppendStructuredBuffer<Instance> sInstance : register(u0);
 [numthreads(4, 4, 1)]
 void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 {
+	const float heightSeed = 300;
+	const float minHeight = 15;
 	float2 p1 = TILE_SIZE * dispatchID.xy - ((float)tileLength/2);
 	float2 pos = tileCoords + p1;
 	
 	float baseheight = (noise2D(pos.x/100,pos.y/72)/2)+0.5f;
-	baseheight = 15 + pow(baseheight,4)*(450);
+	baseheight = minHeight + pow(baseheight,4)*(heightSeed);
 	
 	float noises[NOISE_ITERATIONS];
 	float2 bounds[4];
@@ -272,9 +275,6 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 		return;
 	}
 	
-	float rot = 0.15f * noise2D(pos.x/1000.0f,pos.y/1000.0f);
-	//rot = 0;
-	
 	uint2 prng = poorRNG(pos);
 		
 	float3 col;
@@ -284,6 +284,14 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 	// col.r = 0.1f + 0.5f * ((prng.x)%256 / 256.0f);
 	// col.g = col.r * (75 + prng.y%25)/100.0f;
 	// col.b = col.r * (75 + prng.x%25)/100.0f;
+	
+	float rotY = 0;
+	float heightOffset = 0;
+	float buildWidth = BUILD_WIDTH;
+	if (lodLevel == CITY_LOD_LEVEL_HIGH && baseheight > heightSeed/2) {
+		heightOffset = 50;
+		rotY = 0.10f * noise2D(pos.x/1000.0f,pos.y/1000.0f);
+	}
 	
 	uint2 rn = prng%4 + 1;
 	
@@ -304,42 +312,49 @@ void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 			float height = ( ((int)((rnh.x + rnh.y)%1024)) - 512)/512.0f;
 			baseheight = baseheight + height * 0.15f * baseheight;
 			
-			p.y = terrainHeight-5 + baseheight;
+			p.y = terrainHeight-5 + baseheight + heightOffset;
 			
 			maxHeight = max(maxHeight,baseheight);
 			
 			[branch] if (lodLevel == CITY_LOD_LEVEL_HIGH) {
 				Instance i0;
 				i0.mPos = p;
-				i0.mSize = float3(fp.x,baseheight,fp.y);
+				i0.mSize = float3(fp.x,baseheight-heightOffset,fp.y);
 				i0.mColour = col;
-				i0.mRotY = rot;
+				i0.mRotY = rotY;
 				sInstance.Append(i0);
 			}
 		}
 	}
-	[branch] if (lodLevel != CITY_LOD_LEVEL_HIGH) {
+	[branch] if (lodLevel != CITY_LOD_LEVEL_HIGH || heightOffset) {
 	
-		if (lodLevel >= CITY_LOD_LEVEL_LOW && maxHeight < 50) {
+		if (lodLevel >= CITY_LOD_LEVEL_LOW && maxHeight < heightSeed/8 + minHeight) {
 			return;
 		}
-		if (lodLevel >= CITY_LOD_LEVEL_XLOW && maxHeight < 100) {
+		if (lodLevel >= CITY_LOD_LEVEL_XLOW && maxHeight < heightSeed/4 + minHeight) {
 			return;
 		}
-		if (lodLevel >= CITY_LOD_LEVEL_XXLOW && maxHeight < 200) {
+		if (lodLevel >= CITY_LOD_LEVEL_XXLOW && maxHeight < heightSeed/2 + minHeight) {
 			return;
 		}
 	
 		fp = float2(maxFootPrint,maxFootPrint);
+		
 		float3 p;
-		p.xz = p1 + bl + 2*fp * float2(0.5f,0.5f);	
+		p.xz = p1 + bl + 2*fp * float2(0.5f,0.5f);
+		
+		if (heightOffset) {
+			maxHeight = heightOffset;
+			fp+=5;
+		}
+		
 		p.y = terrainHeight-5 + maxHeight;
-	
+
 		Instance i0;
 		i0.mPos = p;
 		i0.mSize = float3(fp.x,maxHeight,fp.y);
 		i0.mColour = col;
-		i0.mRotY = rot;
+		i0.mRotY = 0;
 		sInstance.Append(i0);
 	}
 }

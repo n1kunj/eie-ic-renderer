@@ -137,9 +137,6 @@
     </ClInclude>
     <ClInclude Include="MessageProcessor.h" />
     <ClInclude Include="DrawableManager.h" />
-    <ClInclude Include="Shaders\GBufferShader.h">
-      <Filter>Shaders</Filter>
-    </ClInclude>
     <ClInclude Include="ShaderManager.h" />
     <ClInclude Include="Shaders\FXAAShader.h">
       <Filter>Shaders</Filter>
@@ -164,6 +161,9 @@
     </ClInclude>
     <ClInclude Include="Procedural\simplexnoise.h">
       <Filter>Procedural</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\CityGBufferShader.h">
+      <Filter>Shaders</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

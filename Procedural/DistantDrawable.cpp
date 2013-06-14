@@ -65,7 +65,7 @@ public:
 				state.setPosition(posX,posY,posZ);
 
 				mTCF(state,mGenerator,posX,posY,posZ,mTileSize,pMesh);
-
+				mTUF(state,mGenerator,posX,posY,posZ);
 				mTiles.push_back(d);
 			}
 		}
@@ -253,12 +253,6 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 
 		auto TCF = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
 			pState.mDistantTile = std::shared_ptr<DistantTile>(new DistantTile(pPosX,pPosY,pPosZ,pTileSize));
-			pGenerator->InitialiseTile(pState.mDistantTile);
-		};
-
-		auto TCFHP = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
-			pState.mDistantTile = std::shared_ptr<DistantTile>(new DistantTile(pPosX,pPosY,pPosZ,pTileSize));
-			pGenerator->InitialiseTileHighPriority(pState.mDistantTile);
 		};
 	
 		auto TUF = [](DrawableState& pState, Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY, DOUBLE pPosZ) -> void {
@@ -299,7 +293,7 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 			LodLevel<DistantTile>* ll;
 			if (i == mNumLods-1) {
 				//Base LOD needs to be created with a higher priority to prevent holes
-				ll = new LodLevel<DistantTile>(tileSize, mTileDimensionLength, OVERLAP_SCALE, mesh, shader, pCamera, pGenerator, prevLod, TCFHP, TUFHP, TDF, TUniqueF);
+				ll = new LodLevel<DistantTile>(tileSize, mTileDimensionLength, OVERLAP_SCALE, mesh, shader, pCamera, pGenerator, prevLod, TCF, TUFHP, TDF, TUniqueF);
 			}
 			else {
 				ll = new LodLevel<DistantTile>(tileSize, mTileDimensionLength, OVERLAP_SCALE, mesh, shader, pCamera, pGenerator, prevLod, TCF, TUF, TDF, TUniqueF);
@@ -317,26 +311,21 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 
 		auto TCFHigh = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
 			pState.mCityTile = std::shared_ptr<CityTile>(new CityTile(pPosX,pPosY,pPosZ,pTileSize,pMesh,CITY_LOD_LEVEL_HIGH));
-			pGenerator->InitialiseTile(pState.mCityTile);
 		};
 
 		auto TCFMed = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
 			pState.mCityTile = std::shared_ptr<CityTile>(new CityTile(pPosX,pPosY,pPosZ,pTileSize,pMesh,CITY_LOD_LEVEL_MED));
-			pGenerator->InitialiseTile(pState.mCityTile);
 		};
 
 		auto TCFLow = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
 			pState.mCityTile = std::shared_ptr<CityTile>(new CityTile(pPosX,pPosY,pPosZ,pTileSize,pMesh,CITY_LOD_LEVEL_LOW));
-			pGenerator->InitialiseTile(pState.mCityTile);
 		};
 
 		auto TCFXLow = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
 			pState.mCityTile = std::shared_ptr<CityTile>(new CityTile(pPosX,pPosY,pPosZ,pTileSize,pMesh,CITY_LOD_LEVEL_XLOW));
-			pGenerator->InitialiseTile(pState.mCityTile);
 		};
 		auto TCFXXLow = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
 			pState.mCityTile = std::shared_ptr<CityTile>(new CityTile(pPosX,pPosY,pPosZ,pTileSize,pMesh,CITY_LOD_LEVEL_XXLOW));
-			pGenerator->InitialiseTileHighPriority(pState.mCityTile);
 		};
 
 		auto TUF = [](DrawableState& pState, Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY, DOUBLE pPosZ) -> void {
@@ -371,10 +360,10 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 			return pState.mCityTile.unique();
 		};
 
-		DrawableShader* cityShader = pShaderManager->getDrawableShader("GBufferShader");
+		DrawableShader* cityShader = pShaderManager->getDrawableShader("CityGBufferShader");
 		DrawableMesh* cityMesh = pMeshManager->getDrawableMesh("CubeMesh");
 
-		float cityTileDim = 8192;
+		float cityTileDim = 8192*2;
 
 		DOUBLE dimension = (pMinTileSize * pow(2,mNumLods-1) * mTileDimensionLength)/cityTileDim;
 

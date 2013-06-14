@@ -104,9 +104,9 @@ GBuffer PS_INSTANCED( PS_INPUT_INSTANCED input )
 	
 	float3 wp = input.mWorldPos;
 	
-	float2 uv = float2(wp.x + wp.z,wp.y)/400.0f;
-	uv.x*=(0.5f + input.mColour.r*0.5f);
-	uv.y*=(0.5f + input.mColour.g*0.5f);
+	float2 uv = float2(wp.x + wp.z,wp.y)/200.0f;
+	uv.x*=(0.25f + input.mColour.r*0.75f);
+	uv.y*=(0.25f + input.mColour.g*0.75f);
 	
 	float2 texmap = tEmittance.Sample(sAnisotropic,uv);
 

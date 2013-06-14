@@ -26,7 +26,7 @@ __declspec(align(16)) struct GBufferPSCB
 	DirectX::XMFLOAT3 padding0;
 };
 
-class GBufferShader : public DrawableShader {
+class CityGBufferShader : public DrawableShader {
 private:
 	boolean mCompiled;
 	ID3D11VertexShader* mVertexShader;
@@ -55,10 +55,10 @@ public:
 		mCompiled = FALSE;
 	}
 
-	GBufferShader() : DrawableShader(L"GBufferShader"),mCompiled(FALSE),mVertexLayout(NULL),mInstancedVS(NULL),mInstancedVL(NULL),
+	CityGBufferShader() : DrawableShader(L"CityGBufferShader"),mCompiled(FALSE),mVertexLayout(NULL),mInstancedVS(NULL),mInstancedVL(NULL),
 		mVertexShader(NULL),mPixelShader(NULL),mVSConstantBuffer(NULL),mPSConstantBuffer(NULL),mInstancedPS(NULL),mNeedMipMap(FALSE),mAnisotropicSampler(NULL) {}
 
-	GBufferShader::~GBufferShader()
+	CityGBufferShader::~CityGBufferShader()
 	{
 		OnD3D11DestroyDevice();
 	}

@@ -6,14 +6,16 @@ end
 
 reset()
 
-distDr = DistantDrawable(CAMERA,SHADERMAN,MESHMAN,GENERATOR,4,9,256);
+--distDr = DistantDrawable(CAMERA,SHADERMAN,MESHMAN,GENERATOR,2,1,2048*4);
+
+distDr = DistantDrawable(CAMERA,SHADERMAN,MESHMAN,GENERATOR,6,9,170);
 --distDr = DistantDrawable(CAMERA,SHADERMAN,MESHMAN,GENERATOR,16,7,256);
 --distDr = DistantDrawable(CAMERA,SHADERMAN,MESHMAN,GENERATOR,4,1,2048*32);
 
 
 DRAWMAN:addDrawable(distDr)
 
-shader = SHADERMAN:getDrawableShader("GBufferShader")
+shader = SHADERMAN:getDrawableShader("CityGBufferShader")
 mesh = MESHMAN:getDrawableMesh("CubeMesh")
 
 lightSrc = BasicDrawable(mesh,shader,CAMERA)

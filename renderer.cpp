@@ -3,7 +3,7 @@
 #include "MessageProcessor.h"
 #include "Meshes/CubeMeshLoader.h"
 #include "Meshes/PlaneLoader.h"
-#include "Shaders/GBufferShader.h"
+#include "Shaders/CityGBufferShader.h"
 #include "Shaders/DistantGBufferShader.h"
 #include "DrawableState.h"
 #include "Drawable.h"
@@ -30,7 +30,7 @@ Renderer::Renderer(MessageLogger* mLogger) : mLogger(mLogger), mDrawableManager(
 	mMeshManager->addMesh(new DrawableMesh(L"Plane128",new PlaneLoader(129)));
 	mMeshManager->addMesh(new DrawableMesh(L"Plane256",new PlaneLoader(257)));
 	mShaderManager = new ShaderManager(mLogger);
-	mShaderManager->addShader(new GBufferShader());
+	mShaderManager->addShader(new CityGBufferShader());
 	mShaderManager->addShader(new DistantGBufferShader());
 
 	mLightManager = new LightManager();
@@ -109,18 +109,18 @@ void Renderer::init()
 	PointLight* ll = &mLightList[1023];
 	ll->ambient = 0.05f;
 	ll->attenuationEnd = FLT_MAX/10.0f;
-	//ll->colour.x = 1.0f;
-	//ll->colour.y = 1.0f;
-	//ll->colour.z = 1.0f;
-	ll->colour.x = 0.1f;
-	ll->colour.y = 0.1f;
-	ll->colour.z = 0.1f;
-	//ll->x = 50000000000.0f;
-	//ll->z = 111445532285.0f;
-	//ll->y = 86371600270.0f;
-	ll->x = 100000000000;
-	ll->z = 150000000000.0f;
-	ll->y = 10000000000.0f;
+	ll->colour.x = 1.0f;
+	ll->colour.y = 1.0f;
+	ll->colour.z = 1.0f;
+	//ll->colour.x = 0.1f;
+	//ll->colour.y = 0.1f;
+	//ll->colour.z = 0.1f;
+	ll->x = 50000000000.0f;
+	ll->z = 111445532285.0f;
+	ll->y = 86371600270.0f;
+	//ll->x = 100000000000;
+	//ll->z = 150000000000.0f;
+	//ll->y = 10000000000.0f;
 	mLightManager->addLight(ll);
 
 }
