@@ -48,10 +48,20 @@ RendererMessageProcessor::RendererMessageProcessor( MessageLogger* logger, Rende
 		class_<DrawableShader>("DrawableShader"),
 		class_<DrawableMesh>("DrawableMesh"),
 
+		class_<XMFLOAT2>("XMFLOAT2")
+		.def_readwrite("x", &XMFLOAT2::x)
+		.def_readwrite("y", &XMFLOAT2::y),
+
 		class_<XMFLOAT3>("XMFLOAT3")
 		.def_readwrite("x", &XMFLOAT3::x)
 		.def_readwrite("y", &XMFLOAT3::y)
 		.def_readwrite("z", &XMFLOAT3::z),
+
+		class_<XMFLOAT4>("XMFLOAT4")
+		.def_readwrite("x", &XMFLOAT4::x)
+		.def_readwrite("y", &XMFLOAT4::y)
+		.def_readwrite("z", &XMFLOAT4::z)
+		.def_readwrite("w", &XMFLOAT4::w),
 
 		class_<RendererSettings>("RendererSettings")
 		.def_readwrite("wireframe", &RendererSettings::wireframe),
@@ -86,6 +96,11 @@ RendererMessageProcessor::RendererMessageProcessor( MessageLogger* logger, Rende
 		.def("getDrawableMesh",&MeshManager::getDrawableMesh),
 
 		class_<Generator>("Generator")
+		.def("setNoiseBiomeCount",&Generator::setNoiseBiomeCount)
+		.def("setScalesData",&Generator::setScalesData)
+		.def("setCoeffsData",&Generator::setCoeffsData)
+		.def("setColourCityData",&Generator::setColourCityData)
+		.def("setSpecPowData",&Generator::setSpecPowData)
 	];
 	runScript("setup.lua");
 

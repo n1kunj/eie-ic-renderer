@@ -16,6 +16,10 @@ RWTexture2D<float4> normalTex : register(u1);
 RWTexture2D<float> heightTex : register(u2);
 
 StructuredBuffer<float> scalesBuffer : register(t1);
+StructuredBuffer<float> coeffsBuffer : register(t2);
+StructuredBuffer<float4> coloursBuffer : register(t3);
+StructuredBuffer<float2> specPowBuffer : register(t4);
+
 
 uint2 poorRNG(float2 xy);
 float minDist(float2 l1, float2 l2, float2 p);
@@ -23,74 +27,26 @@ float minDist(float2 l1, float2 l2, float2 p);
 float getTileCoeff(float2 pos);
 bool isAccepted(float2 pos, float tileInd);
 
-cbuffer CSDistantTileCB : register( b0 )
+cbuffer CSGlobalTileCB : register(b0)
+{
+	uint cNoiseIterations;
+	uint cNumBiomes;
+}
+
+cbuffer CSDistantTileCB : register(b1)
 {
 	uint2 cDistantResolution;
 	int2 cDistantTileCoords;
 	uint cDistantTileSize;
 }
 
-#define NUM_BIOMES 9
-#define NOISE_ITERATIONS 12
+#define MAX_NOISE_ITERATIONS 12
 
-void getNoisesBoundsAccept( in float2 pos, out float noises[NOISE_ITERATIONS], out float2 bounds[4], out bool accept[4]);
+void getNoisesBoundsAccept( in float2 pos, out float noises[MAX_NOISE_ITERATIONS], out float2 bounds[4], out bool accept[4]);
 
-void getTerrainInfo( in float2 pos, in float noises[NOISE_ITERATIONS], in bool accept[4], out float tileCoeff, out float terrainHeight, out float4 tileCols, out float2 tileSpec);
-
-static const float coeffs[NUM_BIOMES][NOISE_ITERATIONS] = {
-{0,0,2,1,0.5,0.5,0.5,0.5,0.5,0.5,0.25,0.25},
-
-{0,0,0,0,0,0,0,0,0,0,0,0},//
-{128,0,0,0,0,0,0,0,0,0,0,0},//
-{256,0,0,0,0,0,0,0,0,0,0,0},//
-{128,0,0,0,0,0,0,0,0,0,0,0},//
-{0,0,0,0,0,0,0,0,0,0,0,0},//
-
-// {0,0,0,0,0,0.25,0,0,0,0.25,0.25,0},
-// {2048,512,128,64,32,16,8,4,2,1,0.5f,0.25f},
-// {2048,512,128,64,32,16,8,4,2,1,0.5f,0.25f},
-// {2048,512,128,64,32,16,8,4,2,1,0.5f,0.25f},
-// {0,0,0,0,0,0.25,0,0,0,0.25,0.25,0},
-
-{0,0,2,1,0.5,0.5,0.5,0.5,0.5,0.5,0.25,0.25},
-{0,0,2,1,0.5,0.5,0.5,0.5,0.5,0.5,0.25,0.25},
-{0,0,2,1,0.5,0.5,0.5,0.5,0.5,0.5,0.25,0.25},
-};
+void getTerrainInfo( in float2 pos, in float noises[MAX_NOISE_ITERATIONS], in bool accept[4], out float tileCoeff, out float terrainHeight, out float4 tileCols, out float2 tileSpec);
 
 #define CITY_COEFF 0
-
-//r,g,b,city
-static const float4 colours[NUM_BIOMES] = {
-float4(0,0,0.5,1),
-
-float4(0.9,0.9,0.9,0),
-float4(0.9,0.9,0.9,0),
-float4(0.9,0.9,0.9,0),
-float4(0.9,0.9,0.9,0),
-float4(0.9,0.9,0.9,0),
-
-// float4(0.5,0.5,0.5,1),
-// float4(0.5,0.5,0.5,1),
-// float4(0.5,0.5,0.5,1),
-// float4(0.5,0.5,0.5,1),
-// float4(0.5,0.5,0.5,1),
-
-float4(0,0,0.5,1),
-float4(0,0,0.4,1),
-float4(0,0,0.3,1),
-};
-
-static const float2 specPowAmount[NUM_BIOMES] = {
-float2(20,1),
-float2(128,0.1f),
-float2(128,0.1f),
-float2(128,0.1f),
-float2(128,0.1f),
-float2(128,0.1f),
-float2(20,1),
-float2(20,1),
-float2(20,1),
-};
 
 groupshared float sDistantHeights[DISTANT_TILE_GROUP_DIM][DISTANT_TILE_GROUP_DIM];
 
@@ -103,7 +59,7 @@ void CSDistantTile(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupThr
 	float2 pos = (float2)pixIndex/(cDistantResolution-1) - 0.50f;
 	pos = pos * OVERLAP_SCALE * cDistantTileSize + cDistantTileCoords;
 	
-	float noises[NOISE_ITERATIONS];
+	float noises[MAX_NOISE_ITERATIONS];
 	float2 bounds[4];
 	bool accept[4];
 
@@ -221,7 +177,7 @@ void CSDistantTile(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupThr
 #define CITY_LOD_LEVEL_XLOW 3
 #define CITY_LOD_LEVEL_XXLOW 4
 
-cbuffer CSCityTileCB : register( b0 )
+cbuffer CSCityTileCB : register(b1)
 {
 	int2 cCityTileCoords;
 	uint cCityTileSize;
@@ -241,7 +197,7 @@ void CSCityTile(uint3 dispatchID : SV_DispatchThreadID)
 	float baseheight = (noise2D(pos.x/100,pos.y/72)/2)+0.5f;
 	baseheight = minHeight + pow(baseheight,4)*(heightSeed);
 	
-	float noises[NOISE_ITERATIONS];
+	float noises[MAX_NOISE_ITERATIONS];
 	float2 bounds[4];
 	bool accept[4];
 
@@ -346,11 +302,11 @@ void CSCityTile(uint3 dispatchID : SV_DispatchThreadID)
 
 //*******UTILITY FUNCTIONS**********//
 
-void getNoisesBoundsAccept( in float2 pos, out float noises[NOISE_ITERATIONS], out float2 bounds[4], out bool accept[4]) {
+void getNoisesBoundsAccept( in float2 pos, out float noises[MAX_NOISE_ITERATIONS], out float2 bounds[4], out bool accept[4]) {
 	
-	[loop] for (int i = 0; i < NOISE_ITERATIONS; i++) {
+	for (int i = 0; i < MAX_NOISE_ITERATIONS; i++) {
 		float2 p2 = pos/(0.25f*scalesBuffer[i]);
-		[call] noises[i] = (noise2D(p2.x,p2.y)/2)+0.5f;
+		noises[i] = (noise2D(p2.x,p2.y)/2)+0.5f;
 	}
 	
 	//Find the bottom left value of the quadrant we're assumed to be in
@@ -367,7 +323,7 @@ void getNoisesBoundsAccept( in float2 pos, out float noises[NOISE_ITERATIONS], o
 	}
 }
 
-void getTerrainInfo( in float2 pos, in float noises[NOISE_ITERATIONS], in bool accept[4], out float tileCoeff, out float terrainHeight, out float4 tileCols, out float2 tileSpec) {
+void getTerrainInfo( in float2 pos, in float noises[MAX_NOISE_ITERATIONS], in bool accept[4], out float tileCoeff, out float terrainHeight, out float4 tileCols, out float2 tileSpec) {
 
 	uint numAccept = 0;
 	[unroll] for (uint i = 0; i < 4; i++) {
@@ -378,8 +334,8 @@ void getTerrainInfo( in float2 pos, in float noises[NOISE_ITERATIONS], in bool a
 	uint tcr = round(tileCoeff);
 	uint tc2 = tcr < tileCoeff ? tcr+1 : tcr-1;
 	
-	float4 colr = colours[tcr];
-	float4 col2 = colours[tc2];
+	float4 colr = coloursBuffer[tcr];
+	float4 col2 = coloursBuffer[tc2];
 	
 	//If there are roads and we're not in a road section, we need to change the coefficient to prevent interpolation
 	if (numAccept && (colr.a != CITY_COEFF)) {
@@ -394,18 +350,18 @@ void getTerrainInfo( in float2 pos, in float noises[NOISE_ITERATIONS], in bool a
 	
 	//Calculate the terrain height
 	terrainHeight = 0;
-	for (int i = 0; i < NOISE_ITERATIONS; i++) {
-		float c0 = coeffs[tcr][i];
-		float c1 = coeffs[tc2][i];
+	for (int i = 0; i < MAX_NOISE_ITERATIONS; i++) {
+		float c0 = coeffsBuffer[tcr * cNoiseIterations + i];
+		float c1 = coeffsBuffer[tc2 * cNoiseIterations + i];
 		float mult = lerp(c0,c1,ss);
-		terrainHeight+=noises[i] * mult;
+		terrainHeight += i < cNoiseIterations ? noises[i] * mult : 0;
 	}
 	
 	//Calculate the tile colour and speculars
 	tileCols = lerp(colr,col2,ss);
 	
-	float2 specr = specPowAmount[tcr];
-	float2 spec2 = specPowAmount[tc2];
+	float2 specr = specPowBuffer[tcr];
+	float2 spec2 = specPowBuffer[tc2];
 	
 	tileSpec = lerp(specr,spec2,ss);
 }
@@ -431,7 +387,7 @@ float minDist( float2 l1, float2 l2, float2 p) {
 }
 
 bool isAccepted(float2 pos, float tileInd) {
-	float4 cols = colours[(uint)round(tileInd)];
+	float4 cols = coloursBuffer[(uint)round(tileInd)];
 	if (cols.a != CITY_COEFF) {
 		return 0;
 	}
@@ -447,7 +403,7 @@ float getTileCoeff(float2 pos) {
 	const float scale = 30000;
 	//n>0 always
 	float n = (noise2D(pos.x/scale,pos.y/scale)/2)+0.501f;
-	return min(NUM_BIOMES-1,NUM_BIOMES*n);
+	return min(cNumBiomes-1,cNumBiomes*n);
 }
 
 uint2 poorRNG(float2 xy)

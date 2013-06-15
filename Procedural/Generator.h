@@ -71,13 +71,14 @@ private:
 	ID3D11ComputeShader* mCSCity;
 	ID3D11Buffer* mCSCBDistant;
 	ID3D11Buffer* mCSCBCity;
+	ID3D11Buffer* mCSCBGlobal;
 	MessageLogger* mLogger;
 
 	UINT mSimplex2DLUT[256][256];
 	StructuredBuffer<UINT> mSimplexBuffer;
 
-	UINT mNumBiomes;
 	UINT mNoiseIterations;
+	UINT mNumBiomes;
 
 	std::vector<FLOAT> mScalesData;
 	std::vector<FLOAT> mCoeffsData;
@@ -99,6 +100,7 @@ public:
 		SAFE_RELEASE(mCSCity);
 		SAFE_RELEASE(mCSCBDistant);
 		SAFE_RELEASE(mCSCBCity);
+		SAFE_RELEASE(mCSCBGlobal);
 
 		SAFE_RELEASE(dtDisjoint);
 		SAFE_RELEASE(dtStart);
@@ -162,6 +164,24 @@ public:
 		mCoeffsData.resize(mNoiseIterations * mNumBiomes);
 		mColourCityData.resize(mNumBiomes);
 		mSpecPowData.resize(mNumBiomes);
+
+		mBufferInit = FALSE;
+	}
+
+	void setScalesData(UINT pIndex, FLOAT pValue) {
+		mScalesData[pIndex] = pValue;
+	}
+
+	void setCoeffsData(UINT pIndex, FLOAT pValue) {
+		mCoeffsData[pIndex] = pValue;
+	}
+
+	void setColourCityData(UINT pIndex, FLOAT pX, FLOAT pY, FLOAT pZ, FLOAT pW) {
+		mColourCityData[pIndex] = DirectX::XMFLOAT4(pX,pY,pZ,pW);
+	}
+
+	void setSpecPowData(UINT pIndex, FLOAT pX, FLOAT pY) {
+		mSpecPowData[pIndex] = DirectX::XMFLOAT2(pX,pY);
 	}
 
 private:

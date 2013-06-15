@@ -11,6 +11,12 @@
 #define CITY_CS_GROUP_DIM 8
 #define CITY_CS_TILE_DIM 128
 
+__declspec(align(16)) struct GlobalTileCSCB {
+	UINT numNoiseIterations;
+	UINT numBiomes;
+	DirectX::XMUINT2 padding;
+};
+
 __declspec(align(16)) struct DistantTileCSCB {
 	DirectX::XMUINT2 bufferDim;
 	DirectX::XMINT2 coords;
@@ -278,24 +284,26 @@ void Generator::ComputeTextures(ID3D11DeviceContext* pd3dContext, DistantTile &p
 
 	pd3dContext->Unmap(mCSCBDistant,0);
 
-	pd3dContext->CSSetConstantBuffers(0,1,&mCSCBDistant);
+	ID3D11Buffer* cbs[2] = {mCSCBGlobal,mCSCBDistant};
+
+	pd3dContext->CSSetConstantBuffers(0,2,cbs);
 
 	ID3D11UnorderedAccessView* uavs[3] = {pDT.mAlbedoMap.mUAV,
 		pDT.mNormalMap.mUAV,pDT.mHeightMap.mUAV};
 
 	pd3dContext->CSSetUnorderedAccessViews(0,3,uavs,0);
 
-	ID3D11ShaderResourceView* srvs[2] = {mSimplexBuffer.mSRV,mScalesBuffer.mSRV};
+	ID3D11ShaderResourceView* srvs[5] = {mSimplexBuffer.mSRV,mScalesBuffer.mSRV,mCoeffsBuffer.mSRV,mColourCityBuffer.mSRV,mSpecPowBuffer.mSRV};
 
-	pd3dContext->CSSetShaderResources(0,2,srvs);
+	pd3dContext->CSSetShaderResources(0,5,srvs);
 
 	pd3dContext->CSSetShader(mCSDistant,0,0);
 	pd3dContext->Dispatch(DISTANT_DISPATCH_DIM,DISTANT_DISPATCH_DIM,1);
 
 	ID3D11UnorderedAccessView* nulluavs[3] = {NULL,NULL,NULL};
 	pd3dContext->CSSetUnorderedAccessViews(0,3,nulluavs,0);
-	ID3D11ShaderResourceView* nullsrv[2] = {NULL,NULL};
-	pd3dContext->CSSetShaderResources(0,2,nullsrv);
+	ID3D11ShaderResourceView* nullsrv[5] = {NULL,NULL,NULL,NULL,NULL};
+	pd3dContext->CSSetShaderResources(0,5,nullsrv);
 }
 
 void Generator::ComputeCity( ID3D11DeviceContext* pd3dContext, CityTile &pCT )
@@ -312,13 +320,15 @@ void Generator::ComputeCity( ID3D11DeviceContext* pd3dContext, CityTile &pCT )
 	cscb->lodLevel = (UINT)pCT.mCLL;
 	pd3dContext->Unmap(mCSCBCity,0);
 
-	pd3dContext->CSSetConstantBuffers(0,1,&mCSCBCity);
+	ID3D11Buffer* cbs[2] = {mCSCBGlobal,mCSCBCity};
+
+	pd3dContext->CSSetConstantBuffers(0,2,cbs);
 	const UINT count = 0;
 	pd3dContext->CSSetUnorderedAccessViews(0,1,&pCT.mInstanceBuffer.mUAV,&count);
 
-	ID3D11ShaderResourceView* srvs[2] = {mSimplexBuffer.mSRV,mScalesBuffer.mSRV};
+	ID3D11ShaderResourceView* srvs[5] = {mSimplexBuffer.mSRV,mScalesBuffer.mSRV,mCoeffsBuffer.mSRV,mColourCityBuffer.mSRV,mSpecPowBuffer.mSRV};
 
-	pd3dContext->CSSetShaderResources(0,2,srvs);
+	pd3dContext->CSSetShaderResources(0,5,srvs);
 
 	pd3dContext->CSSetShader(mCSCity,0,0);
 
@@ -331,8 +341,8 @@ void Generator::ComputeCity( ID3D11DeviceContext* pd3dContext, CityTile &pCT )
 	ID3D11UnorderedAccessView* nulluavs[1] = {NULL};
 	pd3dContext->CSSetUnorderedAccessViews(0,1,nulluavs,0);
 
-	ID3D11ShaderResourceView* nullsrv[2] = {NULL,NULL};
-	pd3dContext->CSSetShaderResources(0,2,nullsrv);
+	ID3D11ShaderResourceView* nullsrv[5] = {NULL,NULL,NULL,NULL,NULL};
+	pd3dContext->CSSetShaderResources(0,5,nullsrv);
 }
 
 
@@ -369,11 +379,14 @@ HRESULT Generator::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 	bd.ByteWidth = sizeof(CityTileCSCB);
 	V_RETURN(pd3dDevice->CreateBuffer( &bd, NULL, &mCSCBCity ));
 
+	bd.ByteWidth = sizeof(GlobalTileCSCB);
+	V_RETURN(pd3dDevice->CreateBuffer(&bd, NULL, &mCSCBGlobal));
+
 	mCompiled = TRUE;
 	return S_OK;
 }
 
-Generator::Generator( MessageLogger* pLogger ) : mCompiled(FALSE),mCSDistant(NULL),mCSCity(NULL), mCSCBDistant(NULL), mCSCBCity(NULL), mLogger(pLogger), mBufferInit(FALSE), mInitialLoad(FALSE), mFrameNumber(0)
+Generator::Generator( MessageLogger* pLogger ) : mCompiled(FALSE),mCSDistant(NULL),mCSCity(NULL), mCSCBDistant(NULL), mCSCBCity(NULL), mCSCBGlobal(NULL), mLogger(pLogger), mBufferInit(FALSE), mInitialLoad(FALSE), mFrameNumber(0)
 {
 	dtDisjoint = NULL;
 	dtStart = NULL;
@@ -442,23 +455,24 @@ void Generator::InitialiseBuffers(ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 
 	mSimplexBuffer.CreateBuffer(pd3dDevice,mSimplex2DLUT);
 
-	float tempScales[12] = {
-		150000,	30000,	12800,	640,
-		320,	160,	80,		40,
-		20,		10,		5,		2.5
-	};
-
 	mScalesBuffer.mElements = (UINT)mScalesData.size();
-	mScalesBuffer.CreateBuffer(pd3dDevice,tempScales);
+	mScalesBuffer.CreateBuffer(pd3dDevice,&mScalesData[0]);
 
 	mCoeffsBuffer.mElements = (UINT)mCoeffsData.size();
-	mCoeffsBuffer.CreateBuffer(pd3dDevice,&mCoeffsData);
+	mCoeffsBuffer.CreateBuffer(pd3dDevice,&mCoeffsData[0]);
 
 	mColourCityBuffer.mElements = (UINT)mColourCityData.size();
-	mColourCityBuffer.CreateBuffer(pd3dDevice,&mColourCityData);
+	mColourCityBuffer.CreateBuffer(pd3dDevice,&mColourCityData[0]);
 
 	mSpecPowBuffer.mElements = (UINT)mSpecPowData.size();
-	mSpecPowBuffer.CreateBuffer(pd3dDevice,&mSpecPowData);
+	mSpecPowBuffer.CreateBuffer(pd3dDevice,&mSpecPowData[0]);
+
+	D3D11_MAPPED_SUBRESOURCE MappedResource;
+	pd3dContext->Map(mCSCBGlobal,0,D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
+	GlobalTileCSCB* cscb = (GlobalTileCSCB*)MappedResource.pData;
+	cscb->numBiomes = mNumBiomes;
+	cscb->numNoiseIterations = mNoiseIterations;
+	pd3dContext->Unmap(mCSCBGlobal,0);
 }
 
 UINT Generator::GetMinCityTileDim()
