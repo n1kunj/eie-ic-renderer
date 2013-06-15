@@ -1,20 +1,6 @@
-float dot20(uint simpData, const float x, const float y) {
-	int gx = (int)(simpData & 3) - 1;
-	int gy = (int)((simpData & 12) >> 2) - 1;
-	return gx*x+gy*y;
-}
-
-float dot21(uint simpData, const float x, const float y) {
-	int gx = (int)((simpData & 48) >> 4) - 1;
-	int gy = (int)((simpData & 192) >> 6) - 1;
-	return gx*x+gy*y;
-}
-
-float dot22(uint simpData, const float x, const float y) {
-	int gx = (int)((simpData & 768) >> 8) - 1;
-	int gy = (int)((simpData & 3072) >> 10) - 1;
-	return gx*x+gy*y;
-}
+float dot20(uint simpData, const float x, const float y);
+float dot21(uint simpData, const float x, const float y);
+float dot22(uint simpData, const float x, const float y);
 
 StructuredBuffer<uint> simplexBuffer : register(t0);
 
@@ -80,4 +66,22 @@ float noise2D( float x, float y) {
     // Add contributions from each corner to get the final noise value.
     // The result is scaled to return values in the interval [-1,1].
     return 70.0f * (n0 + n1 + n2);
+}
+
+float dot20(uint simpData, const float x, const float y) {
+	int gx = (int)(simpData & 3) - 1;
+	int gy = (int)((simpData & 12) >> 2) - 1;
+	return gx*x+gy*y;
+}
+
+float dot21(uint simpData, const float x, const float y) {
+	int gx = (int)((simpData & 48) >> 4) - 1;
+	int gy = (int)((simpData & 192) >> 6) - 1;
+	return gx*x+gy*y;
+}
+
+float dot22(uint simpData, const float x, const float y) {
+	int gx = (int)((simpData & 768) >> 8) - 1;
+	int gy = (int)((simpData & 3072) >> 10) - 1;
+	return gx*x+gy*y;
 }
