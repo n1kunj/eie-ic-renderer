@@ -472,7 +472,6 @@
     <ClCompile Include="Meshes\CubeMeshLoader.cpp" />
     <ClCompile Include="Procedural\DistantDrawable.cpp" />
     <ClCompile Include="Procedural\Generator.cpp" />
-    <ClCompile Include="Procedural\simplexnoise.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Shaders\LightingShader.h" />
     <ClCompile Include="Utils\ShaderTools.cpp" />
@@ -492,7 +491,7 @@
     <ClInclude Include="Meshes\CubeMeshLoader.h" />
     <ClInclude Include="Procedural\DistantDrawable.h" />
     <ClInclude Include="Procedural\Generator.h" />
-    <ClInclude Include="Procedural\simplexnoise.h" />
+    <ClInclude Include="Procedural\SimplexNoise.h" />
     <ClInclude Include="ShaderManager.h" />
     <ClInclude Include="Shaders\DistantGBufferShader.h" />
     <ClInclude Include="Shaders\FXAAShader.h" />

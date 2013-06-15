@@ -159,11 +159,11 @@
     <ClInclude Include="Procedural\Generator.h">
       <Filter>Procedural</Filter>
     </ClInclude>
-    <ClInclude Include="Procedural\simplexnoise.h">
-      <Filter>Procedural</Filter>
-    </ClInclude>
     <ClInclude Include="Shaders\CityGBufferShader.h">
       <Filter>Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="Procedural\SimplexNoise.h">
+      <Filter>Procedural</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -191,9 +191,6 @@
       <Filter>Procedural</Filter>
     </ClCompile>
     <ClCompile Include="Procedural\Generator.cpp">
-      <Filter>Procedural</Filter>
-    </ClCompile>
-    <ClCompile Include="Procedural\simplexnoise.cpp">
       <Filter>Procedural</Filter>
     </ClCompile>
   </ItemGroup>

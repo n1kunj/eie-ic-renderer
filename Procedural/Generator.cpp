@@ -1,7 +1,7 @@
 #include "DXUT.h"
 #include "Generator.h"
 #include "../Utils/ShaderTools.h"
-#include "simplexnoise.h"
+#include "SimplexNoise.h"
 
 #define ALBNORM_MAP_RESOLUTION 256
 #define HEIGHT_MAP_RESOLUTION 256
@@ -11,14 +11,14 @@
 #define CITY_CS_GROUP_DIM 8
 #define CITY_CS_TILE_DIM 128
 
-__declspec(align(16)) struct HeightMapCSCB {
+__declspec(align(16)) struct DistantTileCSCB {
 	DirectX::XMUINT2 bufferDim;
 	DirectX::XMINT2 coords;
 	UINT tileSize;
 	DirectX::XMUINT3 padding;
 };
 
-__declspec(align(16)) struct CityCSCB {
+__declspec(align(16)) struct CityTileCSCB {
 	DirectX::XMINT2 coords;
 	UINT tileSize;
 	UINT lodLevel;
@@ -271,7 +271,7 @@ void Generator::ComputeTextures(ID3D11DeviceContext* pd3dContext, DistantTile &p
 
 	D3D11_MAPPED_SUBRESOURCE MappedResource;
 	pd3dContext->Map(mCSCBDistant,0,D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
-	HeightMapCSCB* cscb = (HeightMapCSCB*)MappedResource.pData;
+	DistantTileCSCB* cscb = (DistantTileCSCB*)MappedResource.pData;
 	cscb->bufferDim = DirectX::XMUINT2(ALBNORM_MAP_RESOLUTION, ALBNORM_MAP_RESOLUTION);
 	cscb->coords = DirectX::XMINT2((INT)pDT.mPosX,(INT)pDT.mPosZ);
 	cscb->tileSize = (UINT)pDT.mSize;
@@ -307,7 +307,7 @@ void Generator::ComputeCity( ID3D11DeviceContext* pd3dContext, CityTile &pCT )
 
 	D3D11_MAPPED_SUBRESOURCE MappedResource;
 	pd3dContext->Map(mCSCBCity,0,D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
-	CityCSCB* cscb = (CityCSCB*)MappedResource.pData;
+	CityTileCSCB* cscb = (CityTileCSCB*)MappedResource.pData;
 	cscb->coords = DirectX::XMINT2((INT)pCT.mPosX,(INT)pCT.mPosZ);
 	cscb->tileSize = (UINT)pCT.mSize;
 	cscb->lodLevel = (UINT)pCT.mCLL;
@@ -320,7 +320,7 @@ void Generator::ComputeCity( ID3D11DeviceContext* pd3dContext, CityTile &pCT )
 
 	pd3dContext->CSSetShader(mCSCity,0,0);
 
-	UINT dwidth = (UINT)(pCT.mSize/CITY_CS_GROUP_DIM)/CITY_CS_TILE_DIM;
+	UINT dwidth = (UINT)(pCT.mSize/CITY_CS_GROUP_DIM * CITY_CS_TILE_DIM);
 
 	pd3dContext->Dispatch(dwidth,dwidth,1);
 
@@ -341,7 +341,7 @@ HRESULT Generator::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 	//Compile CS
 	{
 		ID3DBlob* pCSBlob = NULL;
-		V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\GeneratorShader.fx", "CSPass1", "cs_5_0", &pCSBlob ));
+		V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\GeneratorShader.fx", "CSDistantTile", "cs_5_0", &pCSBlob ));
 
 		//Create the compute shader
 		//If fails, releases pCSBlob.
@@ -351,7 +351,7 @@ HRESULT Generator::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 	//Create CSCityPass High
 	{
 		ID3DBlob* pCSBlob = NULL;
-		V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\GeneratorShader.fx", "CSCityPass", "cs_5_0", &pCSBlob ));
+		V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\GeneratorShader.fx", "CSCityTile", "cs_5_0", &pCSBlob ));
 		V_RELEASE_IF_RETURN(pCSBlob,pd3dDevice->CreateComputeShader( pCSBlob->GetBufferPointer(), pCSBlob->GetBufferSize(), NULL, &mCSCity ));
 	}
 
@@ -360,10 +360,10 @@ HRESULT Generator::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 	bd.Usage = D3D11_USAGE_DYNAMIC;
 	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	bd.ByteWidth = sizeof(HeightMapCSCB);
+	bd.ByteWidth = sizeof(DistantTileCSCB);
 	V_RETURN(pd3dDevice->CreateBuffer( &bd, NULL, &mCSCBDistant ));
 
-	bd.ByteWidth = sizeof(CityCSCB);
+	bd.ByteWidth = sizeof(CityTileCSCB);
 	V_RETURN(pd3dDevice->CreateBuffer( &bd, NULL, &mCSCBCity ));
 
 	mSimplexBuffer.CreateBuffer(pd3dDevice);

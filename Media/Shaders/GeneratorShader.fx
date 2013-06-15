@@ -25,7 +25,7 @@ bool isAccepted(float2 pos, float tileInd);
 float2 getShiftedCoords(float2 p);
 
 
-cbuffer CSPass1CSCB : register( b0 )
+cbuffer CSDistantTileCB : register( b0 )
 {
 	uint2 bufferDim;
 	int2 coords;
@@ -49,11 +49,11 @@ static const float coeffs[NUM_BIOMES][NOISE_ITERATIONS] = {
 {512,128,64,32,16,8,4,2,1,0.5f,0.25f,0.125f}, */
 {0,0,2,1,0.5,0.5,0.5,0.5,0.5,0.5,0.25,0.25},
 
-{64,0,0,0,0,0,0,0,0,0,0,0},//
+{0,0,0,0,0,0,0,0,0,0,0,0},//
 {128,0,0,0,0,0,0,0,0,0,0,0},//
 {256,0,0,0,0,0,0,0,0,0,0,0},//
 {128,0,0,0,0,0,0,0,0,0,0,0},//
-{64,0,0,0,0,0,0,0,0,0,0,0},//
+{0,0,0,0,0,0,0,0,0,0,0,0},//
 
 // {0,0,0,0,0,0.25,0,0,0,0.25,0.25,0},
 // {2048,512,128,64,32,16,8,4,2,1,0.5f,0.25f},
@@ -105,7 +105,7 @@ float2(20,1),
 groupshared float sGroupHeights[CS_GROUP_DIM][CS_GROUP_DIM];
 
 [numthreads(CS_GROUP_DIM, CS_GROUP_DIM, 1)]
-void CSPass1(uint3 groupID 			: SV_GroupID,
+void CSDistantTile(uint3 groupID 			: SV_GroupID,
 			uint3 groupThreadID    	: SV_GroupThreadID,
 			uint groupIndex 		: SV_GroupIndex)
 {
@@ -177,15 +177,15 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 		
 		if (roadDist < ROAD_WIDTH) {
 			colour = float3(0.55,0.52,0.52);
-			height = 5.0f;
+			height = 7.0f;
 		}
 		else if (roadDist < PAVE_WIDTH) {
-			height = 5.15f;
+			height = 7.15f;
 			colour = float3(0.259,0.259,0.259);
 		}
 		else {
 			colour = tileCols.rgb;
-			height = 5.15f;
+			height = 7.15f;
 		}
 	}
 	else {
@@ -233,7 +233,7 @@ void CSPass1(uint3 groupID 			: SV_GroupID,
 #define CITY_LOD_LEVEL_XLOW 3
 #define CITY_LOD_LEVEL_XXLOW 4
 
-cbuffer CSCityPassCB : register( b0 )
+cbuffer CSCityTileCB : register( b0 )
 {
 	int2 tileCoords;
 	uint tileLength;
@@ -243,10 +243,10 @@ cbuffer CSCityPassCB : register( b0 )
 AppendStructuredBuffer<Instance> sInstance : register(u0);
 
 [numthreads(8, 8, 1)]
-void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
+void CSCityTile(uint3 dispatchID : SV_DispatchThreadID)
 {
 	const float heightSeed = 300;
-	const float minHeight = 15;
+	const float minHeight = 30;
 	float2 p1 = TILE_SIZE * dispatchID.xy - ((float)tileLength/2);
 	float2 pos = tileCoords + p1;
 	
