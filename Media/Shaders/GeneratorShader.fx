@@ -15,6 +15,8 @@ RWTexture2D<float4> albedoTex : register(u0);
 RWTexture2D<float4> normalTex : register(u1);
 RWTexture2D<float> heightTex : register(u2);
 
+StructuredBuffer<float> scalesBuffer : register(t1);
+
 uint2 poorRNG(float2 xy);
 float minDist(float2 l1, float2 l2, float2 p);
 
@@ -34,12 +36,6 @@ cbuffer CSDistantTileCB : register( b0 )
 void getNoisesBoundsAccept( in float2 pos, out float noises[NOISE_ITERATIONS], out float2 bounds[4], out bool accept[4]);
 
 void getTerrainInfo( in float2 pos, in float noises[NOISE_ITERATIONS], in bool accept[4], out float tileCoeff, out float terrainHeight, out float4 tileCols, out float2 tileSpec);
-
-static const float scales[NOISE_ITERATIONS] = {
-150000,	30000,	12800,	640,
-320,	160,	80,		40,
-20,		10,		5,		2.5
-};
 
 static const float coeffs[NUM_BIOMES][NOISE_ITERATIONS] = {
 {0,0,2,1,0.5,0.5,0.5,0.5,0.5,0.5,0.25,0.25},
@@ -353,7 +349,7 @@ void CSCityTile(uint3 dispatchID : SV_DispatchThreadID)
 void getNoisesBoundsAccept( in float2 pos, out float noises[NOISE_ITERATIONS], out float2 bounds[4], out bool accept[4]) {
 	
 	[loop] for (int i = 0; i < NOISE_ITERATIONS; i++) {
-		float2 p2 = pos/(0.25f*scales[i]);
+		float2 p2 = pos/(0.25f*scalesBuffer[i]);
 		[call] noises[i] = (noise2D(p2.x,p2.y)/2)+0.5f;
 	}
 	

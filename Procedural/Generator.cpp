@@ -94,6 +94,10 @@ void Generator::Generate( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dCon
 {
 	FLOAT elapsedTime = 0;
 
+	if (!mBufferInit) {
+		InitialiseBuffers(pd3dDevice,pd3dContext);
+	}
+
 	//Load in everything right at the start
 	if (mInitialLoad) {
 		elapsedTime = -FLT_MAX;
@@ -265,10 +269,6 @@ void Generator::ComputeTextures(ID3D11DeviceContext* pd3dContext, DistantTile &p
 		return;
 	}
 
-	if (!mSimplexInit) {
-		InitialiseSimplex(pd3dContext);
-	}
-
 	D3D11_MAPPED_SUBRESOURCE MappedResource;
 	pd3dContext->Map(mCSCBDistant,0,D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
 	DistantTileCSCB* cscb = (DistantTileCSCB*)MappedResource.pData;
@@ -284,25 +284,24 @@ void Generator::ComputeTextures(ID3D11DeviceContext* pd3dContext, DistantTile &p
 		pDT.mNormalMap.mUAV,pDT.mHeightMap.mUAV};
 
 	pd3dContext->CSSetUnorderedAccessViews(0,3,uavs,0);
-	pd3dContext->CSSetShaderResources(0,1,&mSimplexBuffer.mSRV);
+
+	ID3D11ShaderResourceView* srvs[2] = {mSimplexBuffer.mSRV,mScalesBuffer.mSRV};
+
+	pd3dContext->CSSetShaderResources(0,2,srvs);
 
 	pd3dContext->CSSetShader(mCSDistant,0,0);
 	pd3dContext->Dispatch(DISTANT_DISPATCH_DIM,DISTANT_DISPATCH_DIM,1);
 
 	ID3D11UnorderedAccessView* nulluavs[3] = {NULL,NULL,NULL};
 	pd3dContext->CSSetUnorderedAccessViews(0,3,nulluavs,0);
-	ID3D11ShaderResourceView* nullsrv[1] = {NULL};
-	pd3dContext->CSSetShaderResources(0,1,nullsrv);
+	ID3D11ShaderResourceView* nullsrv[2] = {NULL,NULL};
+	pd3dContext->CSSetShaderResources(0,2,nullsrv);
 }
 
 void Generator::ComputeCity( ID3D11DeviceContext* pd3dContext, CityTile &pCT )
 {
 	if (!mCompiled) {
 		return;
-	}
-
-	if (!mSimplexInit) {
-		InitialiseSimplex(pd3dContext);
 	}
 
 	D3D11_MAPPED_SUBRESOURCE MappedResource;
@@ -316,7 +315,10 @@ void Generator::ComputeCity( ID3D11DeviceContext* pd3dContext, CityTile &pCT )
 	pd3dContext->CSSetConstantBuffers(0,1,&mCSCBCity);
 	const UINT count = 0;
 	pd3dContext->CSSetUnorderedAccessViews(0,1,&pCT.mInstanceBuffer.mUAV,&count);
-	pd3dContext->CSSetShaderResources(0,1,&mSimplexBuffer.mSRV);
+
+	ID3D11ShaderResourceView* srvs[2] = {mSimplexBuffer.mSRV,mScalesBuffer.mSRV};
+
+	pd3dContext->CSSetShaderResources(0,2,srvs);
 
 	pd3dContext->CSSetShader(mCSCity,0,0);
 
@@ -328,8 +330,9 @@ void Generator::ComputeCity( ID3D11DeviceContext* pd3dContext, CityTile &pCT )
 
 	ID3D11UnorderedAccessView* nulluavs[1] = {NULL};
 	pd3dContext->CSSetUnorderedAccessViews(0,1,nulluavs,0);
-	ID3D11ShaderResourceView* nullsrv[1] = {NULL};
-	pd3dContext->CSSetShaderResources(0,1,nullsrv);
+
+	ID3D11ShaderResourceView* nullsrv[2] = {NULL,NULL};
+	pd3dContext->CSSetShaderResources(0,2,nullsrv);
 }
 
 
@@ -366,13 +369,11 @@ HRESULT Generator::OnD3D11CreateDevice( ID3D11Device* pd3dDevice )
 	bd.ByteWidth = sizeof(CityTileCSCB);
 	V_RETURN(pd3dDevice->CreateBuffer( &bd, NULL, &mCSCBCity ));
 
-	mSimplexBuffer.CreateBuffer(pd3dDevice);
-
 	mCompiled = TRUE;
 	return S_OK;
 }
 
-Generator::Generator( MessageLogger* pLogger ) : mCompiled(FALSE),mCSDistant(NULL),mCSCity(NULL), mCSCBDistant(NULL), mCSCBCity(NULL), mLogger(pLogger), mSimplexInit(FALSE), mInitialLoad(FALSE), mFrameNumber(0)
+Generator::Generator( MessageLogger* pLogger ) : mCompiled(FALSE),mCSDistant(NULL),mCSCity(NULL), mCSCBDistant(NULL), mCSCBCity(NULL), mLogger(pLogger), mBufferInit(FALSE), mInitialLoad(FALSE), mFrameNumber(0)
 {
 	dtDisjoint = NULL;
 	dtStart = NULL;
@@ -417,23 +418,47 @@ Generator::Generator( MessageLogger* pLogger ) : mCompiled(FALSE),mCSDistant(NUL
 		}
 	}
 	mSimplexBuffer.mBindFlags = D3D11_BIND_SHADER_RESOURCE;
-	mSimplexBuffer.mCPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	mSimplexBuffer.mUsage = D3D11_USAGE_DYNAMIC;
+	mSimplexBuffer.mUsage = D3D11_USAGE_IMMUTABLE;
 	mSimplexBuffer.mElements = 256*256;
+
+	mScalesBuffer.mBindFlags = D3D11_BIND_SHADER_RESOURCE;
+	mScalesBuffer.mUsage = D3D11_USAGE_IMMUTABLE;
+
+	mCoeffsBuffer.mBindFlags = D3D11_BIND_SHADER_RESOURCE;
+	mCoeffsBuffer.mUsage = D3D11_USAGE_IMMUTABLE;
+
+	mColourCityBuffer.mBindFlags = D3D11_BIND_SHADER_RESOURCE;
+	mColourCityBuffer.mUsage = D3D11_USAGE_IMMUTABLE;
+
+	mSpecPowBuffer.mBindFlags = D3D11_BIND_SHADER_RESOURCE;
+	mSpecPowBuffer.mUsage = D3D11_USAGE_IMMUTABLE;
+
+	setNoiseBiomeCount(12,9);
 }
 
-void Generator::InitialiseSimplex( ID3D11DeviceContext* pd3dContext )
+void Generator::InitialiseBuffers(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext)
 {
-	UINT* simpl = mSimplexBuffer.MapDiscard(pd3dContext);
-	UINT index = 0;
-	for (int i = 0; i < 256; i++) {
-		for (int j = 0; j < 256; j++) {
-			simpl[index] = mSimplex2DLUT[i][j];
-			index++;
-		}
-	}
-	mSimplexBuffer.Unmap(pd3dContext);
-	mSimplexInit = TRUE;
+	mBufferInit = TRUE;
+
+	mSimplexBuffer.CreateBuffer(pd3dDevice,mSimplex2DLUT);
+
+	float tempScales[12] = {
+		150000,	30000,	12800,	640,
+		320,	160,	80,		40,
+		20,		10,		5,		2.5
+	};
+
+	mScalesBuffer.mElements = (UINT)mScalesData.size();
+	mScalesBuffer.CreateBuffer(pd3dDevice,tempScales);
+
+	mCoeffsBuffer.mElements = (UINT)mCoeffsData.size();
+	mCoeffsBuffer.CreateBuffer(pd3dDevice,&mCoeffsData);
+
+	mColourCityBuffer.mElements = (UINT)mColourCityData.size();
+	mColourCityBuffer.CreateBuffer(pd3dDevice,&mColourCityData);
+
+	mSpecPowBuffer.mElements = (UINT)mSpecPowData.size();
+	mSpecPowBuffer.CreateBuffer(pd3dDevice,&mSpecPowData);
 }
 
 UINT Generator::GetMinCityTileDim()

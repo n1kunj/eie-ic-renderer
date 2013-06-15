@@ -3,6 +3,7 @@
 #ifndef GENERATOR_H
 #define GENERATOR_H
 #include <deque>
+#include <vector>
 #include <memory>
 #include "../Texture2D.h"
 #include "../DirectXMath/DirectXMath.h"
@@ -71,9 +72,24 @@ private:
 	ID3D11Buffer* mCSCBDistant;
 	ID3D11Buffer* mCSCBCity;
 	MessageLogger* mLogger;
+
 	UINT mSimplex2DLUT[256][256];
 	StructuredBuffer<UINT> mSimplexBuffer;
-	BOOL mSimplexInit;
+
+	UINT mNumBiomes;
+	UINT mNoiseIterations;
+
+	std::vector<FLOAT> mScalesData;
+	std::vector<FLOAT> mCoeffsData;
+	std::vector<DirectX::XMFLOAT4> mColourCityData;
+	std::vector<DirectX::XMFLOAT2> mSpecPowData;
+
+	StructuredBuffer<FLOAT> mScalesBuffer;
+	StructuredBuffer<FLOAT> mCoeffsBuffer;
+	StructuredBuffer<DirectX::XMFLOAT4> mColourCityBuffer;
+	StructuredBuffer<DirectX::XMFLOAT2> mSpecPowBuffer;
+
+	BOOL mBufferInit;
 	BOOL mInitialLoad;
 	UINT64 mFrameNumber;
 public:
@@ -93,8 +109,12 @@ public:
 		SAFE_RELEASE(ctEnd);
 
 		mCompiled = FALSE;
-		mSimplexInit = FALSE;
+		mBufferInit = FALSE;
 		mSimplexBuffer.OnD3D11DestroyDevice();
+		mScalesBuffer.OnD3D11DestroyDevice();
+		mCoeffsBuffer.OnD3D11DestroyDevice();
+		mColourCityBuffer.OnD3D11DestroyDevice();
+		mSpecPowBuffer.OnD3D11DestroyDevice();
 		mTextureQueue.clear();
 		mTextureQueueHP.clear();
 		mCityQueue.clear();
@@ -135,12 +155,21 @@ public:
 
 	UINT GetMinCityTileDim();
 
+	void setNoiseBiomeCount(UINT pNumNoises, UINT pNumBiomes) {
+		mNoiseIterations = pNumNoises;
+		mNumBiomes = pNumBiomes;
+		mScalesData.resize(mNoiseIterations);
+		mCoeffsData.resize(mNoiseIterations * mNumBiomes);
+		mColourCityData.resize(mNumBiomes);
+		mSpecPowData.resize(mNumBiomes);
+	}
+
 private:
 	FLOAT ProcessDT(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, std::deque<DTPTR> &pDTqueue);
 	FLOAT ProcessCT(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, std::deque<CTPTR> &pCTqueue);
 	void ComputeTextures(ID3D11DeviceContext* pd3dContext, DistantTile &pDT );
 
-	void InitialiseSimplex( ID3D11DeviceContext* pd3dContext );
+	void InitialiseBuffers(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext);
 	void ComputeCity(ID3D11DeviceContext* pd3dContext, CityTile &pCT);
 };
 
