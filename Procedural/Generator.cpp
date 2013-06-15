@@ -320,7 +320,7 @@ void Generator::ComputeCity( ID3D11DeviceContext* pd3dContext, CityTile &pCT )
 
 	pd3dContext->CSSetShader(mCSCity,0,0);
 
-	UINT dwidth = (UINT)(pCT.mSize/CITY_CS_GROUP_DIM * CITY_CS_TILE_DIM);
+	UINT dwidth = (UINT)(pCT.mSize/(CITY_CS_GROUP_DIM * CITY_CS_TILE_DIM));
 
 	pd3dContext->Dispatch(dwidth,dwidth,1);
 
