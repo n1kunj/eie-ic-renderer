@@ -242,7 +242,7 @@ cbuffer CSCityPassCB : register( b0 )
 
 AppendStructuredBuffer<Instance> sInstance : register(u0);
 
-[numthreads(4, 4, 1)]
+[numthreads(8, 8, 1)]
 void CSCityPass(uint3 dispatchID : SV_DispatchThreadID)
 {
 	const float heightSeed = 300;

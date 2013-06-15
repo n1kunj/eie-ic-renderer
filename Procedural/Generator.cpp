@@ -8,7 +8,7 @@
 #define DISTANT_CS_GROUP_DIM 16
 #define DISTANT_DISPATCH_DIM (ALBNORM_MAP_RESOLUTION/DISTANT_CS_GROUP_DIM)
 
-#define CITY_CS_GROUP_DIM 4
+#define CITY_CS_GROUP_DIM 8
 #define CITY_CS_TILE_DIM 128
 
 __declspec(align(16)) struct HeightMapCSCB {
@@ -434,4 +434,9 @@ void Generator::InitialiseSimplex( ID3D11DeviceContext* pd3dContext )
 	}
 	mSimplexBuffer.Unmap(pd3dContext);
 	mSimplexInit = TRUE;
+}
+
+UINT Generator::GetMinCityTileDim()
+{
+	return CITY_CS_GROUP_DIM*CITY_CS_TILE_DIM;
 }

@@ -72,7 +72,7 @@ public:
 		//Compile VS
 		{
 			ID3DBlob* pVSBlob = NULL;
-			V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\GBufferShader.fx", "VS", "vs_5_0", &pVSBlob ));
+			V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\CityGBufferShader.fx", "VS", "vs_5_0", &pVSBlob ));
 
 			//Create the vertex shader
 			//If fails, releases pVSBlob.
@@ -85,7 +85,7 @@ public:
 		//Compile Instanced VS
 		{
 			ID3DBlob* pVSBlob = NULL;
-			V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\GBufferShader.fx", "VS_INSTANCED", "vs_5_0", &pVSBlob ));
+			V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\CityGBufferShader.fx", "VS_INSTANCED", "vs_5_0", &pVSBlob ));
 
 			//Create the vertex shader
 			//If fails, releases pVSBlob.
@@ -98,7 +98,7 @@ public:
 		{
 			// Compile the pixel shader
 			ID3DBlob* pPSBlob = NULL;
-			V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\GBufferShader.fx", "PS", "ps_5_0", &pPSBlob ));
+			V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\CityGBufferShader.fx", "PS", "ps_5_0", &pPSBlob ));
 
 			// Create the pixel shader
 			V_RELEASE_AND_RETURN(pPSBlob, pd3dDevice->CreatePixelShader( pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), NULL, &mPixelShader ));
@@ -107,7 +107,7 @@ public:
 		{
 			// Compile the pixel shader
 			ID3DBlob* pPSBlob = NULL;
-			V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\GBufferShader.fx", "PS_INSTANCED", "ps_5_0", &pPSBlob ));
+			V_RETURN(ShaderTools::CompileShaderFromFile( L"Shaders\\CityGBufferShader.fx", "PS_INSTANCED", "ps_5_0", &pPSBlob ));
 
 			// Create the pixel shader
 			V_RELEASE_AND_RETURN(pPSBlob, pd3dDevice->CreatePixelShader( pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), NULL, &mInstancedPS ));

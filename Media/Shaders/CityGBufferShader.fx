@@ -64,7 +64,6 @@ PS_INPUT_INSTANCED VS_INSTANCED( VS_INPUT input, uint index : SV_InstanceID)
 	float cosa = cos(angle);
 	float sina = sin(angle);
 	float3x3 rotmat = {cosa,0,-sina,0,1,0,sina,0,cosa};
-
 	
 	float4 pos = float4(input.mPos,1);
 	pos.xyz*=i0.mSize;
@@ -111,15 +110,13 @@ GBuffer PS_INSTANCED( PS_INPUT_INSTANCED input )
 	float2 texmap = tEmittance.Sample(sAnisotropic,uv);
 
 	output.mAlbedo = float4(input.mColour,1);
-//	output.mAlbedo = float4(0.3,0.3,0.3,1);
-
 	
 	output.mEmittance = float4(0,0,0,0.3f);
 
 	if (!(dot(input.mWorldNorm,float3(0,1,0)) > 0.95f)) {
 		output.mAlbedo.xyz = lerp(output.mAlbedo.xyz,float3(0,0,0),texmap.x);
 		//output.mEmittance.xyz = float3(1,1,0.5f) * texmap.y;
-				output.mEmittance.xyz = input.mColour * texmap.y;
+		output.mEmittance.xyz = input.mColour * texmap.y;
 
 	}
 	

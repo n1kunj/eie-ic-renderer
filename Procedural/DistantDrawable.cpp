@@ -10,6 +10,8 @@
 #define SIGNUM(X) ((X > 0) ? 1 : ((X < 0) ? -1 : 0))
 #define OVERLAP_SCALE 1.05f
 
+#define MAX_CITY_LODS 5
+
 typedef void (*TileCreatorFunc)(DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh);
 
 typedef void (*TileUpdaterFunc)(DrawableState& pState, Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY, DOUBLE pPosZ);
@@ -306,25 +308,25 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 		}
 	}
 
+	//Initialise city
 	{
-		//Initialise city
+		TileCreatorFunc TCFArray[MAX_CITY_LODS];
 
-		auto TCFHigh = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
+		//These are lambdas, so they need to be written out in full.
+		//As these will be used as function pointers, the capture can't be used so they can't be initialised in a for loop
+		TCFArray[0] = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
 			pState.mCityTile = std::shared_ptr<CityTile>(new CityTile(pPosX,pPosY,pPosZ,pTileSize,pMesh,CITY_LOD_LEVEL_HIGH));
 		};
-
-		auto TCFMed = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
+		TCFArray[1] = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
 			pState.mCityTile = std::shared_ptr<CityTile>(new CityTile(pPosX,pPosY,pPosZ,pTileSize,pMesh,CITY_LOD_LEVEL_MED));
 		};
-
-		auto TCFLow = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
+		TCFArray[2] = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
 			pState.mCityTile = std::shared_ptr<CityTile>(new CityTile(pPosX,pPosY,pPosZ,pTileSize,pMesh,CITY_LOD_LEVEL_LOW));
 		};
-
-		auto TCFXLow = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
+		TCFArray[3] = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
 			pState.mCityTile = std::shared_ptr<CityTile>(new CityTile(pPosX,pPosY,pPosZ,pTileSize,pMesh,CITY_LOD_LEVEL_XLOW));
 		};
-		auto TCFXXLow = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
+		TCFArray[4] = [](DrawableState& pState,Generator* pGenerator, DOUBLE pPosX,DOUBLE pPosY,DOUBLE pPosZ,DOUBLE pTileSize,DrawableMesh* pMesh) -> void {
 			pState.mCityTile = std::shared_ptr<CityTile>(new CityTile(pPosX,pPosY,pPosZ,pTileSize,pMesh,CITY_LOD_LEVEL_XXLOW));
 		};
 
@@ -363,32 +365,46 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 		DrawableShader* cityShader = pShaderManager->getDrawableShader("CityGBufferShader");
 		DrawableMesh* cityMesh = pMeshManager->getDrawableMesh("CubeMesh");
 
-		float cityTileDim = 8192*2;
+		const UINT minCityTileDim = pGenerator->GetMinCityTileDim();
 
-		DOUBLE dimension = (pMinTileSize * pow(2,mNumLods-1) * mTileDimensionLength)/cityTileDim;
+		const UINT minDimension = 6;
 
-		//Ensure dimension is even
-		dimension = ceil(dimension/2) * 2;
+		const UINT maxCityTileDim = minCityTileDim * (UINT)pow(2,MAX_CITY_LODS-1);
 
-		cityTileDim/=16;
+		const DOUBLE worldLength = (pMinTileSize * pow(2,mNumLods-1) * mTileDimensionLength);
 
-		mCityLods.push_back(new LodLevel<CityTile>(cityTileDim, (UINT)dimension, 1.0f/cityTileDim, cityMesh, cityShader, pCamera, pGenerator, NULL, TCFHigh, TUF, TDF, TUniqueF));
+		UINT numCityLods;
 
-		cityTileDim*=2;
+		UINT dimension = minDimension;
 
-		mCityLods.push_back(new LodLevel<CityTile>(cityTileDim, (UINT)dimension, 1.0f/cityTileDim, cityMesh, cityShader, pCamera, pGenerator, mCityLods[0], TCFMed, TUF, TDF, TUniqueF));
+		for (int i = 0; i < MAX_CITY_LODS; i++) {
+			UINT dim = (UINT)(minCityTileDim * pow(2,i));
+			numCityLods = i+1;
 
-		cityTileDim*=2;
+			if (dim * minDimension >= worldLength) {
+				break;
+			}
+			else if (i == MAX_CITY_LODS - 1) {
+				DOUBLE d = worldLength/maxCityTileDim;
+				dimension = (UINT)(ceil(d/2) * 2);
+			}
+		}
 
-		mCityLods.push_back(new LodLevel<CityTile>(cityTileDim, (UINT)dimension, 1.0f/cityTileDim, cityMesh, cityShader, pCamera, pGenerator, mCityLods[1], TCFLow, TUF, TDF, TUniqueF));
+		UINT cityTileDim = minCityTileDim;
 
-		cityTileDim*=2;
+		LodLevel<CityTile>* prevLod = NULL;
+		for (UINT i = 0; i < numCityLods; i++) {
 
-		mCityLods.push_back(new LodLevel<CityTile>(cityTileDim, (UINT)dimension, 1.0f/cityTileDim, cityMesh, cityShader, pCamera, pGenerator, mCityLods[2], TCFXLow, TUF, TDF, TUniqueF));
+			if (i == numCityLods-1) {
+				mCityLods.push_back(new LodLevel<CityTile>(cityTileDim, (UINT)dimension, 1.0f/cityTileDim, cityMesh, cityShader, pCamera, pGenerator, prevLod, TCFArray[i], TUFHP, TDF, TUniqueF));
+			}
+			else {
+				mCityLods.push_back(new LodLevel<CityTile>(cityTileDim, (UINT)dimension, 1.0f/cityTileDim, cityMesh, cityShader, pCamera, pGenerator, prevLod, TCFArray[i], TUF, TDF, TUniqueF));
+			}
 
-		cityTileDim*=2;
-
-		mCityLods.push_back(new LodLevel<CityTile>(cityTileDim, (UINT)dimension, 1.0f/cityTileDim, cityMesh, cityShader, pCamera, pGenerator, mCityLods[3], TCFXXLow, TUFHP, TDF, TUniqueF));
+			prevLod = mCityLods[i];
+			cityTileDim*=2;
+		}
 	}
 }
 

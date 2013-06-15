@@ -133,6 +133,8 @@ public:
 
 	void Generate(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, FLOAT pMaxRuntimeSeconds);
 
+	UINT GetMinCityTileDim();
+
 private:
 	FLOAT ProcessDT(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, std::deque<DTPTR> &pDTqueue);
 	FLOAT ProcessCT(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, std::deque<CTPTR> &pCTqueue);
