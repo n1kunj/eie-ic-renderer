@@ -3,7 +3,7 @@
 
 #define DISTANT_TILE_GROUP_DIM 18
 #define CITY_TILE_GROUP_DIM 8
-#define TILE_SIZE 128
+#define CITY_GRID_SIZE 128
 
 #define ROAD_WIDTH 12
 #define BUILD_WIDTH 23
@@ -20,12 +20,10 @@ StructuredBuffer<float> coeffsBuffer : register(t2);
 StructuredBuffer<float4> coloursBuffer : register(t3);
 StructuredBuffer<float2> specPowBuffer : register(t4);
 
-
-uint2 poorRNG(float2 xy);
-float minDist(float2 l1, float2 l2, float2 p);
-
 float getTileCoeff(float2 pos);
 bool isAccepted(float2 pos, float tileInd);
+float minDist(float2 l1, float2 l2, float2 p);
+uint2 poorRNG(float2 xy);
 
 cbuffer CSGlobalTileCB : register(b0)
 {
@@ -46,7 +44,7 @@ void getNoisesBoundsAccept( in float2 pos, out float noises[MAX_NOISE_ITERATIONS
 
 void getTerrainInfo( in float2 pos, in float noises[MAX_NOISE_ITERATIONS], in bool accept[4], out float tileCoeff, out float terrainHeight, out float4 tileCols, out float2 tileSpec);
 
-#define CITY_COEFF 0
+#define MAX_CITY_COEFF 0
 
 groupshared float sDistantHeights[DISTANT_TILE_GROUP_DIM][DISTANT_TILE_GROUP_DIM];
 
@@ -80,7 +78,7 @@ void CSDistantTile(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupThr
 	float3 colour = 0;
 	float height = 0;
 	
-	if (tileCols.a == CITY_COEFF || numAccept) {
+	if (tileCols.a <= MAX_CITY_COEFF || numAccept) {
 		float roadDist = 9999999.0f;
 
 		for (int i = 0; i < 4; i++) {
@@ -101,15 +99,12 @@ void CSDistantTile(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupThr
 		
 		if (roadDist < ROAD_WIDTH) {
 			colour = float3(0.55,0.52,0.52);
-			height = 7.0f;
 		}
 		else if (roadDist < PAVE_WIDTH) {
-			height = 7.15f;
 			colour = float3(0.259,0.259,0.259);
 		}
 		else {
 			colour = tileCols.rgb;
-			height = 7.15f;
 		}
 	}
 	else {
@@ -169,9 +164,7 @@ AppendStructuredBuffer<Instance> sInstance : register(u0);
 [numthreads(CITY_TILE_GROUP_DIM, CITY_TILE_GROUP_DIM, 1)]
 void CSCityTile(uint3 dispatchID : SV_DispatchThreadID)
 {
-	const float heightSeed = 300;
-	const float minHeight = 30;
-	float2 p1 = TILE_SIZE * dispatchID.xy - ((float)cCityTileSize/2);
+	float2 p1 = CITY_GRID_SIZE * dispatchID.xy - ((float)cCityTileSize/2);
 	float2 pos = cCityTileCoords + p1;
 	
 	float noises[MAX_NOISE_ITERATIONS];
@@ -186,6 +179,9 @@ void CSCityTile(uint3 dispatchID : SV_DispatchThreadID)
 	float2 tileSpec;
 
 	getTerrainInfo(pos, noises, accept, tileCoeff, terrainHeight, tileCols, tileSpec);
+	
+	const float heightSeed = -tileCols.a;
+	const float minHeight = 20;
 	
 	float baseheight = (noise2D(pos.x/100,pos.y/72)/2)+0.5f;
 	baseheight = minHeight + pow(baseheight,4)*(heightSeed);
@@ -209,14 +205,14 @@ void CSCityTile(uint3 dispatchID : SV_DispatchThreadID)
 	float rotY = 0;
 	float heightOffset = 0;
 	float buildWidth = BUILD_WIDTH;
-	if (cCityLodLevel == CITY_LOD_LEVEL_HIGH && baseheight > heightSeed/2) {
+	if (cCityLodLevel == CITY_LOD_LEVEL_HIGH && baseheight > 100) {
 		heightOffset = 50;
 		rotY = 0.10f * noise2D(pos.x/1000.0f,pos.y/1000.0f);
 	}
 	
 	uint2 rn = prng%4 + 1;
 	
-	const float maxFootPrint = (TILE_SIZE - (BUILD_WIDTH*2))/2;
+	const float maxFootPrint = (CITY_GRID_SIZE - (BUILD_WIDTH*2))/2;
 	float2 fp = float2(maxFootPrint/rn.x,maxFootPrint/rn.y);
 	
 	const float2 bl = float2(BUILD_WIDTH,BUILD_WIDTH);
@@ -233,7 +229,7 @@ void CSCityTile(uint3 dispatchID : SV_DispatchThreadID)
 			float height = ( ((int)((rnh.x + rnh.y)%1024)) - 512)/512.0f;
 			baseheight = baseheight + height * 0.15f * baseheight;
 			
-			p.y = terrainHeight-5 + baseheight + heightOffset;
+			p.y = terrainHeight-10 + baseheight + heightOffset;
 			
 			maxHeight = max(maxHeight,baseheight);
 			
@@ -269,7 +265,7 @@ void CSCityTile(uint3 dispatchID : SV_DispatchThreadID)
 			fp+=5;
 		}
 		
-		p.y = terrainHeight-5 + maxHeight;
+		p.y = terrainHeight-10 + maxHeight;
 
 		Instance i0;
 		i0.mPos = p;
@@ -284,19 +280,19 @@ void CSCityTile(uint3 dispatchID : SV_DispatchThreadID)
 
 void getNoisesBoundsAccept( in float2 pos, out float noises[MAX_NOISE_ITERATIONS], out float2 bounds[4], out bool accept[4]) {
 	
-	for (int i = 0; i < MAX_NOISE_ITERATIONS; i++) {
+	[loop] for (int i = 0; i < MAX_NOISE_ITERATIONS; i++) {
 		float2 p2 = pos/(0.25f*scalesBuffer[i]);
-		noises[i] = (noise2D(p2.x,p2.y)/2)+0.5f;
+		[call] noises[i] = (noise2D(p2.x,p2.y)/2)+0.5f;
 	}
 	
 	//Find the bottom left value of the quadrant we're assumed to be in
-	int2 tile_id = floor(pos/TILE_SIZE);
-	float2 bl = TILE_SIZE * tile_id;
+	int2 tile_id = floor(pos/CITY_GRID_SIZE);
+	float2 bl = CITY_GRID_SIZE * tile_id;
 	
 	bounds[0] = bl;
-	bounds[1] = bl + float2(TILE_SIZE,0);
-	bounds[2] = bl + float2(TILE_SIZE,TILE_SIZE);
-	bounds[3] = bl + float2(0,TILE_SIZE);
+	bounds[1] = bl + float2(CITY_GRID_SIZE,0);
+	bounds[2] = bl + float2(CITY_GRID_SIZE,CITY_GRID_SIZE);
+	bounds[3] = bl + float2(0,CITY_GRID_SIZE);
 	
 	[unroll] for (int i = 0; i < 4; i++) {
 		accept[i] = isAccepted(bounds[i], getTileCoeff(bounds[i]));
@@ -318,7 +314,7 @@ void getTerrainInfo( in float2 pos, in float noises[MAX_NOISE_ITERATIONS], in bo
 	float4 col2 = coloursBuffer[tc2];
 	
 	//If there are roads and we're not in a road section, we need to change the coefficient to prevent interpolation
-	if (numAccept && (colr.a != CITY_COEFF)) {
+	if (numAccept && (colr.a > MAX_CITY_COEFF)) {
 		tileCoeff = tc2;
 	}
 	//If the 2 coefficients are different, we need to prevent interpolation
@@ -334,7 +330,8 @@ void getTerrainInfo( in float2 pos, in float noises[MAX_NOISE_ITERATIONS], in bo
 		float c0 = coeffsBuffer[tcr * cNoiseIterations + i];
 		float c1 = coeffsBuffer[tc2 * cNoiseIterations + i];
 		float mult = lerp(c0,c1,ss);
-		terrainHeight += i < cNoiseIterations ? noises[i] * mult : 0;
+		float height = ((noises[i]/2)+0.5f) * mult;
+		terrainHeight += i < cNoiseIterations ? height : 0;
 	}
 	
 	//Calculate the tile colour and speculars
@@ -368,7 +365,7 @@ float minDist( float2 l1, float2 l2, float2 p) {
 
 bool isAccepted(float2 pos, float tileInd) {
 	float4 cols = coloursBuffer[(uint)round(tileInd)];
-	if (cols.a != CITY_COEFF) {
+	if (cols.a > MAX_CITY_COEFF) {
 		return 0;
 	}
 
@@ -380,9 +377,16 @@ bool isAccepted(float2 pos, float tileInd) {
 }
 
 float getTileCoeff(float2 pos) {
-	const float scale = 30000;
-	//n>0 always
-	float n = (noise2D(pos.x/scale,pos.y/scale)/2)+0.501f;
+	float n = 0;
+	const uint numNoises = 3;
+	for (uint i = 0; i < numNoises; i++) {
+		float2 pos2 = pos/scalesBuffer[i];
+		float noise = noise2D(pos2.x,pos2.y);
+		n += pow(2,numNoises-1-i)*noise;
+	}
+	
+	n = n/(2*(pow(2,numNoises)-1)) + 0.501f;
+	
 	return min(cNumBiomes-1,cNumBiomes*n);
 }
 

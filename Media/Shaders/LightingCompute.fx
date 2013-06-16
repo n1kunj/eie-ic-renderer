@@ -205,7 +205,7 @@ void LightingCS(uint3 groupId 			: SV_GroupID,
 
 			float fogFactor = saturate((fogEnd - length(gbViewPos))/(fogEnd - fogStart));
 			//fogFactor = sqrt(fogFactor);
-			fogFactor=pow(fogFactor,0.25);
+			//fogFactor=pow(fogFactor,0.25);
 			pixVal = lerp(fogCol,pixVal,fogFactor);
 			WriteSample(screenPix.xy,bufferDim.xy, float4(pixVal, 0.0f));
 		}

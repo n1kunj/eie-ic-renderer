@@ -20,7 +20,7 @@ Camera::Camera() : mHeldMouseLooking(FALSE),mMouseCentred(FALSE),
 	mForceMouseLooking(FALSE), mMouseStart(), mMoveDistanceX(0),
 	mMoveDistanceY(0),mCamMoveBackward(),mCamMoveForward(),
 	mCamStrafeLeft(),mCamStrafeRight(),mCamMoveUp(),mCamMoveDown(),
-	mzFar(300000.0f),mzNear(1.0f),mYFOV(XM_PIDIV2), mCoords(0,0,0)
+	mzFar(150000.0f),mzNear(1.0f),mYFOV(XM_PIDIV2), mCoords(0,0,0)
 {
 	// Initialize the view matrix
 	mEye = XMVectorSet( 0.0f, 5000.0f, 0.0f, 0.0f );

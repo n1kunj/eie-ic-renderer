@@ -51,3 +51,15 @@ end
 function move(x,y,z)
 CAMERA:setEye(x,y,z)
 end
+
+function runcube()
+run("cube.lua")
+end
+
+function runwater()
+run("water.lua")
+end
+
+function runmount()
+run("mountains.lua")
+end
