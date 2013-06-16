@@ -2,6 +2,7 @@
 #include "Generator.h"
 #include "../Utils/ShaderTools.h"
 #include "SimplexNoise.h"
+#include <algorithm>
 
 #define ALBNORM_MAP_RESOLUTION 256
 #define HEIGHT_MAP_RESOLUTION 256
@@ -30,7 +31,8 @@ __declspec(align(16)) struct CityTileCSCB {
 	UINT lodLevel;
 };
 
-DistantTile::DistantTile(DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize) {
+DistantTile::DistantTile(DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize, INT pPriority) {
+	mPriority = pPriority;
 	mPosX = pPosX;
 	mPosY = pPosY;
 	mPosZ = pPosZ;
@@ -59,7 +61,7 @@ DistantTile::DistantTile(DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize)
 	mHeightMap.mDesc = desc;
 }
 
-CityTile::CityTile( DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize, DrawableMesh* pMesh, CityLodLevel pCLL) : mCLL(pCLL)
+CityTile::CityTile( DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize, DrawableMesh* pMesh, CityLodLevel pCLL, INT pPriority) : mCLL(pCLL), mPriority(pPriority)
 {
 	mPosX = pPosX;
 	mPosY = pPosY;
@@ -110,6 +112,16 @@ void Generator::Generate( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dCon
 		mInitialLoad = FALSE;
 	}
 
+	auto cityCompare = [](CTPTR a, CTPTR b) -> BOOL {
+		return a->mPriority > b->mPriority;
+	};
+	auto distantCompare = [](DTPTR a, DTPTR b) -> BOOL {
+		return a->mPriority > b->mPriority;
+	};
+
+	std::sort(mCityQueue.begin(),mCityQueue.end(),cityCompare);
+	std::sort(mTextureQueue.begin(),mTextureQueue.end(),distantCompare);
+
 	while (elapsedTime <= abs(pMaxRuntimeSeconds)) {
 		if (mTextureQueueHP.size() != 0) {
 			elapsedTime += ProcessDT(pd3dDevice,pd3dContext,mTextureQueueHP);
@@ -117,14 +129,37 @@ void Generator::Generate( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dCon
 		else if (mCityQueueHP.size() != 0) {
 			elapsedTime += ProcessCT(pd3dDevice,pd3dContext,mCityQueueHP);
 		}
-		else if (mCityQueue.size() != 0) {
-			elapsedTime += ProcessCT(pd3dDevice,pd3dContext,mCityQueue);
-		}
-		else if (mTextureQueue.size() != 0) {
-			elapsedTime += ProcessDT(pd3dDevice,pd3dContext,mTextureQueue);
-		}
 		else {
-			break;
+			size_t mcqSize = mCityQueue.size();
+			size_t mtqSize = mTextureQueue.size();
+			if (mcqSize == 0 && mtqSize == 0) {
+				break;
+			}
+
+			BOOL cityFirst;
+			if (mcqSize && !mtqSize) {
+				cityFirst = TRUE;
+			}
+			else if (mtqSize && !mcqSize) {
+				cityFirst = FALSE;
+			}
+			else {
+				INT mcqp = mCityQueue.front()->mPriority;
+				INT mtqp = mTextureQueue.front()->mPriority;
+				if (mcqp >= mtqp) {
+					cityFirst = TRUE;
+				}
+				else {
+					cityFirst = FALSE;
+				}
+			}
+
+			if (cityFirst) {
+				elapsedTime += ProcessCT(pd3dDevice,pd3dContext,mCityQueue);
+			}
+			else {
+				elapsedTime += ProcessDT(pd3dDevice,pd3dContext,mTextureQueue);
+			}
 		}
 	}
 	mFrameNumber++;

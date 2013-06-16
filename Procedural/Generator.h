@@ -21,7 +21,9 @@ public:
 	Texture2D mNormalMap;
 	Texture2D mHeightMap;
 
-	DistantTile(DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize);
+	INT mPriority;
+
+	DistantTile(DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize, INT pPriority);
 	~DistantTile() {}
 };
 
@@ -42,11 +44,13 @@ public:
 	DOUBLE mSize;
 	CityLodLevel mCLL;
 
+	INT mPriority;
+
 	StructuredBuffer<InstanceData> mInstanceBuffer;
 	StructuredBuffer<UINT> mIndirectBuffer;
 	UINT mIndirectData[5];
 	//Position is the centre of the tile
-	CityTile(DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize, DrawableMesh* pMesh, CityLodLevel pCLL);
+	CityTile(DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize, DrawableMesh* pMesh, CityLodLevel pCLL, INT pPriority);
 	~CityTile() {}
 };
 
