@@ -81,12 +81,9 @@ void CSDistantTile(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupThr
 	float height = 0;
 	
 	if (tileCols.a == CITY_COEFF || numAccept) {
-		uint diag = 0;
 		float roadDist = 9999999.0f;
-		bool doDiag = 0;
 
-		[loop] for (int i = 0; i < 4; i++) {
-		
+		for (int i = 0; i < 4; i++) {
 			int ind1 = i%4;
 			int ind2 = (i+1)%4;
 			
@@ -94,28 +91,11 @@ void CSDistantTile(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupThr
 				float dist;
 				if (accept[ind2]) {
 					dist = minDist(bounds[ind1],bounds[ind2],pos);
-					if (diag) {
-						dist+=2.0f;
-					}
-					diag = 0;
 				}
 				else {
 					dist = length(bounds[ind1] - pos);
-					if (doDiag) {
-						if (!diag) {
-						bounds[ind2] = bounds[ind1];
-						accept[ind2] = accept[ind1];
-						diag = 1;
-						}
-						else {
-							diag = 0;
-						}
-					}
 				}
 				roadDist = min(roadDist,dist);
-			}
-			else {
-				diag = 0;
 			}
 		}
 		
@@ -194,9 +174,6 @@ void CSCityTile(uint3 dispatchID : SV_DispatchThreadID)
 	float2 p1 = TILE_SIZE * dispatchID.xy - ((float)cCityTileSize/2);
 	float2 pos = cCityTileCoords + p1;
 	
-	float baseheight = (noise2D(pos.x/100,pos.y/72)/2)+0.5f;
-	baseheight = minHeight + pow(baseheight,4)*(heightSeed);
-	
 	float noises[MAX_NOISE_ITERATIONS];
 	float2 bounds[4];
 	bool accept[4];
@@ -210,6 +187,9 @@ void CSCityTile(uint3 dispatchID : SV_DispatchThreadID)
 
 	getTerrainInfo(pos, noises, accept, tileCoeff, terrainHeight, tileCols, tileSpec);
 	
+	float baseheight = (noise2D(pos.x/100,pos.y/72)/2)+0.5f;
+	baseheight = minHeight + pow(baseheight,4)*(heightSeed);
+	
 	uint numAccept = 0;
 	for (uint i = 0; i < 4; i++) {
 		numAccept+=(accept[i] && accept[(i+1)%4]) ? 1 : 0;
@@ -222,9 +202,9 @@ void CSCityTile(uint3 dispatchID : SV_DispatchThreadID)
 	uint2 prng = poorRNG(pos);
 		
 	float3 col;
-	col.r = (noise2D(pos.x,pos.y)/2)+0.5f;
-	col.g = (noise2D(pos.x+900,pos.y-800)/2)+0.5f;
-	col.b = pow((noise2D(pos.x-900,pos.y+8000)/2)+0.5f,2);
+	col.r = prng.x%256/256.0;
+	col.g = prng.y%256/256.0;
+	col.b = pow((prng.y+prng.x)%1024/1024.0,2);
 	
 	float rotY = 0;
 	float heightOffset = 0;
