@@ -16,12 +16,11 @@ public:
 	DOUBLE mPosY;
 	DOUBLE mPosZ;
 	DOUBLE mSize;
+	INT mPriority;
 
 	Texture2D mAlbedoMap;
 	Texture2D mNormalMap;
 	Texture2D mHeightMap;
-
-	INT mPriority;
 
 	DistantTile(DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize, INT pPriority);
 	~DistantTile() {}
@@ -34,7 +33,7 @@ enum CityLodLevel {
 	CITY_LOD_LEVEL_XLOW = 3,
 	CITY_LOD_LEVEL_XXLOW = 4
 };
-const UINT MAX_BUILDINGS_PER_TILE[] = {16,1,1,1,1};
+const UINT MAX_OBJECTS_PER_GRID_TILE[] = {17,1,1,1,1};
 
 class CityTile {
 public:
@@ -43,7 +42,6 @@ public:
 	DOUBLE mPosZ;
 	DOUBLE mSize;
 	CityLodLevel mCLL;
-
 	INT mPriority;
 
 	StructuredBuffer<InstanceData> mInstanceBuffer;

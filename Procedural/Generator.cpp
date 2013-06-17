@@ -10,7 +10,7 @@
 #define DISTANT_DISPATCH_DIM (ALBNORM_MAP_RESOLUTION/DISTANT_CS_GROUP_DIM)
 
 #define CITY_CS_GROUP_DIM 8
-#define CITY_CS_TILE_DIM 128
+#define CITY_GRID_SIZE 128
 
 __declspec(align(16)) struct GlobalTileCSCB {
 	UINT numNoiseIterations;
@@ -68,17 +68,18 @@ CityTile::CityTile( DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize, Draw
 	mPosZ = pPosZ;
 	mSize = pSize;
 	{
-		DOUBLE numBuildings = (pSize / CITY_CS_TILE_DIM);
-		numBuildings*=numBuildings * MAX_BUILDINGS_PER_TILE[mCLL];
+		UINT maxObjects = MAX_OBJECTS_PER_GRID_TILE[mCLL];
+		UINT numBuildings = (UINT)(mSize / CITY_GRID_SIZE);
+		numBuildings *= numBuildings * maxObjects;
 
 		auto& ib = mInstanceBuffer;
 		ib.mBindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
 		ib.mCPUAccessFlags = 0;
 		ib.mUsage = D3D11_USAGE_DEFAULT;
-		ib.mElements = (INT)numBuildings;
+		ib.mElements = (UINT)numBuildings;
 		ib.mDefaultUAVDesc = FALSE;
 		ib.mUAVDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_APPEND;
-		ib.mUAVDesc.Buffer.NumElements = (INT)numBuildings;
+		ib.mUAVDesc.Buffer.NumElements = (UINT)numBuildings;
 		ib.mUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
 	}
 	{
@@ -367,7 +368,7 @@ void Generator::ComputeCity( ID3D11DeviceContext* pd3dContext, CityTile &pCT )
 
 	pd3dContext->CSSetShader(mCSCity,0,0);
 
-	UINT dwidth = (UINT)(pCT.mSize/(CITY_CS_GROUP_DIM * CITY_CS_TILE_DIM));
+	UINT dwidth = (UINT)(pCT.mSize/(CITY_CS_GROUP_DIM * CITY_GRID_SIZE));
 
 	pd3dContext->Dispatch(dwidth,dwidth,1);
 
@@ -512,5 +513,5 @@ void Generator::InitialiseBuffers(ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 
 UINT Generator::GetMinCityTileDim()
 {
-	return CITY_CS_GROUP_DIM*CITY_CS_TILE_DIM;
+	return CITY_CS_GROUP_DIM*CITY_GRID_SIZE;
 }
