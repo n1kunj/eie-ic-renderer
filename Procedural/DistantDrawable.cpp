@@ -192,7 +192,7 @@ private:
 
 		BasicDrawable& d = mTiles[index];
 
-		auto aabb = DirectX::XMFLOAT3((FLOAT)mTileSize/2,4000,(FLOAT)mTileSize/2);
+		auto aabb = DirectX::XMFLOAT3((FLOAT)mTileSize/2,10000,(FLOAT)mTileSize/2);
 
 		if (!mCamera->testFrustumAABB(d.mState.mPosition,d.mState.mCoords,aabb)) {
 			return;
@@ -395,14 +395,13 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 		UINT cityTileDim = minCityTileDim;
 
 		LodLevel<CityTile>* prevLod = NULL;
-		INT priorityHandicap = mNumLods - numCityLods;
 		for (UINT i = 0; i < numCityLods; i++) {
 
 			if (i == numCityLods-1) {
-				mCityLods.push_back(new LodLevel<CityTile>(cityTileDim, (UINT)dimension, 1.0f/cityTileDim, cityMesh, cityShader, pCamera, pGenerator, prevLod, TCFArray[i], TUFHP, TDF, TUniqueF,i + priorityHandicap));
+				mCityLods.push_back(new LodLevel<CityTile>(cityTileDim, (UINT)dimension, 1.0f/cityTileDim, cityMesh, cityShader, pCamera, pGenerator, prevLod, TCFArray[i], TUFHP, TDF, TUniqueF,i));
 			}
 			else {
-				mCityLods.push_back(new LodLevel<CityTile>(cityTileDim, (UINT)dimension, 1.0f/cityTileDim, cityMesh, cityShader, pCamera, pGenerator, prevLod, TCFArray[i], TUF, TDF, TUniqueF,i + priorityHandicap));
+				mCityLods.push_back(new LodLevel<CityTile>(cityTileDim, (UINT)dimension, 1.0f/cityTileDim, cityMesh, cityShader, pCamera, pGenerator, prevLod, TCFArray[i], TUF, TDF, TUniqueF,i));
 			}
 
 			prevLod = mCityLods[i];

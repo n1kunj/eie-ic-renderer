@@ -101,6 +101,7 @@ RendererMessageProcessor::RendererMessageProcessor( MessageLogger* logger, Rende
 		.def("setCoeffsData",&Generator::setCoeffsData)
 		.def("setColourCityData",&Generator::setColourCityData)
 		.def("setSpecPowData",&Generator::setSpecPowData)
+		.def("setCityHandicap",&Generator::setCityHandicap)
 	];
 	runScript("setup.lua");
 

@@ -54,6 +54,7 @@ spec = {
 
 DRAWMAN:addDrawable(distDr)
 
+GENERATOR:setCityHandicap(5);
 GENERATOR:setNoiseBiomeCount(numNoises,numBiomes);
 
 for i=1,numNoises do

@@ -81,6 +81,7 @@ private:
 
 	UINT mNoiseIterations;
 	UINT mNumBiomes;
+	INT mCityHandicap;
 
 	std::vector<FLOAT> mScalesData;
 	std::vector<FLOAT> mCoeffsData;
@@ -168,6 +169,10 @@ public:
 		mSpecPowData.resize(mNumBiomes);
 
 		mBufferInit = FALSE;
+	}
+
+	void setCityHandicap(INT pHandicap) {
+		mCityHandicap = pHandicap;
 	}
 
 	void setScalesData(UINT pIndex, FLOAT pValue) {

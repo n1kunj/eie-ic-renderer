@@ -57,7 +57,7 @@ DistantTile::DistantTile(DOUBLE pPosX, DOUBLE pPosY, DOUBLE pPosZ, DOUBLE pSize,
 	desc.MipLevels = 1;
 	desc.MiscFlags = 0;
 	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
-	desc.Format = DXGI_FORMAT_R16_FLOAT;
+	desc.Format = DXGI_FORMAT_R32_FLOAT;
 	mHeightMap.mDesc = desc;
 }
 
@@ -145,7 +145,7 @@ void Generator::Generate( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dCon
 				cityFirst = FALSE;
 			}
 			else {
-				INT mcqp = mCityQueue.front()->mPriority;
+				INT mcqp = mCityQueue.front()->mPriority + mCityHandicap;
 				INT mtqp = mTextureQueue.front()->mPriority;
 				if (mcqp >= mtqp) {
 					cityFirst = TRUE;
@@ -240,7 +240,7 @@ FLOAT Generator::ProcessDT(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dCo
 FLOAT Generator::ProcessCT( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, std::deque<CTPTR> &pCTqueue)
 {
 	static bool newQuery = TRUE;
-	static FLOAT sEstTime = 0.1f;
+	static FLOAT sEstTimePerBuilding = 0.1f;
 	static UINT64 sQueryFrame = 0;
 
 	if (ctDisjoint == NULL) {
@@ -274,6 +274,8 @@ FLOAT Generator::ProcessCT( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dC
 		}
 		ComputeCity(pd3dContext,*first);
 	}
+	FLOAT numBuildings = (FLOAT)first->mSize/CITY_GRID_SIZE;
+
 	pCTqueue.pop_front();
 
 	if (newQuery) {
@@ -291,7 +293,7 @@ FLOAT Generator::ProcessCT( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dC
 				if ( S_OK == pd3dContext->GetData(ctStart, &start, sizeof(UINT64),0)){
 
 					FLOAT time = ((FLOAT)(end-start))/djData.Frequency;
-					sEstTime = 0.8f * sEstTime + 0.2f * time;
+					sEstTimePerBuilding = 0.8f * sEstTimePerBuilding + 0.2f * time/numBuildings;
 
 					newQuery = true;
 				}
@@ -302,7 +304,7 @@ FLOAT Generator::ProcessCT( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dC
 		}
 	}
 
-	return sEstTime;
+	return sEstTimePerBuilding*numBuildings;
 }
 
 void Generator::ComputeTextures(ID3D11DeviceContext* pd3dContext, DistantTile &pDT )
@@ -483,6 +485,7 @@ Generator::Generator( MessageLogger* pLogger ) : mCompiled(FALSE),mCSDistant(NUL
 	mSpecPowBuffer.mUsage = D3D11_USAGE_IMMUTABLE;
 
 	setNoiseBiomeCount(12,9);
+	mCityHandicap = 0;
 }
 
 void Generator::InitialiseBuffers(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext)

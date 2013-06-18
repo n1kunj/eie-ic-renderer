@@ -38,7 +38,7 @@ cbuffer CSDistantTileCB : register(b1)
 	uint cDistantTileSize;
 }
 
-#define MAX_NOISE_ITERATIONS 12
+#define MAX_NOISE_ITERATIONS 16
 
 void getNoisesBoundsAccept( in float2 pos, out float noises[MAX_NOISE_ITERATIONS], out float2 bounds[4], out bool accept[4]);
 

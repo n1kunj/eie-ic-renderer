@@ -8,7 +8,7 @@
 
 #define CAMERALOOKSCALE 0.005
 
-#define CAMERAMOVESPEED ((2.0/1000.0)*100000.0)
+#define CAMERAMOVESPEED ((2.0/1000.0)*1000.0)
 
 using namespace DirectX;
 
@@ -20,7 +20,7 @@ Camera::Camera() : mHeldMouseLooking(FALSE),mMouseCentred(FALSE),
 	mForceMouseLooking(FALSE), mMouseStart(), mMoveDistanceX(0),
 	mMoveDistanceY(0),mCamMoveBackward(),mCamMoveForward(),
 	mCamStrafeLeft(),mCamStrafeRight(),mCamMoveUp(),mCamMoveDown(),
-	mzFar(12000000.0f),mzNear(4.0f),mYFOV(XM_PIDIV2*(2.0f/3.0f)), mCoords(0,0,0)
+	mzFar(24000000.0f),mzNear(8.0f),mYFOV(XM_PIDIV2*(2.0f/3.0f)), mCoords(0,0,0)
 {
 	// Initialize the view matrix
 	mEye = XMVectorSet( 0.0f, 5000.0f, 0.0f, 0.0f );
