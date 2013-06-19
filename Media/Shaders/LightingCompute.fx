@@ -194,18 +194,20 @@ void LightingCS(uint3 groupId 			: SV_GroupID,
 
 	pixVal = clamp(pixVal,0,1);
 	
+	//pixVal = gbEmit + gbAlbedo;
+	
 	float fogEnd = 120000*16;
-	float fogStart = 10000;
+	float fogStart = 100000;
 	
 	if (all(screenPix.xy < bufferDim.xy)) {
 		if (rawDepth != 1.0f) {
 			//WriteSample(screenPix.xy,bufferDim.xy, float4(lightCount.xxx/512.0f, 0.0f));
-			//float3 fogCol = float3( 0.329f, 0.608f, 0.722f);
-			float3 fogCol = float3( 0.00f, 0.00f, 0.01f);
+			float3 fogCol = float3( 0.501f, 0.855f, 0.921f);
+			//float3 fogCol = float3( 0.00f, 0.00f, 0.01f);
 
 			float fogFactor = saturate((fogEnd - length(gbViewPos))/(fogEnd - fogStart));
 			//fogFactor = sqrt(fogFactor);
-			//fogFactor=pow(fogFactor,0.25);
+			//fogFactor=pow(fogFactor,2);
 			pixVal = lerp(fogCol,pixVal,fogFactor);
 			WriteSample(screenPix.xy,bufferDim.xy, float4(pixVal, 0.0f));
 		}

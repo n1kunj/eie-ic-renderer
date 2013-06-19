@@ -5,10 +5,11 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <sstream>
+#include "Renderer.h"
 
 #define CAMERALOOKSCALE 0.005
 
-#define CAMERAMOVESPEED ((2.0/1000.0)*1000.0)
+#define CAMERAMOVESPEEDSCALE (2.0/1000.0)
 
 using namespace DirectX;
 
@@ -16,11 +17,11 @@ double getTime() {
 	return 1000 * DXUTGetTime();
 }
 
-Camera::Camera() : mHeldMouseLooking(FALSE),mMouseCentred(FALSE),
+Camera::Camera(RendererSettings* pRendererSettings) : mHeldMouseLooking(FALSE),mMouseCentred(FALSE),
 	mForceMouseLooking(FALSE), mMouseStart(), mMoveDistanceX(0),
 	mMoveDistanceY(0),mCamMoveBackward(),mCamMoveForward(),
 	mCamStrafeLeft(),mCamStrafeRight(),mCamMoveUp(),mCamMoveDown(),
-	mzFar(24000000.0f),mzNear(8.0f),mYFOV(XM_PIDIV2*(2.0f/3.0f)), mCoords(0,0,0)
+	mCoords(0,0,0), mRendererSettings(pRendererSettings), mYFOV(XM_PIDIV2 * (2.0f/3.0f))
 {
 	// Initialize the view matrix
 	mEye = XMVectorSet( 0.0f, 5000.0f, 0.0f, 0.0f );
@@ -45,6 +46,9 @@ void Camera::setEye(DOUBLE x, DOUBLE y, DOUBLE z) {
 
 void Camera::update(DXGI_SURFACE_DESC pSurfaceDesc)
 {
+	mCameraMoveSpeed = mRendererSettings->cameraspeed * CAMERAMOVESPEEDSCALE;
+	mzFar = mRendererSettings->zfar;
+	mzNear = mRendererSettings->znear;
 	updateCameraMove();
 
 	FLOAT mEyeX = XMVectorGetX(mEye);
@@ -92,7 +96,7 @@ void Camera::update(DXGI_SURFACE_DESC pSurfaceDesc)
 
 	FLOAT aspect = pSurfaceDesc.Width / (FLOAT)pSurfaceDesc.Height;
 
-	mProjectionMatrix = XMMatrixPerspectiveFovLH( mYFOV, aspect, mzNear, mzFar);
+	mProjectionMatrix = XMMatrixPerspectiveFovLH(mYFOV, aspect, mzNear, mzFar);
 
 	mViewProjectionMatrix = XMMatrixMultiply(mViewMatrix,mProjectionMatrix);
 
@@ -222,12 +226,12 @@ LRESULT Camera::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, boo
 
 void Camera::updateCameraMove()
 {
-	DOUBLE forwardDist = (DOUBLE) mCamMoveForward.GetTicksPressedFor() * CAMERAMOVESPEED;
-	DOUBLE backwardDist = (DOUBLE) mCamMoveBackward.GetTicksPressedFor() * CAMERAMOVESPEED;
-	DOUBLE leftDist = (DOUBLE) mCamStrafeLeft.GetTicksPressedFor() * CAMERAMOVESPEED;
-	DOUBLE rightDist = (DOUBLE) mCamStrafeRight.GetTicksPressedFor() * CAMERAMOVESPEED;
-	DOUBLE upDist = (DOUBLE) mCamMoveUp.GetTicksPressedFor() * CAMERAMOVESPEED;
-	DOUBLE downDist = (DOUBLE) mCamMoveDown.GetTicksPressedFor() * CAMERAMOVESPEED;
+	DOUBLE forwardDist = (DOUBLE) mCamMoveForward.GetTicksPressedFor() * mCameraMoveSpeed;
+	DOUBLE backwardDist = (DOUBLE) mCamMoveBackward.GetTicksPressedFor() * mCameraMoveSpeed;
+	DOUBLE leftDist = (DOUBLE) mCamStrafeLeft.GetTicksPressedFor() * mCameraMoveSpeed;
+	DOUBLE rightDist = (DOUBLE) mCamStrafeRight.GetTicksPressedFor() * mCameraMoveSpeed;
+	DOUBLE upDist = (DOUBLE) mCamMoveUp.GetTicksPressedFor() * mCameraMoveSpeed;
+	DOUBLE downDist = (DOUBLE) mCamMoveDown.GetTicksPressedFor() * mCameraMoveSpeed;
 	
 	DOUBLE deltaForward = forwardDist - backwardDist;
 	DOUBLE deltaLeft = leftDist - rightDist;

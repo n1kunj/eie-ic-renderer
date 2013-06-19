@@ -18,7 +18,7 @@
 
 Renderer::Renderer(MessageLogger* mLogger) : mLogger(mLogger), mDrawableManager()
 {
-	mCamera = new Camera();
+	mCamera = new Camera(&mSettings);
 	mMeshManager = new MeshManager();
 	mMeshManager->addMesh(new DrawableMesh(L"CubeMesh",new CubeMeshLoader()));
 	mMeshManager->addMesh(new DrawableMesh(L"Plane2",new PlaneLoader(3)));

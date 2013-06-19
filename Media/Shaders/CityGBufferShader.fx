@@ -51,13 +51,13 @@ PS_INPUT VS( VS_INPUT input)
     return output;
 }
 
-StructuredBuffer<Instance> bIndices : register(t0);
+StructuredBuffer<Instance> bInstances : register(t0);
 
 PS_INPUT_INSTANCED VS_INSTANCED( VS_INPUT input, uint index : SV_InstanceID)
 {
     PS_INPUT_INSTANCED output;
 	
-	Instance i0 = bIndices[index];
+	Instance i0 = bInstances[index];
 	
 	float angle = i0.mRotY;
 	

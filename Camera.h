@@ -3,6 +3,8 @@
 #define CAMERA_H
 #include "DirectXMath/DirectXMath.h"
 
+struct RendererSettings;
+
 class CameraButton{
 public:
 	CameraButton();
@@ -51,7 +53,7 @@ public:
 		return ((DOUBLE) DirectX::XMVectorGetZ(mEye)) + mCoords.z;
 	}
 
-	Camera();
+	Camera(RendererSettings* pRendererSettings);
 	~Camera();
 
 private:
@@ -77,6 +79,8 @@ private:
 	POINT mMouseStart;
 	DOUBLE mMoveDistanceX;
 	DOUBLE mMoveDistanceY;
+	DOUBLE mCameraMoveSpeed;
+
 
 	boolean mForceMouseLooking;
 	boolean mHeldMouseLooking;
@@ -97,6 +101,8 @@ private:
 	CameraButton mCamStrafeRight;
 	CameraButton mCamMoveDown;
 	CameraButton mCamMoveUp;
+	RendererSettings* mRendererSettings;
+	
 };
 
 #endif

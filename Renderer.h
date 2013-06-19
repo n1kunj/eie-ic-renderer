@@ -16,8 +16,15 @@ class Generator;
 
 struct RendererSettings {
 	BOOL wireframe;
+	DOUBLE cameraspeed;
+	FLOAT znear;
+	FLOAT zfar;
+
 	RendererSettings() {
 		wireframe = FALSE;
+		cameraspeed = 1000;
+		zfar = 24000000.0;
+		znear = 8.0;
 	}
 };
 

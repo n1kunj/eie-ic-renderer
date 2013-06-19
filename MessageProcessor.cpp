@@ -64,7 +64,10 @@ RendererMessageProcessor::RendererMessageProcessor( MessageLogger* logger, Rende
 		.def_readwrite("w", &XMFLOAT4::w),
 
 		class_<RendererSettings>("RendererSettings")
-		.def_readwrite("wireframe", &RendererSettings::wireframe),
+		.def_readwrite("wireframe", &RendererSettings::wireframe)
+		.def_readwrite("cameraspeed", &RendererSettings::cameraspeed)
+		.def_readwrite("znear", &RendererSettings::znear)
+		.def_readwrite("zfar", &RendererSettings::zfar),
 
 		class_<DrawableState>("DrawableState")
 		.def("setPosition", &DrawableState::setPosition)
@@ -113,7 +116,7 @@ RendererMessageProcessor::RendererMessageProcessor( MessageLogger* logger, Rende
 	call_function<void>(mLuaState,"setRendererSettings",boost::ref(mRenderer->mSettings));
 	call_function<void>(mLuaState,"setGenerator",boost::ref(mRenderer->mGenerator));
 
-	runScript("cube.lua");
+	runScript("mountains.lua");
 
 }
 

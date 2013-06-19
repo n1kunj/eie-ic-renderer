@@ -1,3 +1,10 @@
+/* This code has been adapted from an implementation by Eliot Eshelman.
+https://code.google.com/p/battlestar-tux/source/browse/procedural/simplexnoise.cpp
+http://www.6by9.net/simplex-noise-for-c-and-python/
+*/
+
+//Something something GPL
+
 float dot20(uint simpData, const float x, const float y);
 float dot21(uint simpData, const float x, const float y);
 float dot22(uint simpData, const float x, const float y);
