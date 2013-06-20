@@ -169,7 +169,7 @@ void Generator::Generate( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dCon
 FLOAT Generator::ProcessDT(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, std::deque<DTPTR> &pDTqueue) {
 
 	static bool newQuery = TRUE;
-	static FLOAT sEstTime = 0.1f;
+	static FLOAT sEstTime = 0.01f;
 	static UINT64 sQueryFrame = 0;
 
 	if (dtDisjoint == NULL) {
@@ -240,7 +240,7 @@ FLOAT Generator::ProcessDT(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dCo
 FLOAT Generator::ProcessCT( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dContext, std::deque<CTPTR> &pCTqueue)
 {
 	static bool newQuery = TRUE;
-	static FLOAT sEstTimePerBuilding = 0.1f;
+	static FLOAT sEstTimePerBuilding = 0.001f;
 	static UINT64 sQueryFrame = 0;
 
 	if (ctDisjoint == NULL) {
