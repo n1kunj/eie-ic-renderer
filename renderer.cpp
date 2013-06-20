@@ -347,7 +347,14 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 	//Set read only DS and proxy output texture
 	//We set this here to prevent the runtime from complaining
 	//We don't actually need it for the compute shader
-	pd3dImmediateContext->OMSetRenderTargets(1, &mProxyTexture.mRTV, mDSVRO.mDSV);
+
+	if (mSettings.fxaa) {
+		pd3dImmediateContext->OMSetRenderTargets(1, &mProxyTexture.mRTV, mDSVRO.mDSV);
+	}
+	else {
+		pd3dImmediateContext->OMSetRenderTargets(1, &backBuffer, mDSVRO.mDSV);
+	}
+
 
 	//Lighting CS
 	mLightingCompute->Compute(pd3dImmediateContext,GBufferSRVs,&mLightingCSFBSB,mCamera,numLights);
@@ -357,9 +364,11 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 	//Final lighting shader (skybox etc.)
 	mLightingShader->DrawPost(pd3dImmediateContext,SkyboxSRVs,mCamera);
 
-	//FXAA into back buffer, no need for a depth buffer to be bound
-	pd3dImmediateContext->OMSetRenderTargets(1, &backBuffer, NULL);
-	mFXAAShader->DrawPost(pd3dImmediateContext,mProxyTexture.mSRV);
+	if (mSettings.fxaa) {
+		//FXAA into back buffer, no need for a depth buffer to be bound
+		pd3dImmediateContext->OMSetRenderTargets(1, &backBuffer, NULL);
+		mFXAAShader->DrawPost(pd3dImmediateContext,mProxyTexture.mSRV);
+	}
 }
 
 void Renderer::OnExit()

@@ -67,7 +67,8 @@ RendererMessageProcessor::RendererMessageProcessor( MessageLogger* logger, Rende
 		.def_readwrite("wireframe", &RendererSettings::wireframe)
 		.def_readwrite("cameraspeed", &RendererSettings::cameraspeed)
 		.def_readwrite("znear", &RendererSettings::znear)
-		.def_readwrite("zfar", &RendererSettings::zfar),
+		.def_readwrite("zfar", &RendererSettings::zfar)
+		.def_readwrite("fxaa", &RendererSettings::fxaa),
 
 		class_<DrawableState>("DrawableState")
 		.def("setPosition", &DrawableState::setPosition)

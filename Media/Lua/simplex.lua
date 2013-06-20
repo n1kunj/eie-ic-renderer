@@ -1,23 +1,21 @@
 reset()
 
-numNoises = 12
+numNoises = 3
 numBiomes = 1
 
 
-scales = {150000, 30000, 12800,	640,
-		320, 160, 80, 40,
-		20, 10, 5, 2.5}
+scales = {100000,50000,25000}
 		
 coeffs = {
-0,-100,100,-10,10,-1,1,-1,1,-1,0.5,0.5,
+10000,5000,2500
 };
 
 cols = {
-0,0,0.5,1,
+1,1,1,1,
 };
 
 spec = {
-20,1,
+20,0,
 };
 
 distDr = DistantDrawable(CAMERA,SHADERMAN,MESHMAN,GENERATOR,6,15,42.5);
