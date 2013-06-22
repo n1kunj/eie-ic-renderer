@@ -23,9 +23,9 @@ struct RendererSettings {
 
 	RendererSettings() {
 		wireframe = FALSE;
-		cameraspeed = 1000;
-		zfar = 24000000.0;
-		znear = 8.0;
+		cameraspeed = 100000;
+		zfar = 1000000000.0;
+		znear = 10.0;
 		fxaa = 1;
 	}
 };

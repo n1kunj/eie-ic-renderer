@@ -387,7 +387,7 @@ float getTileCoeff(float2 pos) {
 	
 	n = n/(2*(pow(2,numNoises)-1)) + 0.501f;
 	
-	return min(cNumBiomes-1,cNumBiomes*n);
+	return min(cNumBiomes-1,(cNumBiomes-1)*n);
 }
 
 uint2 poorRNG(float2 xy)

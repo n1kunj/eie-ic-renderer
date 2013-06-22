@@ -43,13 +43,13 @@ public:
 
 	void setEye(DOUBLE x, DOUBLE y, DOUBLE z);
 
-	DOUBLE getEyeX() {
+	DOUBLE getEyeX() const {
 		return ((DOUBLE) DirectX::XMVectorGetX(mEye)) + mCoords.x;
 	}
-	DOUBLE getEyeY() {
+	DOUBLE getEyeY() const {
 		return ((DOUBLE) DirectX::XMVectorGetY(mEye)) + mCoords.y;
 	}
-	DOUBLE getEyeZ() {
+	DOUBLE getEyeZ() const {
 		return ((DOUBLE) DirectX::XMVectorGetZ(mEye)) + mCoords.z;
 	}
 

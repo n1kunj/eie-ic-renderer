@@ -63,3 +63,7 @@ end
 function runmount()
 run("mountains.lua")
 end
+
+function runearth()
+run("earth.lua")
+end

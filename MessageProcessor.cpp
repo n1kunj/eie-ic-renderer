@@ -117,7 +117,7 @@ RendererMessageProcessor::RendererMessageProcessor( MessageLogger* logger, Rende
 	call_function<void>(mLuaState,"setRendererSettings",boost::ref(mRenderer->mSettings));
 	call_function<void>(mLuaState,"setGenerator",boost::ref(mRenderer->mGenerator));
 
-	runScript("mountains.lua");
+	runScript("earth.lua");
 
 }
 

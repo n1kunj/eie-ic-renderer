@@ -8,8 +8,10 @@
 
 __declspec(align(16)) struct LightingPSCB
 {
+	DirectX::XMMATRIX Projection;
 	DirectX::XMUINT2 bufferDim;
-	DirectX::XMFLOAT2 padding0;
+	FLOAT yHeight;
+	FLOAT padding;
 };
 
 class LightingShader{
@@ -45,7 +47,9 @@ public:
 		D3D11_MAPPED_SUBRESOURCE MappedResource;
 		pd3dContext->Map(mPSCB,0,D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
 		LightingPSCB* pscb = (LightingPSCB*)MappedResource.pData;
+		pscb->Projection = XMMatrixTranspose(pCamera->mProjectionMatrix);
 		pscb->bufferDim = DirectX::XMUINT2(width,height);
+		pscb->yHeight = (FLOAT)pCamera->getEyeY();
 		pd3dContext->Unmap(mPSCB,0);
 
 		pd3dContext->PSSetConstantBuffers(0,1,&mPSCB);
