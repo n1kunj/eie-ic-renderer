@@ -123,7 +123,7 @@ void Generator::Generate( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dCon
 	std::sort(mCityQueue.begin(),mCityQueue.end(),cityCompare);
 	std::sort(mTextureQueue.begin(),mTextureQueue.end(),distantCompare);
 
-	while (elapsedTime <= abs(pMaxRuntimeSeconds)) {
+	while (elapsedTime <= pMaxRuntimeSeconds) {
 		if (mTextureQueueHP.size() != 0) {
 			elapsedTime += ProcessDT(pd3dDevice,pd3dContext,mTextureQueueHP);
 		}

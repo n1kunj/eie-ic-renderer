@@ -18,7 +18,7 @@ __declspec(align(16)) struct DistantGBufferVSCB
 	DirectX::XMMATRIX MV;
 	DirectX::XMMATRIX MVP;
 	DirectX::XMINT3 Offset;
-	FLOAT padding;
+	FLOAT tessAmount;
 };
 
 class DistantGBufferShader : public DrawableShader {
@@ -32,6 +32,7 @@ private:
 	ID3D11Buffer* mDSConstantBuffer;
 	ID3D11SamplerState* mDefaultSampler;
 	ID3D11SamplerState* mAnisotropicSampler;
+	FLOAT* mTessAmount;
 
 public:
 	void OnD3D11DestroyDevice() {
@@ -46,8 +47,8 @@ public:
 		mCompiled = FALSE;
 	}
 
-	DistantGBufferShader() : DrawableShader(L"DistantGBufferShader"),mCompiled(FALSE),mVertexLayout(NULL),
-		mVertexShader(NULL),mPixelShader(NULL),mDSConstantBuffer(NULL),mHullShader(NULL), mDomainShader(NULL), mDefaultSampler(NULL), mAnisotropicSampler(NULL) {}
+	DistantGBufferShader(FLOAT* pTessAmount) : DrawableShader(L"DistantGBufferShader"),mCompiled(FALSE),mVertexLayout(NULL),
+		mVertexShader(NULL),mPixelShader(NULL),mDSConstantBuffer(NULL),mHullShader(NULL), mDomainShader(NULL), mDefaultSampler(NULL), mAnisotropicSampler(NULL), mTessAmount(pTessAmount) {}
 
 	~DistantGBufferShader()
 	{
@@ -157,8 +158,10 @@ private:
 		vscb->Offset = XMINT3(mCrds.x - cCrds.x,
 			mCrds.y - cCrds.y,
 			mCrds.z - cCrds.z);
+		vscb->tessAmount = *mTessAmount;
 		pd3dContext->Unmap(mDSConstantBuffer,0);
 
+		pd3dContext->HSSetConstantBuffers( 0, 1, &mDSConstantBuffer );
 		pd3dContext->DSSetConstantBuffers( 0, 1, &mDSConstantBuffer );
 		pd3dContext->PSSetConstantBuffers( 0, 1, &mDSConstantBuffer );
 		pd3dContext->PSSetSamplers(0,1,&mDefaultSampler);

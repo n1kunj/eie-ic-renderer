@@ -96,9 +96,9 @@ spec = {
 20,0.7,
 };
 
-distDr = DistantDrawable(CAMERA,SHADERMAN,MESHMAN,GENERATOR,6,16,85);
 GENERATOR:setCityHandicap(6);
 GENERATOR:setNoiseBiomeCount(numNoises,numBiomes);
+distDr = DistantDrawable(CAMERA,SHADERMAN,MESHMAN,GENERATOR,6,15,85);
 
 for i=1,numNoises do
 GENERATOR:setScalesData(i-1,scales[i]*2);

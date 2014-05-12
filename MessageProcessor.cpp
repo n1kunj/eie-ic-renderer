@@ -27,7 +27,7 @@ using namespace DirectX;
 
 RendererMessageProcessor::RendererMessageProcessor( MessageLogger* logger, Renderer* renderer ) :
 	mLogger(logger), mRenderer(renderer),
-	mLogColourR(1.0f),mLogColourG(0.0f),mLogColourB(1.0f),
+	mLogColourR(0.0f),mLogColourG(0.0f),mLogColourB(0.0f),
 	mErrorColourR(1.0f),mErrorColourG(0.0f),mErrorColourB(0.0f)
 {
 	//Dynamically allocates memory within this function
@@ -44,7 +44,12 @@ RendererMessageProcessor::RendererMessageProcessor( MessageLogger* logger, Rende
 		.def("luaLog", (void(RendererMessageProcessor::*)(float))&RendererMessageProcessor::luaLog)
 		.def("runScript", &RendererMessageProcessor::runScript),
 		class_<Camera>("Camera")
-		.def("setEye", &Camera::setEye),
+		.def("setEye", &Camera::setEye)
+		.def("setLook", &Camera::setLook)
+		.def("smoothLook", &Camera::smoothLook)
+		.def("constLook", &Camera::constLook)
+		.def("smoothMove", &Camera::smoothMove)
+		.def("constMove", &Camera::constMove),
 		class_<DrawableShader>("DrawableShader"),
 		class_<DrawableMesh>("DrawableMesh"),
 
@@ -68,7 +73,10 @@ RendererMessageProcessor::RendererMessageProcessor( MessageLogger* logger, Rende
 		.def_readwrite("cameraspeed", &RendererSettings::cameraspeed)
 		.def_readwrite("znear", &RendererSettings::znear)
 		.def_readwrite("zfar", &RendererSettings::zfar)
-		.def_readwrite("fxaa", &RendererSettings::fxaa),
+		.def_readwrite("fxaa", &RendererSettings::fxaa)
+		.def_readwrite("schedTime", &RendererSettings::schedTime)
+		.def_readwrite("schedStep", &RendererSettings::schedStep)
+		.def_readwrite("tessAmount", &RendererSettings::tessAmount),
 
 		class_<DrawableState>("DrawableState")
 		.def("setPosition", &DrawableState::setPosition)
@@ -106,6 +114,8 @@ RendererMessageProcessor::RendererMessageProcessor( MessageLogger* logger, Rende
 		.def("setColourCityData",&Generator::setColourCityData)
 		.def("setSpecPowData",&Generator::setSpecPowData)
 		.def("setCityHandicap",&Generator::setCityHandicap)
+		.def("setInitialLoad",&Generator::setInitialLoad)
+		.def("reset",&Generator::reset)
 	];
 	runScript("setup.lua");
 
@@ -117,7 +127,7 @@ RendererMessageProcessor::RendererMessageProcessor( MessageLogger* logger, Rende
 	call_function<void>(mLuaState,"setRendererSettings",boost::ref(mRenderer->mSettings));
 	call_function<void>(mLuaState,"setGenerator",boost::ref(mRenderer->mGenerator));
 
-	runScript("earth.lua");
+	runScript("cues.lua");
 
 }
 

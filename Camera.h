@@ -53,6 +53,16 @@ public:
 		return ((DOUBLE) DirectX::XMVectorGetZ(mEye)) + mCoords.z;
 	}
 
+	void smoothMove(DOUBLE x, DOUBLE y, DOUBLE z, DOUBLE speed);
+
+	void constMove(DOUBLE speedX, DOUBLE speedY, DOUBLE speedZ);
+
+	void setLook(DOUBLE zenith, DOUBLE azimuth);
+
+	void smoothLook(DOUBLE zenith, DOUBLE azimuth, DOUBLE rotSpeed);
+
+	void constLook(DOUBLE dz, DOUBLE da);
+
 	Camera(RendererSettings* pRendererSettings);
 	~Camera();
 
@@ -76,11 +86,33 @@ private:
 	DirectX::XMVECTOR mLeftTopNearPoint;
 	DirectX::XMVECTOR mRightBottomFarPoint;
 
+	DOUBLE mLastUpdateTime;
+
 	POINT mMouseStart;
-	DOUBLE mMoveDistanceX;
-	DOUBLE mMoveDistanceY;
+	DOUBLE mLookDistanceX;
+	DOUBLE mLookDistanceY;
+
+	BOOL mSmoothLook;
+	DOUBLE mSmoothLookDistanceX;
+	DOUBLE mSmoothLookDistanceY;
+	DOUBLE mRotSpeed;
+
+	BOOL mConstLook;
+	DOUBLE mConstLookDX;
+	DOUBLE mConstLookDY;
+
 	DOUBLE mCameraMoveSpeed;
 
+	BOOL mSmoothMove;
+	DOUBLE mSmoothMoveX;
+	DOUBLE mSmoothMoveY;
+	DOUBLE mSmoothMoveZ;
+	DOUBLE mSmoothMoveSpeed;
+
+	BOOL mConstMove;
+	DOUBLE mConstMoveX;
+	DOUBLE mConstMoveY;
+	DOUBLE mConstMoveZ;
 
 	boolean mForceMouseLooking;
 	boolean mHeldMouseLooking;

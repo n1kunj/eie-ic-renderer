@@ -26,13 +26,13 @@ public:
 	void setMessageProcessor(MessageProcessor* pMProc) {
 		mMessageProcessor = pMProc;
 	}
+	void processConsoleInput(WCHAR* input);
 private:
 	DebugText* mDebugText;
 	DebugTextArray* mDebugTextArray;
 	MessageProcessor* mMessageProcessor;
 	INT mCurrentInputCursor;
 	INT mShowStartLine;
-	void processConsoleInput(WCHAR* input);
 	WCHAR* currentInput;
 	FLOAT mInputColourR;
 	FLOAT mInputColourG;

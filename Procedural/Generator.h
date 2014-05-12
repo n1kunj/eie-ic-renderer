@@ -120,6 +120,10 @@ public:
 		mCoeffsBuffer.OnD3D11DestroyDevice();
 		mColourCityBuffer.OnD3D11DestroyDevice();
 		mSpecPowBuffer.OnD3D11DestroyDevice();
+		reset();
+	}
+
+	void reset() {
 		mTextureQueue.clear();
 		mTextureQueueHP.clear();
 		mCityQueue.clear();

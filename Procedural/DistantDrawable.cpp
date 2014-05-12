@@ -241,13 +241,11 @@ private:
 
 DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager, MeshManager* pMeshManager, Generator* pGenerator, UINT pTileDimensionLength, UINT pNumLods, DOUBLE pMinTileSize) : Drawable(pCamera)
 {
-	pGenerator->setInitialLoad();
-
 	{
 		//Initialise terrain
 
 		DrawableShader* shader = pShaderManager->getDrawableShader("DistantGBufferShader");
-		DrawableMesh* mesh = pMeshManager->getDrawableMesh("Plane16");
+		DrawableMesh* mesh = pMeshManager->getDrawableMesh("Plane2");
 
 		mTileDimensionLength = pTileDimensionLength;
 		mNumLods = pNumLods;
@@ -279,7 +277,9 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 
 			//If unique, add to the generator. Else, it's already in there pending!
 			if (dt.unique()) {
-				pGenerator->InitialiseTileHighPriority(dt);
+				pGenerator->InitialiseTile(dt);
+
+				//pGenerator->InitialiseTileHighPriority(dt);
 			}
 		};
 	
@@ -352,7 +352,8 @@ DistantDrawable::DistantDrawable( Camera* pCamera, ShaderManager* pShaderManager
 
 			//If unique, add to the generator. Else, it's already in there pending!
 			if (dt.unique()) {
-				pGenerator->InitialiseTileHighPriority(dt);
+				pGenerator->InitialiseTile(dt);
+				//pGenerator->InitialiseTileHighPriority(dt);
 			}
 		};
 

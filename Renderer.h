@@ -20,6 +20,9 @@ struct RendererSettings {
 	FLOAT znear;
 	FLOAT zfar;
 	BOOL fxaa;
+	FLOAT schedTime;
+	BOOL schedStep;
+	FLOAT tessAmount;
 
 	RendererSettings() {
 		wireframe = FALSE;
@@ -27,6 +30,9 @@ struct RendererSettings {
 		zfar = 1000000000.0;
 		znear = 10.0;
 		fxaa = 1;
+		schedTime = 0.15;
+		schedStep = 0;
+		tessAmount = 32;
 	}
 };
 

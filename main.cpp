@@ -197,7 +197,28 @@ LRESULT CALLBACK MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 	}
 
 	if (focusedUI!= FOCUSED_CONSOLE) {
-		renderer.MsgProc(hWnd,uMsg,wParam,lParam,pbNoFurtherProcessing,pUserContext);
+		if (uMsg == WM_KEYDOWN) {
+			if (wParam == 'J') {
+				devConsole.processConsoleInput(L"cue = cue - 1;");
+				devConsole.processConsoleInput(L"run(\"cues.lua\")");
+				*pbNoFurtherProcessing = true;
+			}
+			else if (wParam == 'K') {
+				devConsole.processConsoleInput(L"cue = cue + 1;");
+				devConsole.processConsoleInput(L"run(\"cues.lua\")");
+				*pbNoFurtherProcessing = true;
+			}
+			else if (wParam == 'L') {
+				devConsole.processConsoleInput(L"step()");
+				*pbNoFurtherProcessing = true;
+			}
+		}
+
+		if (*pbNoFurtherProcessing) {
+			return 0;
+		}
+
+		renderer.MsgProc(hWnd, uMsg, wParam, lParam, pbNoFurtherProcessing, pUserContext);
 	}
 
 	return 0;

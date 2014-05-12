@@ -18,16 +18,17 @@ double getTime() {
 }
 
 Camera::Camera(RendererSettings* pRendererSettings) : mHeldMouseLooking(FALSE),mMouseCentred(FALSE),
-	mForceMouseLooking(FALSE), mMouseStart(), mMoveDistanceX(0),
-	mMoveDistanceY(0),mCamMoveBackward(),mCamMoveForward(),
+	mForceMouseLooking(FALSE), mMouseStart(), mLookDistanceX(0),
+	mLookDistanceY(0),mCamMoveBackward(),mCamMoveForward(),
 	mCamStrafeLeft(),mCamStrafeRight(),mCamMoveUp(),mCamMoveDown(),
-	mCoords(0,0,0), mRendererSettings(pRendererSettings), mYFOV(XM_PIDIV2 * (2.0f/3.0f))
+	mCoords(0,0,0), mRendererSettings(pRendererSettings), mYFOV(XM_PIDIV2 * (2.0f/3.0f)),mSmoothLook(FALSE), mSmoothLookDistanceX(0), mSmoothLookDistanceY(0), mConstLook(FALSE), mSmoothMove(FALSE),mConstMove(FALSE)
 {
 	// Initialize the view matrix
 	mEye = XMVectorSet( 0.0f, 5000.0f, 0.0f, 0.0f );
 	mLookVector = XMVectorSet( 0.0f, 0.0f, -1.0f, 0.0f );
 	mUp = XMVectorSet( 0.0f, 1.0f, 0.0f, 0.0f );
 	mActualUp = XMVectorSet(0.0f,1.0f,0.0f,0.0f);
+	mLastUpdateTime = getTime();
 }
 
 Camera::~Camera()
@@ -42,14 +43,62 @@ void Camera::setEye(DOUBLE x, DOUBLE y, DOUBLE z) {
 		(FLOAT)(y - dY),
 		(FLOAT)(z - dZ),1.0f);
 	mCoords = XMINT3(dX,dY,dZ);
+	mConstMove = FALSE;
+	mSmoothMove = FALSE;
 }
 
 void Camera::update(DXGI_SURFACE_DESC pSurfaceDesc)
 {
+	DOUBLE updateTime = getTime();
+	DOUBLE deltaTime = (updateTime - mLastUpdateTime)/1000.0;
+	mLastUpdateTime = updateTime;
+
+	if (mSmoothLook) {
+		DOUBLE dx = mSmoothLookDistanceX - mLookDistanceX;
+		DOUBLE dy = mSmoothLookDistanceY - mLookDistanceY;
+
+		mLookDistanceX += mRotSpeed*deltaTime*dx;
+		mLookDistanceY += mRotSpeed*deltaTime*dy;
+		updateCameraLook(DirectX::XMINT2(0,0));
+	}
+	if (mConstLook) {
+		mLookDistanceX +=mConstLookDX*deltaTime;
+		mLookDistanceY +=mConstLookDY*deltaTime;
+		updateCameraLook(DirectX::XMINT2(0,0));
+	}
+
 	mCameraMoveSpeed = mRendererSettings->cameraspeed * CAMERAMOVESPEEDSCALE;
 	mzFar = mRendererSettings->zfar;
 	mzNear = mRendererSettings->znear;
 	updateCameraMove();
+
+	if (mSmoothMove || mConstMove) {
+		DOUBLE x = getEyeX();
+		DOUBLE y = getEyeY();
+		DOUBLE z = getEyeZ();
+
+		DOUBLE dx = mSmoothMoveX - x;
+		DOUBLE dy = mSmoothMoveY - y;
+		DOUBLE dz = mSmoothMoveZ - z;
+
+		DOUBLE newx;
+		DOUBLE newy;
+		DOUBLE newz;
+
+		if (mSmoothMove) {
+			newx = x + dx*mSmoothMoveSpeed*deltaTime;
+			newy = y + dy*mSmoothMoveSpeed*deltaTime;
+			newz = z + dz*mSmoothMoveSpeed*deltaTime;
+		}
+		else {
+			newx = x + mConstMoveX*deltaTime;
+			newy = y + mConstMoveY*deltaTime;
+			newz = z + mConstMoveZ*deltaTime;
+		}
+
+		mEye = XMVectorSet((FLOAT)newx,(FLOAT)newy,(FLOAT)newz,1.0f);
+		mCoords = XMINT3(0,0,0);
+	}
 
 	FLOAT mEyeX = XMVectorGetX(mEye);
 	FLOAT mEyeY = XMVectorGetY(mEye);
@@ -196,6 +245,8 @@ LRESULT Camera::MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, boo
 				*pbNoFurtherProcessing = TRUE;
 			}
 			else if (mHeldMouseLooking == TRUE || mForceMouseLooking == TRUE) {
+				mSmoothLook = FALSE;
+				mConstLook = FALSE;
 				POINT mousePos;
 				GetCursorPos( &mousePos );
 
@@ -257,37 +308,37 @@ void Camera::updateCameraMove()
 
 void Camera::updateCameraLook(XMINT2 pMoveDelta) {
 
-		mMoveDistanceX += pMoveDelta.x;
-		mMoveDistanceY += pMoveDelta.y;
+		mLookDistanceX += pMoveDelta.x;
+		mLookDistanceY += pMoveDelta.y;
 
-		if (mMoveDistanceX > 2 * M_PI / CAMERALOOKSCALE) {
-			mMoveDistanceX-= 2 * M_PI / CAMERALOOKSCALE;
+		if (mLookDistanceX > 2 * M_PI / CAMERALOOKSCALE) {
+			mLookDistanceX-= 2 * M_PI / CAMERALOOKSCALE;
 		}
-		else if (mMoveDistanceX < -2 * M_PI / CAMERALOOKSCALE) {
-			mMoveDistanceX+= 2 * M_PI / CAMERALOOKSCALE;
+		else if (mLookDistanceX < -2 * M_PI / CAMERALOOKSCALE) {
+			mLookDistanceX+= 2 * M_PI / CAMERALOOKSCALE;
 		}
 
 		//Set X axis vars
-		DOUBLE curX = CAMERALOOKSCALE * mMoveDistanceX;
+		DOUBLE curX = CAMERALOOKSCALE * mLookDistanceX;
 		DOUBLE sinX = sin(curX);
 		DOUBLE cosX = cos(curX);
 
 		//Set Y axis vars
-		DOUBLE curY = CAMERALOOKSCALE * mMoveDistanceY;
+		DOUBLE curY = CAMERALOOKSCALE * mLookDistanceY;
 		DOUBLE sinY;
 		DOUBLE cosY;
 
 		//Nik's super awesome FPS style camera. Won't let you look upside down.
 		if (curY >= M_PI_2)
 		{
-			mMoveDistanceY = M_PI_2 / CAMERALOOKSCALE;
+			mLookDistanceY = M_PI_2 / CAMERALOOKSCALE;
 
 			sinY = 1;
 			cosY = 0.0001f;
 		}
 		else if (curY <= -M_PI_2)
 		{
-			mMoveDistanceY = -M_PI_2 / CAMERALOOKSCALE;
+			mLookDistanceY = -M_PI_2 / CAMERALOOKSCALE;
 			sinY = -1;
 			cosY = 0.0001f;
 		}
@@ -367,6 +418,8 @@ void Camera::keyInteracted(HWND hWnd, UINT uMsg, WPARAM wParam, bool* pbNoFurthe
 	}
 
 	if (button != NULL) {
+		mSmoothMove = FALSE;
+		mConstMove = FALSE;
 		if (uMsg == WM_KEYDOWN) {
 			button->Push();
 		}
@@ -539,4 +592,59 @@ BOOL Camera::testFrustumAABB( DirectX::XMFLOAT3 pPos, DirectX::XMINT3 pCoords, D
 
 	}
 	return TRUE;
+}
+
+void Camera::setLook( DOUBLE zenith, DOUBLE azimuth )
+{
+	mSmoothLook = FALSE;
+	mConstLook = FALSE;
+	//azi = rotation
+	//zeni = inclination
+	mLookDistanceX = -(azimuth/180.0) * (2 * M_PI / CAMERALOOKSCALE);
+	mLookDistanceY = -(zenith/90) * (M_PI_2/CAMERALOOKSCALE);
+	updateCameraLook(DirectX::XMINT2(0,0));
+}
+
+void Camera::smoothLook( DOUBLE zenith, DOUBLE azimuth, DOUBLE rotSpeed)
+{
+	mSmoothLook = TRUE;
+	mConstLook = FALSE;
+	mSmoothLookDistanceX = -(azimuth/180.0) * (2 * M_PI / CAMERALOOKSCALE);
+	mSmoothLookDistanceY = -(zenith/90) * (M_PI_2/CAMERALOOKSCALE);
+
+	if (mSmoothLookDistanceX > 2 * M_PI / CAMERALOOKSCALE) {
+		mSmoothLookDistanceX-= 2 * M_PI / CAMERALOOKSCALE;
+	}
+	else if (mSmoothLookDistanceX < -2 * M_PI / CAMERALOOKSCALE) {
+		mSmoothLookDistanceX+= 2 * M_PI / CAMERALOOKSCALE;
+	}
+
+	mRotSpeed = rotSpeed;
+}
+
+void Camera::constLook( DOUBLE dz, DOUBLE da )
+{
+	mSmoothLook = FALSE;
+	mConstLook = TRUE;
+	mConstLookDX = -(da/180.0) * (2 * M_PI / CAMERALOOKSCALE);
+	mConstLookDY = -(dz/90) * (M_PI_2/CAMERALOOKSCALE);
+}
+
+void Camera::smoothMove( DOUBLE x, DOUBLE y, DOUBLE z, DOUBLE speed)
+{
+	mSmoothMove = TRUE;
+	mConstMove = FALSE;
+	mSmoothMoveSpeed = speed;
+	mSmoothMoveX = x;
+	mSmoothMoveY = y;
+	mSmoothMoveZ = z;
+}
+
+void Camera::constMove( DOUBLE speedX, DOUBLE speedY, DOUBLE speedZ )
+{
+	mSmoothMove = FALSE;
+	mConstMove = TRUE;
+	mConstMoveX = speedX;
+	mConstMoveY = speedY;
+	mConstMoveZ = speedZ;
 }

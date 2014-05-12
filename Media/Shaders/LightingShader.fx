@@ -45,13 +45,13 @@ float4 LightingPS(LightingVSOutput input) : SV_TARGET {
 	float4 litSample = UnpackRGBA16(litTex[offset]);
 	
 	float fogEnd = 3200000;
-	float fogStart = 3200000/2;
+	float fogStart = 1000000;
 	
 	fogEnd = sqrt(fogEnd*fogEnd + yHeight*yHeight);
 	fogStart = sqrt(fogStart*fogStart + yHeight*yHeight);
 	
 	float fogFactor = saturate((fogEnd - length(viewPos))/(fogEnd - fogStart));
-	fogFactor = pow(fogFactor,1.0/3.0);
+	fogFactor = pow(fogFactor,1.0/10.0);
 
 	litSample.xyz = lerp(fogCol,litSample,fogFactor);
 	return litSample;

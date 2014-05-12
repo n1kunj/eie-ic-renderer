@@ -19,6 +19,17 @@ VS_OUTPUT VS( VS_INPUT input)
 	return output;
 }
 
+cbuffer DSConstantBuffer : register( b0 )
+{
+	matrix cModel;
+	matrix cView;
+	matrix cVP;
+	matrix cMV;
+	matrix cMVP;
+	int3 cOffset;
+	float cTessAmount;
+}
+
 struct HS_C_OUTPUT
 {
 	float mEdges[4] : SV_TessFactor;
@@ -28,7 +39,7 @@ struct HS_C_OUTPUT
 HS_C_OUTPUT HS_CONSTANT(InputPatch<VS_OUTPUT,4> inputPatch, uint patchId : SV_PrimitiveID)
 {    
 	HS_C_OUTPUT output;
-	float tessAmount = 4;
+	float tessAmount = cTessAmount;
 	
 	output.mEdges[0] = tessAmount;
 	output.mEdges[1] = tessAmount;
@@ -64,15 +75,7 @@ struct DS_OUTPUT
 	float2 mUV : TEXCOORDS;
 };
 
-cbuffer DSConstantBuffer : register( b0 )
-{
-	matrix cModel;
-	matrix cView;
-	matrix cVP;
-	matrix cMV;
-	matrix cMVP;
-	int3 cOffset;
-}
+
 
 SamplerState sDefault : register(s0);
 SamplerState sAnisotropic : register(s1);

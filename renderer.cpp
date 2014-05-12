@@ -31,7 +31,7 @@ Renderer::Renderer(MessageLogger* mLogger) : mLogger(mLogger), mDrawableManager(
 	mMeshManager->addMesh(new DrawableMesh(L"Plane256",new PlaneLoader(257)));
 	mShaderManager = new ShaderManager(mLogger);
 	mShaderManager->addShader(new CityGBufferShader());
-	mShaderManager->addShader(new DistantGBufferShader());
+	mShaderManager->addShader(new DistantGBufferShader(&mSettings.tessAmount));
 
 	mLightManager = new LightManager();
 	mFXAAShader = new FXAAShader();
@@ -312,7 +312,14 @@ void Renderer::OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext
 
 	//Runtime millis should be max of 15% of the frametime
 	if (mGenerator->hasGeneratables()) {
-		FLOAT runTime = savedFrameTime * 0.15f;
+		FLOAT runTime;
+		if (mSettings.schedStep) {
+			runTime = 0;
+			mSettings.schedStep = 0;
+		}
+		else {
+			runTime = savedFrameTime * mSettings.schedTime;
+		}
 		mGenerator->Generate(pd3dDevice, pd3dImmediateContext,runTime);
 	}
 	else {
